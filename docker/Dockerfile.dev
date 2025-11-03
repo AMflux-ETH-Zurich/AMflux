@@ -1,0 +1,12 @@
+FROM python:3.11-slim
+
+# Install basic tools (useful for sensor testing or CAN bus later)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git build-essential i2c-tools can-utils \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory inside the container
+WORKDIR /workspace
+
+# Default command keeps container open (so you can attach from Docker Desktop)
+CMD ["/bin/bash"]
