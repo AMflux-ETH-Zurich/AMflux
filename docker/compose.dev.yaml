@@ -1,8 +1,7 @@
-version: "3.9"
-
 services:
   app:
     container_name: amflux-app
+    image: amflux/controls-dev:latest  
     build:
       context: ..
       dockerfile: docker/Dockerfile.dev
@@ -11,10 +10,9 @@ services:
     working_dir: /workspace
     tty: true
     stdin_open: true
-    # Optional: enable these when you use real hardware on Raspberry Pi
     # devices:
     #   - /dev/i2c-1:/dev/i2c-1
     #   - /dev/spidev0.0:/dev/spidev0.0
     # cap_add:
     #   - NET_ADMIN
-    # network_mode: hosto
+    # network_mode: host
