@@ -1,5 +1,5 @@
 import canopen
-
+import time
 
 def network_setup():
     # Create a CANopen network
@@ -17,9 +17,27 @@ def network_setup():
 
 
 
+def run_motor():
+    node.sdo[0x6040].raw = 0x0006      # Shutdown
+    node.sdo[0x6040].raw = 0x0007      # Switch on
+
+    node.sdo[0x6060].raw = 0xFE        # Open-loop mode (254 decimal)
+
+    node.sdo[0x6040].raw = 0x000F      # Enable operation
+
+    node.sdo[0x60FF].raw = 300         # Command (depends on mode scaling)
+
+    time.sleep(2)
+
+    node.sdo[0x6040].raw = 0x0000      # Disable drive (stop)
+
+
 
 def main():
     network_setup()
+
+
+
 
 
     
