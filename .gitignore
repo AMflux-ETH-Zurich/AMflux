@@ -1,0 +1,29 @@
+# macOS system files
+.DS_Store
+.AppleDouble
+.Spotlight-V100
+.Trashes
+
+# Python virtual environments
+.venv/
+AMfluxenv/
+
+# VSCode settings (optional)
+.vscode/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Jupyter and notebooks
+.ipynb_checkpoints/
+
+# Build / distribution
+build/
+dist/
+*.egg-info/
+
+# Logs or temp
+*.log
+*.tmp
