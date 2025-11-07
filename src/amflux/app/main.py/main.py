@@ -21,7 +21,7 @@ def run_motor():
     node.sdo[0x6040].raw = 0x0006      # Shutdown
     node.sdo[0x6040].raw = 0x0007      # Switch on
 
-    node.sdo[0x6060].raw = 0xFE        # Open-loop mode (254 decimal)
+    node.sdo[0x6060].raw = 10          # Open-loop mode (254 decimal) (10 should work)
 
     node.sdo[0x6040].raw = 0x000F      # Enable operation
 
