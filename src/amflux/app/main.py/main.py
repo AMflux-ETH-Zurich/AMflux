@@ -6,7 +6,7 @@ def network_setup():
     network = canopen.Network()
 
     # Connect to a CAN interface (e.g., 'can0' for Linux SocketCAN)
-    network.connect(channel='can0', bustype='socketcan')
+    network.connect(channel='can0', bustype='socketcan') #write 'virtal' when debugging on mac 
 
     # Add a node to the network with a specific EDS file
     node = network.add_node(1, 'src/amflux/app/main.py/Epos4_70_15.eds') 
