@@ -9,19 +9,19 @@ def network_setup():
     network.connect(channel='can0', bustype='socketcan')
 
     # Add a node to the network with a specific EDS file
-    node = network.add_node(1, 'path/to/your/eds/file.eds') 
+    node = network.add_node(1, 'src/amflux/app/main.py/Epos4_70_15.eds') 
 
     # disconnect from the network
     network.disconnect()
 
 
-#yatayatatyatat
+
 
 
 def main():
     network_setup()
 
-    #blablabal
+
     
 
 if __name__ == "__main__":
