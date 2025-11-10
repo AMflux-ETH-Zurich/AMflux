@@ -6,7 +6,7 @@ def network_scan(node_channel: str):
     # Create a CANopen network
     net = canopen.Network()
     # Connect to a CAN interface (e.g., 'can0' for Linux SocketCAN)
-    net.connect(channel='node_channel', bustype='socketcan')
+    net.connect(channel= node_channel, bustype='socketcan')
     # Scan for nodes on the network
     net.scanner.search()
     # Print found nodes
@@ -90,4 +90,4 @@ def main():
 
 if __name__ == "__main__":
     #main()
-    network_scan('can_0')
+    network_scan('can0')
