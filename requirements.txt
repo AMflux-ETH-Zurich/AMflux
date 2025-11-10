@@ -3,3 +3,4 @@ pandas==2.2.2
 matplotlib==3.9.0
 canopen
 TIME-python==0.0.17
+keyboard==0.13.5
