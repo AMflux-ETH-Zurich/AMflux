@@ -64,7 +64,7 @@ def network_shutdown(network):
 
 def main():
     # Setup our CANopen network
-    network, mc1 = network_setup(1, 'src/amflux/app/Epos4_70_15.eds', 'can0')
+    network, mc1 = network_setup(1, 'home/amflux/AMflux/src/amflux/app/Epos4_70_15.eds', 'can0')
     # Setup our Motor Controller
     # CST mode is under int=10 (Firmware-Specification, p219)
     motor_setup(mc1, 10)
