@@ -1,5 +1,6 @@
 import time
 import canopen
+import keyboard
 
 
 def network_setup(node_id: int, node_eds: str, node_channel: str):
@@ -21,23 +22,39 @@ def motor_setup(node, operating_mode: int):
     node.sdo[0x6040].raw = 0x0007
     # Mode
     node.sdo[0x6060].raw = operating_mode
-
-    
-
-def motor_run_cst(node, torque: int, duration: float):
     # Enable operation
     node.sdo[0x6040].raw = 0x000F
+
+    
+def quick_stop(node):
+	node.sdo[0x6040].raw = 0x0002
+     
+
+def motor_run_cst(node, torque: int, duration: float):
     # Give system time for setup
     time.sleep(0.1)
     # Torque Command, Torque in mNm (Firmware-Specification, p223)
     node.sdo[0x60FF].raw = torque
-    # How long the motor runs
-    time.sleep(duration)
+    # Records start time
+    start = time.time()    
+    # Loop that runs for a given duration
+    while time.time() - start < duration:
+        # If key 's' is pressed 
+        if keyboard.is_pressed('s'):
+            quick_stop(node)
+            # Finishing the loop
+            break
+        # So we're not running at maximum cpu capacity
+        time.sleep(0.01)
+    # Give system time for use of Quick Stop
+    time.sleep(0.1)    
+    # Shutdown
+    node.sdo[0x6040].raw = 0x0006
+    # Give system time for Shutdown
+    time.sleep(0.1)
     # Disable drive
     node.sdo[0x6040].raw = 0x0000
-    
-def quick_stop(node):
-		node.sdo[0x6040].raw = 0x0004
+
     
     
 def network_shutdown(network):
@@ -46,15 +63,16 @@ def network_shutdown(network):
 
 
 def main():
-  # Setup our CANopen network
-  network, mc1 = network_setup(1, 'src/amflux/app/main.py/Epos4_70_15.eds', 'can0')
-  # Setup our Motor Controller
-  # CST mode is under int=10 (Firmware-Specification, p219)
-  motor_setup(mc1, 10)
-  # Run the motor in cst mode using a given amount of rpm
-  motor_run_cst(mc1, 1000, 2)
-  # Shutdown the CANopen network after use
-  network_shutdown(network)
+    # Setup our CANopen network
+    network, mc1 = network_setup(1, 'src/amflux/app/main.py/Epos4_70_15.eds', 'can0')
+    # Setup our Motor Controller
+    # CST mode is under int=10 (Firmware-Specification, p219)
+    motor_setup(mc1, 10)
+    # Run the motor in cst mode using a given amount of rpm
+    motor_run_cst(mc1, 1000, 2)
+    # Shutdown the CANopen network after use
+    network_shutdown(network)
+
 
 
 
