@@ -2,6 +2,16 @@ import time
 import canopen
 import keyboard
 
+def network_scan(node_channel: str):
+    # Create a CANopen network
+    net = canopen.Network()
+    # Connect to a CAN interface (e.g., 'can0' for Linux SocketCAN)
+    net.connect(channel='node_channel', bustype='socketcan')
+    # Scan for nodes on the network
+    net.scanner.search()
+    # Print found nodes
+    for nid in net.scanner.nodes:
+        print(f"Found node: {nid}")
 
 def network_setup(node_id: int, node_eds: str, node_channel: str):
     # Create a CANopen network
@@ -79,4 +89,5 @@ def main():
     
 
 if __name__ == "__main__":
-    main()
+    #main()
+    network_scan('can0')
