@@ -90,4 +90,4 @@ def main():
 
 if __name__ == "__main__":
     #main()
-    network_scan('can0')
+    network_scan('can_0')
