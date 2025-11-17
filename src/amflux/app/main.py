@@ -8,7 +8,7 @@ def network_scan(node_channel: str):
     # Connect to a CAN interface (e.g., 'can0' for Linux SocketCAN)
     net.connect(channel= node_channel, bustype='socketcan')
     # Scan for nodes on the network
-    net.scanner.search()
+    net.scanner.search(nodes=[1])
     # Print found nodes
     for nid in net.scanner.nodes:
         print(f"Found node: {nid}")
