@@ -13,7 +13,7 @@ def network_scan(node_channel: str):
         net.connect(channel= node_channel, bustype='socketcan')
 
     # Scan for nodes on the network
-    net.scanner.search(nodes=[1])
+    net.scanner.search()
     # Print found nodes
     for nid in net.scanner.nodes:
         print(f"Found node: {nid}")
