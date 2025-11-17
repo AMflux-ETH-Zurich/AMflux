@@ -2,11 +2,16 @@ import time
 import canopen
 import keyboard
 
+net = None
+
 def network_scan(node_channel: str):
-    # Create a CANopen network
-    net = canopen.Network()
-    # Connect to a CAN interface (e.g., 'can0' for Linux SocketCAN)
-    net.connect(channel= node_channel, bustype='socketcan')
+    global net
+    if net == None:
+        # Create a CANopen network  
+        net = canopen.Network()
+        # Connect to a CAN interface (e.g., 'can0' for Linux SocketCAN)
+        net.connect(channel= node_channel, bustype='socketcan')
+
     # Scan for nodes on the network
     net.scanner.search(nodes=[1])
     # Print found nodes
@@ -14,15 +19,17 @@ def network_scan(node_channel: str):
         print(f"Found node: {nid}")
 
 def network_setup(node_id: int, node_eds: str, node_channel: str):
-    # Create a CANopen network
-    network = canopen.Network()
-    # Connect to a CAN interface (e.g., 'can0' for Linux SocketCAN)
-    # Write 'virtual' when debugging on mac 
-    network.connect(channel=node_channel, bustype='socketcan')
+    global net
+    if net == None:
+        # Create a CANopen network
+        net = canopen.Network()
+        # Connect to a CAN interface (e.g., 'can0' for Linux SocketCAN)
+        # Write 'virtual' when debugging on mac 
+        net.connect(channel=node_channel, bustype='socketcan')
     # Add a node to the network with a specific EDS file
-    node = network.add_node(node_id, node_eds) 
+    node = net.add_node(node_id, node_eds) 
     # Return network and the node 
-    return network, node
+    return net, node
     
     
 def motor_setup(node, operating_mode: int):
@@ -67,12 +74,16 @@ def motor_run_cst(node, torque: int, duration: float):
 
     
     
-def network_shutdown(network):
-    # Disconnect from the network
-    network.disconnect()
+def network_shutdown():
+    global net
+    if net != None:
+        # Disconnect from the network
+        net.disconnect()
+        net = None
 
 
 def main():
+    global net
     # Setup our CANopen network
     network, mc1 = network_setup(1, '/home/amflux/AMflux/src/amflux/app/Epos4_70_15.eds', 'can0')
     # Setup our Motor Controller
@@ -81,7 +92,7 @@ def main():
     # Run the motor in cst mode using a given amount of rpm
     motor_run_cst(mc1, 1000, 2)
     # Shutdown the CANopen network after use
-    network_shutdown(network)
+    network_shutdown()
 
 
 
