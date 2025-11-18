@@ -33,8 +33,7 @@ def network_setup(node_id: int, node_eds: str, node_channel: str):
     return net, node
 
 
-def motor_init_setup(node, motor_type: int=None, nominal_current: int=None, current_lim: int=None, 
-                        pole_pairs: int=None, therm_const: int=None, tor_const: int=None):
+
 def axis_configuration_setup(node, sens_res: int, sys_speed: int):
     #6.2.52
     #Axis configuration for absolute SSI encoder
@@ -51,8 +50,8 @@ def axis_configuration_setup(node, sens_res: int, sys_speed: int):
     node.sdo[0x3000][6].raw = sys_speed #REFER TO RENISHAW ENCODER SHEET
 
 
-def motor_init_setup(node, nominal_current: int, current_lim: int, pole_pairs: int, therm_const: int, 
-                     tor_const: int, ):
+def motor_init_setup(node, motor_type: int=None, nominal_current: int=None, current_lim: int=None, 
+                        pole_pairs: int=None, therm_const: int=None, tor_const: int=None):
     #6.2.53
     #motor type (Sinusoidal PM BL motor = 10 or in hex 0x0A)
     node.sdo[0x6402][0x0].raw = motor_type if motor_type is not None else 0x000A
