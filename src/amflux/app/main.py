@@ -103,7 +103,7 @@ def velocity_control_parameter(node, p_gain:int = None, i_gain: int = None,
     #Velocity controller Feed Forward acceleration gain
     node.sdo[0x30A2][4].raw = ffa_gain if ffa_gain is not None else 0
     #Velocity controller filter cut-off frequency in HZ
-    node.sdo[0x30A2][4].raw = f_cutoff if f_cutoff is not None else 600
+    node.sdo[0x30A2][5].raw = f_cutoff if f_cutoff is not None else 600
     
 
 def velocity_observer_parameter(node, pos_corr_gain: int = None, vel_corr_gain: int = None,
