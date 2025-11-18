@@ -30,6 +30,24 @@ def network_setup(node_id: int, node_eds: str, node_channel: str):
     node = net.add_node(node_id, node_eds) 
     # Return network and the node 
     return net, node
+
+
+def controller_init_setup():
+
+def motor_init_setup(nominal_current: int, current_lim: int, pole_pairs: int, th_t_const: int, tor_const: int, ):
+    #motor type (Sinusoidal PM BL motor = 10 or in hex 0x0A)
+    node.sdo[0x6402.0x00].raw = 0x000A
+    #nominal current flowing through motor windings in mA
+    node.sdo[0x3001.0x01].raw = nominal_current
+    #output current limit in mA
+    node.sdo[0x3001.0x02].raw = current_lim
+    #number of pole pairs
+    node.sdo[0x3001.0x03].raw = pole_pairs
+    #thermal time constant of windings
+    node.sdo[0x3001.0x04].raw = th_t_const
+    #torque constant of motor
+    node.sdo[0x3001.0x05].raw = tor_const
+    
     
     
 def motor_setup(node, operating_mode: int):
