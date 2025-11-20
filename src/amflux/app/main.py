@@ -167,8 +167,52 @@ def velocity_observer_parameter(node, pos_corr_gain: int = None, vel_corr_gain: 
     node.sdo[0x30A3][5].raw = inertia if inertia is not None else 1000
 
 
-
-
+def dual_loop_position_control_parameter(node, main_loop_p_gain_low:int = None, main_loop_p_gain_high:int = None, 
+                                         main_loop_gain_scheduler:int = None, main_loop_filter_coeff_a:int = None,
+                                         main_loop_filter_coeff_b:int = None, main_loop_filter_coeff_c:int = None,
+                                         main_loop_filter_coeff_d:int = None, main_loop_filter_coeff_e:int = None,
+                                         auxiliary_loop_p_gain:int = None, auxiliary_loop_i_gain:int = None,
+                                         auxiliary_loop_ff_velocity_gain:int = None, auxiliary_loop_ff_acceleration_gain:int = None,
+                                         auxiliary_loop_observer_pos_corr_gain:int = None, auxiliary_loop_observer_vel_corr_gain:int = None,
+                                         auxiliary_loop_observer_load_corr_gain:int = None, auxiliary_loop_observer_friction:int = None,
+                                         auxiliary_loop_observer_inertia:int = None, dual_loop_miscellaneous:int = None):
+    #6.2.65
+    #Represents the main loop low bandwidth proportional factor
+    node.sdo[0x30AE][1].raw = main_loop_p_gain_low if main_loop_p_gain_low is not None else 10000
+    #Represents the main loop high bandwidth proportional factor
+    node.sdo[0x30AE][2].raw = main_loop_p_gain_high if main_loop_p_gain_high is not None else 100000
+    #Represents the main loop gain scheduler
+    node.sdo[0x30AE][3].raw = main_loop_gain_scheduler if main_loop_gain_scheduler is not None else 12500
+    #Main loop filter coefficient a
+    node.sdo[0x30AE][0x10].raw = main_loop_filter_coeff_a if main_loop_filter_coeff_a is not None else 1000
+    #Main loop filter coefficient b
+    node.sdo[0x30AE][0x11].raw = main_loop_filter_coeff_b if main_loop_filter_coeff_b is not None else 1000
+    #Main loop filter coefficient c
+    node.sdo[0x30AE][0x12].raw = main_loop_filter_coeff_c if main_loop_filter_coeff_c is not None else 1000
+    #Main loop filter coefficient d
+    node.sdo[0x30AE][0x13].raw = main_loop_filter_coeff_d if main_loop_filter_coeff_d is not None else 1000
+    #Main loop filter coefficient e
+    node.sdo[0x30AE][0x14].raw = main_loop_filter_coeff_e if main_loop_filter_coeff_e is not None else 1000
+    #Auxiliary loop P-gain
+    node.sdo[0x30AE][0x20].raw = auxiliary_loop_p_gain if auxiliary_loop_p_gain is not None else 20000
+    #Auxiliary loop I-gain
+    node.sdo[0x30AE][0x21].raw = auxiliary_loop_i_gain if auxiliary_loop_i_gain is not None else 500000
+    #Auxiliary loop FF velocity gain
+    node.sdo[0x30AE][0x22].raw = auxiliary_loop_ff_velocity_gain if auxiliary_loop_ff_velocity_gain is not None else 0
+    #Auxiliary loop FF acceleration gain
+    node.sdo[0x30AE][0x23].raw = auxiliary_loop_ff_acceleration_gain if auxiliary_loop_ff_acceleration_gain is not None else 0
+    #Auxiliay loop observer position correction gain
+    node.sdo[0x30AE][0x30].raw = auxiliary_loop_observer_pos_corr_gain if auxiliary_loop_observer_pos_corr_gain is not None else 400
+    #Auxiliay loop observer velocity correction gain
+    node.sdo[0x30AE][0x31].raw = auxiliary_loop_observer_vel_corr_gain if auxiliary_loop_observer_vel_corr_gain is not None else 100000
+    #Auxiliay loop observer load correction gain
+    node.sdo[0x30AE][0x32].raw = auxiliary_loop_observer_load_corr_gain if auxiliary_loop_observer_load_corr_gain is not None else 33
+    #Auxiliay loop observer friction
+    node.sdo[0x30AE][0x33].raw = auxiliary_loop_observer_friction if auxiliary_loop_observer_friction is not None else 10
+    #Auxiliay loop observer inertia
+    node.sdo[0x30AE][0x34].raw = auxiliary_loop_observer_inertia if auxiliary_loop_observer_inertia is not None else 1000
+    #Dual loop control miscellaneous configuration
+    node.sdo[0x30AE][0x40].raw = dual_loop_miscellaneous if dual_loop_miscellaneous is not None else 0x0000
 
 
 
