@@ -215,6 +215,14 @@ def dual_loop_position_control_parameter(node, main_loop_p_gain_low:int = None, 
     node.sdo[0x30AE][0x40].raw = dual_loop_miscellaneous if dual_loop_miscellaneous is not None else 0x0000
 
 
+def homing_method(node, homing_method: int = None):
+    #6.2.125
+    #Used to select homing method (absolute SSI encoder = 37)
+    node.sdo[0x6098].raw = homing_method if homing_method is not None else 37
+
+
+
+
 
     
     
