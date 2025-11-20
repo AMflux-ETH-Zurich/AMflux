@@ -82,21 +82,21 @@ def ssi_abs_encoder_init_setup(node, data_rate: int=None, data_bits: int=None, e
     #SSI timeout time
     node.sdo[0x3012][0x5].raw = timeout_time if timeout_time is not None else 30 #REFER TO RENISHAW ENCODER SHEET
     #Special bits trailing data
-    node.sdo[0x3012][0x6].raw = sbits_trailing_data if sbits_trailing_data is not None else 0 #REFER TO RENISHAW ENCODER SHEET
+    #READ ONLY node.sdo[0x3012][0x6].raw = sbits_trailing_data if sbits_trailing_data is not None else 0 #REFER TO RENISHAW ENCODER SHEET
     #SSI refresh frequency
-    node.sdo[0x3012][0x7].raw = refresh_frequency #REFER TO RENISHAW ENCODER SHEET
+    #READ ONLY node.sdo[0x3012][0x7].raw = refresh_frequency #REFER TO RENISHAW ENCODER SHEET
     #SSI Power up time
     node.sdo[0x3012][0x8].raw = power_up_time if power_up_time is not None else 200 #REFER TO RENISHAW ENCODER SHEET
     #SSI postition raw value, lower 32 bits
-    node.sdo[0x3012][0x9].raw = position_raw_value
+    #READ ONLY node.sdo[0x3012][0x9].raw = position_raw_value
     #SSI commutaiton offset value
     node.sdo[0x3012][0xA].raw = commutation_offset_value if commutation_offset_value is not None else 0
     #SSI position bits
     node.sdo[0x3012][0xB].raw = position_bits if position_bits is not None else  0x0000000C #REFER TO RENISHAW ENCODER SHEET, MUST BE REDUCED IF >32
     #SSI special bits leading data
-    node.sdo[0x3012][0xC].raw = sbits_leading_data if sbits_leading_data is not None else 0 #REFER TO RENISHAW ENCODER SHEET
+    #READ ONLY node.sdo[0x3012][0xC].raw = sbits_leading_data if sbits_leading_data is not None else 0 #REFER TO RENISHAW ENCODER SHEET
     #SSI position raw value complemete
-    node.sdo[0x3012][0xD].raw = position_raw_value_complete
+    #READ ONLY node.sdo[0x3012][0xD].raw = position_raw_value_complete
     #SSI communication additional delay
     node.sdo[0x3012][0xE].raw = communication_additional_delay if communication_additional_delay is not None else -1 #REFER TO RENISHAW EN
 
