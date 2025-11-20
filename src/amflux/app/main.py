@@ -99,16 +99,12 @@ def ssi_abs_encoder_init_setup(node, data_rate: int=None, data_bits: int=None, e
     node.sdo[0x3012][0xE].raw = communication_additional_delay if communication_additional_delay is not None else -1 #REFER TO RENISHAW EN
 
 
-
-
 def electrical_system_init_setup(node, electrical_resistance: int=None, electrical_inductance: int=None):
     #6.2.54
     #electrical resistance of motor windings in mOhm
     node.sdo[0x3002][0x1].raw = electrical_resistance if electrical_resistance is not None else 0
     #electrical inductance of motor windings in uH
     node.sdo[0x3002][0x2].raw = electrical_inductance if electrical_inductance is not None else 0
-
-
 
 
 def current_control_parameter(node, p_gain: int = None, i_gain: int = None):
@@ -215,17 +211,31 @@ def dual_loop_position_control_parameter(node, main_loop_p_gain_low:int = None, 
     node.sdo[0x30AE][0x40].raw = dual_loop_miscellaneous if dual_loop_miscellaneous is not None else 0x0000
 
 
+def home_position(node, homeposition: int = None):
+    #6.2.66
+    #defines the position that will be set as zero position of the absolute position counter.
+    node.sdo[0x30B0][0x00].raw = homeposition if homeposition is not None else 0
+
+
+def home_offset_distance(node, home_offset_distance: int = None):
+    #6.2.67
+    #Represents a moving distance in a homing procedure.
+    node.sdo[0x30B1][0x00].raw = home_offset_distance if home_offset_distance is not None else 0
+
+def Current_threshold_homing(node, current_threshold_homing: int = None):
+    #6.2.68
+    #Used for homing methods «−1», «−2», «−3», and «−4».
+    node.sdo[0x30B2][0x00].raw = current_threshold_homing if current_threshold_homing is not None else 1000
+
+
 def homing_method(node, homing_method: int = None):
     #6.2.125
     #Used to select homing method (absolute SSI encoder = 37)
     node.sdo[0x6098].raw = homing_method if homing_method is not None else 37
 
+def current_demand_value(node, current_demand_value: int = None):
 
 
-
-
-    
-    
 def motor_setup(node, operating_mode: int):
     # Shutdown
     node.sdo[0x6040].raw = 0x0006
