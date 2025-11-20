@@ -211,29 +211,46 @@ def dual_loop_position_control_parameter(node, main_loop_p_gain_low:int = None, 
     node.sdo[0x30AE][0x40].raw = dual_loop_miscellaneous if dual_loop_miscellaneous is not None else 0x0000
 
 
-def home_position(node, homeposition: int = None):
+def home_position_init(node, homeposition: int = None):
     #6.2.66
     #defines the position that will be set as zero position of the absolute position counter.
     node.sdo[0x30B0][0x00].raw = homeposition if homeposition is not None else 0
 
 
-def home_offset_distance(node, home_offset_distance: int = None):
+def home_offset_distance_init(node, home_offset_distance: int = None):
     #6.2.67
     #Represents a moving distance in a homing procedure.
     node.sdo[0x30B1][0x00].raw = home_offset_distance if home_offset_distance is not None else 0
 
-def Current_threshold_homing(node, current_threshold_homing: int = None):
+
+def Current_threshold_homing_init(node, current_threshold_homing: int = None):
     #6.2.68
     #Used for homing methods «−1», «−2», «−3», and «−4».
     node.sdo[0x30B2][0x00].raw = current_threshold_homing if current_threshold_homing is not None else 1000
 
 
-def homing_method(node, homing_method: int = None):
+def homing_method_init(node, homing_method: int = None):
     #6.2.125
     #Used to select homing method (absolute SSI encoder = 37)
     node.sdo[0x6098].raw = homing_method if homing_method is not None else 37
 
-def current_demand_value(node, current_demand_value: int = None):
+
+def standstill_window_init(node, standstill_window: int = None):
+    #6.2.73.1
+    #Defines a symmetric range of accepted velocity values relatively to zero.
+    node.sdo[0x30E0][0x01].raw = standstill_window if standstill_window is not None else 30
+
+
+def standstill_window_time_init(node, standstill_window_time: int = None):
+    #6.2.73.2
+    #Defines the time duration for which the velocity must remain within the standstill window for Standstill to be reached. [ms]
+    node.sdo[0x30E0][0x02].raw = standstill_window_time if standstill_window_time is not None else 2
+
+
+def standstill_window_timeout_init(node, standstill_window_timeout: int = None):
+    #6.2.73.3
+    #Defines the point of time standstill is supposed to be reached, even if the standstill conditions are not yet fulfilled.
+    node.sdo[0x30E0][0x03].raw = standstill_window_timeout if standstill_window_timeout is not None else 1000
 
 
 def motor_setup(node, operating_mode: int):
