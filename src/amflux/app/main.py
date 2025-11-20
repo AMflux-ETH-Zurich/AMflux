@@ -34,7 +34,7 @@ def network_setup(node_id: int, node_eds: str, node_channel: str):
 
 
 
-def axis_configuration_setup(node, sens_res: int, sys_speed: int):
+def axis_configuration_setup(node, sens_res: int=None, sys_speed: int=None):
     #6.2.52
     #Axis configuration for absolute SSI encoder
     node.sdo[0x3000][1].raw = 0x00000300
@@ -68,10 +68,8 @@ def motor_init_setup(node, motor_type: int=None, nominal_current: int=None, curr
 
 
 def ssi_abs_encoder_init_setup(node, data_rate: int=None, data_bits: int=None, encoding_type: int=None,
-                                timeout_time: int=None, sbits_trailing_data: int = None, refresh_frequency: int=None,
-                                    power_up_time: int=None, position_raw_value: int=None, commutation_offset_value: int=None,
-                                        position_bits: int=None, sbits_leading_data: int=None, position_raw_value_complete: int=None, 
-                                            communication_additional_delay: int=None):
+                                timeout_time: int=None, power_up_time: int=None, commutation_offset_value: int=None,
+                                        position_bits: int=None, communication_additional_delay: int=None):
     #6.2.58
     #SSI data rate
     node.sdo[0x3012][0x1].raw = data_rate if data_rate is not None else 2000 #REFER TO RENISHAW ENCODER SHEET
@@ -108,7 +106,7 @@ def electrical_system_init_setup(node, electrical_resistance: int=None, electric
     #electrical resistance of motor windings in mOhm
     node.sdo[0x3002][0x1].raw = electrical_resistance if electrical_resistance is not None else 0
     #electrical inductance of motor windings in uH
-    node.sdo[0x3002][0x2].raw = electrical_inductance if electrical_resistance is not None else 0
+    node.sdo[0x3002][0x2].raw = electrical_inductance if electrical_inductance is not None else 0
 
 
 
