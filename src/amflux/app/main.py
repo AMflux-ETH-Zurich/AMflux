@@ -1,9 +1,11 @@
 import time
 import canopen
 import keyboard
+import can
+from can.io import LimitedSend
 
 net = None
-
+"""
 def network_scan(node_channel: str):
     global net
     if net == None:
@@ -17,7 +19,37 @@ def network_scan(node_channel: str):
     # Print found nodes
     for nid in net.scanner.nodes:
         print(f"Found node: {nid}")
+"""
 
+
+# Define a safe message rate to avoid buffer overflow
+RATE_LIMIT_MSGS_PER_SEC = 750 
+
+def network_scan(node_channel: str):
+    global net
+    if net == None:
+        # 1. Create the base SocketCAN bus object
+        # This is the object that interacts with the Linux kernel
+        bus = can.interface.Bus(
+            channel=node_channel, 
+            bustype='socketcan'
+        )
+
+        # 2. Wrap the bus object to enforce a transmission rate limit
+        # This fixes the "Transmit buffer full" error during rapid scanning
+        rate_limited_bus = LimitedSend(bus, max_message_per_second=RATE_LIMIT_MSGS_PER_SEC) 
+        
+        # 3. Create a CANopen network and assign the rate-limited bus
+        # This allows CANopen to use the rate-limited transmission logic
+        net = canopen.Network()
+        net.bus = rate_limited_bus 
+
+    # Scan for nodes on the network. This call now respects the rate limit.
+    net.scanner.search()
+    
+    # Print found nodes
+    for nid in net.scanner.nodes:
+        print(f"Found node: {nid}")
 
 def network_setup(node_id: int, node_eds: str, node_channel: str):
     global net
