@@ -89,6 +89,15 @@ def network_setup(node_id: int, node_eds: str, node_channel: str):
     return net, node
 
 
+def network_shutdown():
+    global net
+    if net != None:
+        # Disconnect from the network
+        net.disconnect()
+        net = None
+
+
+
 
 def axis_configuration_init(node, sens_res: int=None, sys_speed: int=None):
     #6.2.52
@@ -297,13 +306,6 @@ def Current_threshold_homing_init(node, current_threshold_homing: int = None):
     node.sdo[0x30B2][0x00].raw = current_threshold_homing if current_threshold_homing is not None else 1000
 
 
-def homing_method_init(node, homing_method: int = None):
-    #6.2.125
-    check_init(locals())
-    #Used to select homing method (absolute SSI encoder = 37)
-    node.sdo[0x6098].raw = homing_method if homing_method is not None else 37
-
-
 def standstill_window_init(node, standstill_window: int = None):
     #6.2.73.1
     check_init(locals())
@@ -370,18 +372,6 @@ def position_window_time_init(node, position_window_time: int = None):
     node.sdo[0x6068][0x00].raw = position_window_time if position_window_time is not None else 0
 
 
-
-def motor_setup(node, operating_mode: int):
-    # Shutdown
-    node.sdo[0x6040].raw = 0x0006
-    # Switch on
-    node.sdo[0x6040].raw = 0x0007
-    # Mode
-    node.sdo[0x6060].raw = operating_mode
-    # Enable operation
-    node.sdo[0x6040].raw = 0x000F
-
-
 def shutdown_option_code(node, option_code: int = None):
     #6.2.97
     #What action is performed when state transtitions from Operation enabled to ready to switch on
@@ -409,11 +399,6 @@ def fault_reaction_option_code(node, option_code: int = None):
 def control_word(node, control_word: int = None):
     #6.2.94
     node.sdo[0x6040].raw = control_word
-
-
-
-
-
 
 def target_torque(node, torque: int = None):
     #6.2.111
@@ -475,15 +460,7 @@ def homing_method_init(node, homing_method: int = None):
 
 
 
-
-
-
-
-    
-def quick_stop(node):
-	node.sdo[0x6040].raw = 0x0002
-     
-
+"""
 def motor_run_cst(node, torque: int, duration: float):
     # Give system time for setup
     time.sleep(0.1)
@@ -508,15 +485,11 @@ def motor_run_cst(node, torque: int, duration: float):
     time.sleep(0.1)
     # Disable drive
     node.sdo[0x6040].raw = 0x0000
+"""
+    
+    
 
-    
-    
-def network_shutdown():
-    global net
-    if net != None:
-        # Disconnect from the network
-        net.disconnect()
-        net = None
+
 
 
 def main():
