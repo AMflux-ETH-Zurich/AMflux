@@ -295,6 +295,32 @@ def motor_setup(node, operating_mode: int):
     # Enable operation
     node.sdo[0x6040].raw = 0x000F
 
+
+def shutdown_option_code(node, option_code: int = None):
+    #6.2.97
+    #What action is performed when state transtitions from Operation enabled to ready to switch on
+    #0 is Decelerate with slowdown ramp and disabling of drive function, 1 is disable drive function
+    node.sdo[0x605B].raw = option_code if option_code is not None else 0
+
+def disable_operation_option_code(node, option_code: int = None):
+    #6.2.98
+    #Action performed when state transitions from Operation Enabled to Switched on
+    #1 is decelerate with slowdown ramp and disabling of drive function, 0 is disable drive function
+    node.sdo[0x605C].raw = option_code if option_code is not None else 1
+
+def halt_option_code(node, option_code: int = None):
+    #6.2.99
+    #Action performed when halt function is activated
+    #1 is decelerate with slowdown ramp and stay in operation enabled, 2 is decelerate with quick stop ramp and stay in operation enabled
+    node.sdo[0x605D].raw = option_code if option_code is not None else 1
+
+def fault_reaction_option_code(node, option_code: int = None):
+    #6.2.100
+    #Action to be performed if one of the errors labeled in "f" will be detected, "f" contains most errors except communication errors
+    #2 is decelerate with quickstop ramp and disabling of drive function, 1 is decelerate with slowdown ramp and disabling of drive function, 0 is disable drive function
+    node.sdo[0x605E].raw = option_code if option_code is not None else 2
+
+
     
 def quick_stop(node):
 	node.sdo[0x6040].raw = 0x0002
