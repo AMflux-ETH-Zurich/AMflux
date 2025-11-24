@@ -366,15 +366,15 @@ def profile_acceleration(node, prof_acc: int = None):
     #defines the acceleration used during a profiled move (ppm, pvm), value is given in rpm/s
     node.sdo[0x6083].raw = prof_acc if prof_acc is not None else 10000
 
-def profile_deceleration(node, prof_acc: int = None):
+def profile_deceleration(node, prof_dec: int = None):
     #6.2.122
     #defines the deceleration used during a profiled move (ppm, pvm), value is given in rpm/s
-    node.sdo[0x6084].raw = prof_acc if prof_acc is not None else 10000
+    node.sdo[0x6084].raw = prof_dec if prof_dec is not None else 10000
 
-def quick_stop_deceleration(node, prof_acc: int = None):
+def quick_stop_deceleration(node, prof_dec: int = None):
     #6.2.123
     #defines the deceleration used during a profiled move (ppm, pvm), value is given in rpm/s
-    node.sdo[0x6085].raw = prof_acc if prof_acc is not None else 10000
+    node.sdo[0x6085].raw = prof_dec if prof_dec is not None else 10000
 
 def homing_method_init(node, homing_method: int = None):
     #6.2.125
