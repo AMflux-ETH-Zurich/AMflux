@@ -261,12 +261,6 @@ def Current_threshold_homing_init(node, current_threshold_homing: int = None):
     node.sdo[0x30B2][0x00].raw = current_threshold_homing if current_threshold_homing is not None else 1000
 
 
-def homing_method_init(node, homing_method: int = None):
-    #6.2.125
-    #Used to select homing method (absolute SSI encoder = 37)
-    node.sdo[0x6098].raw = homing_method if homing_method is not None else 37
-
-
 def standstill_window_init(node, standstill_window: int = None):
     #6.2.73.1
     #Defines a symmetric range of accepted velocity values relatively to zero.
@@ -323,6 +317,73 @@ def fault_reaction_option_code(node, option_code: int = None):
 def control_word(node, control_word: int = None):
     #6.2.94
     node.sdo[0x6040].raw = control_word
+
+
+
+
+
+
+def target_torque(node, torque: int = None):
+    #6.2.111
+    #indicates the configured target torque value for the controller in CST mode, value is given in per thousand of motor rated torque
+    node.sdo[0x6071].raw = torque if torque is not None else 0
+
+def motor_rated_torque(node, rated_torque: int = None):
+    #6.2.112
+    #holds value to which all torque objects are related to, value is defined as nominal current * torque constant, value is in mNm
+    node.sdo[0x6076].raw = rated_torque if rated_torque is not None else 0
+
+def target_position(node, position: int = None):
+    #6.2.114
+    #represents the position that the drive is supposed to move to using the motion control parameters
+    node.sdo[0x607A].raw = position if position is not None else 0
+
+def software_position_limit(node, min_pos_limit: int = None, max_pos_limit: int = None):
+    #6.2.117
+    #defines the min and max allowed position values for the position controller, if exceeded a position error is generated
+    #min position limit
+    node.sdo[0x607D][1].raw = min_pos_limit if min_pos_limit is not None else 0
+    #max position limit
+    node.sdo[0x607D][2].raw = max_pos_limit if max_pos_limit is not None else 0
+
+def max_profile_velocity(node, max_velocity: int = None):
+    #6.2.118
+    #used as a velocity limit in a ppm or pvm move, value is given in rpm
+    node.sdo[0x607F].raw = max_velocity if max_velocity is not None else 50000
+
+def max_motor_speed(node, max_velocity: int = None):
+    #6.2.119
+    #indicates maximum allowed motor speed, value is given in rpm
+    node.sdo[0x6080].raw = max_velocity if max_velocity is not None else 50000
+
+def profile_velocity(node, prof_velocity: int = None):
+    #6.2.120
+    #represents the velocity normally attained at the end of the accleeratiion ramp during a profiled move (ppm, pvm), value is given in rpm
+    node.sdo[0x6081].raw = prof_velocity if prof_velocity is not None else 1000
+
+def profile_acceleration(node, prof_acc: int = None):
+    #6.2.121
+    #defines the acceleration used during a profiled move (ppm, pvm), value is given in rpm/s
+    node.sdo[0x6083].raw = prof_acc if prof_acc is not None else 10000
+
+def profile_deceleration(node, prof_acc: int = None):
+    #6.2.122
+    #defines the deceleration used during a profiled move (ppm, pvm), value is given in rpm/s
+    node.sdo[0x6084].raw = prof_acc if prof_acc is not None else 10000
+
+def quick_stop_deceleration(node, prof_acc: int = None):
+    #6.2.123
+    #defines the deceleration used during a profiled move (ppm, pvm), value is given in rpm/s
+    node.sdo[0x6085].raw = prof_acc if prof_acc is not None else 10000
+
+def homing_method_init(node, homing_method: int = None):
+    #6.2.125
+    #Used to select homing method (absolute SSI encoder = 37)
+    node.sdo[0x6098].raw = homing_method if homing_method is not None else 37
+
+
+
+
 
 
 
