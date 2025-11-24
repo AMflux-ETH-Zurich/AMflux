@@ -3,6 +3,7 @@ import canopen
 import keyboard
 import can
 from can.io import LimitedSend
+import warnings as warning
 
 net = None
 """
@@ -22,6 +23,29 @@ def network_scan(node_channel: str):
 """
 
 
+# Custom exception for uninitialized objects
+class InitializationError(Exception):
+    pass
+
+def confirm(prompt="Continue? [y/N]: "):
+    ans = input(prompt).strip().lower()
+    yes_answers = {"y", "yes", "j", "ja"}
+    return ans in yes_answers
+
+# Function to check initialization of an object
+def check_init(objects):
+    for name, value in objects.items():
+        # warn user about default value
+        if value is None:
+            warning.warn(f"{name} is set to default value.", UserWarning)
+            return confirm()
+        # fatal, user must init value correctly
+        if value is not None and value == "67":
+            raise InitializationError(f"{name} is not initialized correctly. Please enter a valid value for {name}.")
+    
+    print("Unknown init error")
+    return False
+            
 # Define a safe message rate to avoid buffer overflow
 RATE_LIMIT_MSGS_PER_SEC = 750 
 
@@ -66,7 +90,7 @@ def network_setup(node_id: int, node_eds: str, node_channel: str):
 
 
 
-def axis_configuration_setup(node, sens_res: int=None, sys_speed: int=None):
+def axis_configuration_init(node, sens_res: int=None, sys_speed: int=None):
     #6.2.52
     #Axis configuration for absolute SSI encoder
     node.sdo[0x3000][1].raw = 0x00000300
@@ -82,8 +106,10 @@ def axis_configuration_setup(node, sens_res: int=None, sys_speed: int=None):
     node.sdo[0x3000][6].raw = sys_speed #REFER TO RENISHAW ENCODER SHEET
 
 
-def motor_init_setup(node, motor_type: int=None, nominal_current: int=None, current_lim: int=None, 
+def motor_init(node, motor_type: int=None, nominal_current: int=None, current_lim: int=None, 
                         pole_pairs: int=None, therm_const: int=None, tor_const: int=None):
+    
+    check_init(locals())
     #6.2.53
     #motor type (Sinusoidal PM BL motor = 10 or in hex 0x0A)
     node.sdo[0x6402][0x0].raw = motor_type if motor_type is not None else 0x000A
@@ -99,10 +125,11 @@ def motor_init_setup(node, motor_type: int=None, nominal_current: int=None, curr
     node.sdo[0x3001][0x5].raw = tor_const if tor_const is not None else 0
 
 
-def ssi_abs_encoder_init_setup(node, data_rate: int=None, data_bits: int=None, encoding_type: int=None,
+def ssi_abs_encoder_init(node, data_rate: int=None, data_bits: int=None, encoding_type: int=None,
                                 timeout_time: int=None, power_up_time: int=None, commutation_offset_value: int=None,
                                         position_bits: int=None, communication_additional_delay: int=None):
     #6.2.58
+    check_init(locals())
     #SSI data rate
     node.sdo[0x3012][0x1].raw = data_rate if data_rate is not None else 2000 #REFER TO RENISHAW ENCODER SHEET
     #SSI number of data bits
@@ -131,25 +158,28 @@ def ssi_abs_encoder_init_setup(node, data_rate: int=None, data_bits: int=None, e
     node.sdo[0x3012][0xE].raw = communication_additional_delay if communication_additional_delay is not None else -1 #REFER TO RENISHAW EN
 
 
-def electrical_system_init_setup(node, electrical_resistance: int=None, electrical_inductance: int=None):
+def electrical_system_init(node, electrical_resistance: int=None, electrical_inductance: int=None):
     #6.2.54
+    check_init(locals())
     #electrical resistance of motor windings in mOhm
     node.sdo[0x3002][0x1].raw = electrical_resistance if electrical_resistance is not None else 0
     #electrical inductance of motor windings in uH
     node.sdo[0x3002][0x2].raw = electrical_inductance if electrical_inductance is not None else 0
 
 
-def current_control_parameter(node, p_gain: int = None, i_gain: int = None):
+def current_control_parameter_init(node, p_gain: int = None, i_gain: int = None):
     #6.2.61
+    check_init(locals())
     #Current controller P-gain
     node.sdo[0x30A0][1].raw = p_gain if p_gain is not None else 1171880
     #Current controller I-gain
     node.sdo[0x30A0][2].raw = i_gain if i_gain is not None else 3906250
 
 
-def position_control_parameter(node, p_gain:int = None, i_gain: int = None, d_gain:int = None,
+def position_control_parameter_init(node, p_gain:int = None, i_gain: int = None, d_gain:int = None,
                                ffv_gain: int = None, ffa_gain: int = None, i_gain_si_unit: int = None):
     #6.2.62
+    check_init(locals())
     #Position controller P-gain
     node.sdo[0x30A1][1].raw = p_gain if p_gain is not None else 1500000
     #Position controller I-gain
@@ -164,9 +194,10 @@ def position_control_parameter(node, p_gain:int = None, i_gain: int = None, d_ga
     node.sdo[0x30A1][9].raw = i_gain_si_unit if i_gain_si_unit is not None else 0xFA040300
 
 
-def velocity_control_parameter(node, p_gain:int = None, i_gain: int = None, 
+def velocity_control_parameter_init(node, p_gain:int = None, i_gain: int = None, 
                                ffv_gain: int = None, ffa_gain: int = None, f_cutoff: int = None):
     #6.2.63
+    check_init(locals())
     #Velocity controller P-gain
     node.sdo[0x30A2][1].raw = p_gain if p_gain is not None else 20000
     #Velocity controller I-gain
@@ -179,10 +210,11 @@ def velocity_control_parameter(node, p_gain:int = None, i_gain: int = None,
     node.sdo[0x30A2][5].raw = f_cutoff if f_cutoff is not None else 600
     
 
-def velocity_observer_parameter(node, pos_corr_gain: int = None, vel_corr_gain: int = None,
+def velocity_observer_parameter_init(node, pos_corr_gain: int = None, vel_corr_gain: int = None,
                                 load_corr_gain: int = None, friction: int = None, inertia: int = None
                                 ):
     #6.2.64
+    check_init(locals())
     #Velocity observer position correction gain given in promille
     node.sdo[0x30A3][1].raw = pos_corr_gain if pos_corr_gain is not None else 400
     #Velocity observer velocity correction gain given in mHz
@@ -195,7 +227,7 @@ def velocity_observer_parameter(node, pos_corr_gain: int = None, vel_corr_gain: 
     node.sdo[0x30A3][5].raw = inertia if inertia is not None else 1000
 
 
-def dual_loop_position_control_parameter(node, main_loop_p_gain_low:int = None, main_loop_p_gain_high:int = None, 
+def dual_loop_position_control_parameter_init(node, main_loop_p_gain_low:int = None, main_loop_p_gain_high:int = None, 
                                          main_loop_gain_scheduler:int = None, main_loop_filter_coeff_a:int = None,
                                          main_loop_filter_coeff_b:int = None, main_loop_filter_coeff_c:int = None,
                                          main_loop_filter_coeff_d:int = None, main_loop_filter_coeff_e:int = None,
@@ -205,6 +237,7 @@ def dual_loop_position_control_parameter(node, main_loop_p_gain_low:int = None, 
                                          auxiliary_loop_observer_load_corr_gain:int = None, auxiliary_loop_observer_friction:int = None,
                                          auxiliary_loop_observer_inertia:int = None, dual_loop_miscellaneous:int = None):
     #6.2.65
+    check_init(locals())
     #Represents the main loop low bandwidth proportional factor
     node.sdo[0x30AE][1].raw = main_loop_p_gain_low if main_loop_p_gain_low is not None else 10000
     #Represents the main loop high bandwidth proportional factor
@@ -245,44 +278,97 @@ def dual_loop_position_control_parameter(node, main_loop_p_gain_low:int = None, 
 
 def home_position_init(node, homeposition: int = None):
     #6.2.66
+    check_init(locals())
     #defines the position that will be set as zero position of the absolute position counter.
     node.sdo[0x30B0][0x00].raw = homeposition if homeposition is not None else 0
 
 
 def home_offset_distance_init(node, home_offset_distance: int = None):
     #6.2.67
+    check_init(locals())
     #Represents a moving distance in a homing procedure.
     node.sdo[0x30B1][0x00].raw = home_offset_distance if home_offset_distance is not None else 0
 
 
 def Current_threshold_homing_init(node, current_threshold_homing: int = None):
     #6.2.68
+    check_init(locals())
     #Used for homing methods «−1», «−2», «−3», and «−4».
     node.sdo[0x30B2][0x00].raw = current_threshold_homing if current_threshold_homing is not None else 1000
 
 
 def homing_method_init(node, homing_method: int = None):
     #6.2.125
+    check_init(locals())
     #Used to select homing method (absolute SSI encoder = 37)
     node.sdo[0x6098].raw = homing_method if homing_method is not None else 37
 
 
 def standstill_window_init(node, standstill_window: int = None):
     #6.2.73.1
+    check_init(locals())
     #Defines a symmetric range of accepted velocity values relatively to zero.
     node.sdo[0x30E0][0x01].raw = standstill_window if standstill_window is not None else 30
 
 
 def standstill_window_time_init(node, standstill_window_time: int = None):
     #6.2.73.2
+    check_init(locals())
     #Defines the time duration for which the velocity must remain within the standstill window for Standstill to be reached. [ms]
     node.sdo[0x30E0][0x02].raw = standstill_window_time if standstill_window_time is not None else 2
 
 
 def standstill_window_timeout_init(node, standstill_window_timeout: int = None):
     #6.2.73.3
+    check_init(locals())
     #Defines the point of time standstill is supposed to be reached, even if the standstill conditions are not yet fulfilled.
     node.sdo[0x30E0][0x03].raw = standstill_window_timeout if standstill_window_timeout is not None else 1000
+
+def abort_connection_option_init(node, abort_option: int = None):
+    #6.2.92
+    check_init(locals())
+    #Specifies the action that will be performed when one of the errors labeled “a” is detected
+    # 2 -> «Disable voltage» command
+    # 3 -> Decelerate with quick stop ramp; disabling of the drive function
+    node.sdo[0x605B][0x00].raw = abort_option if abort_option is not None else 3
+
+def mode_of_operation_init(node, op_mode: int):
+    #6.2.101
+    check_init(locals())
+    #Set mode of operation
+    #default: 1 -> Profile position mode
+    node.sdo[0x6060][0x00].raw = op_mode if op_mode is not None else 1 
+
+def following_error_window_init(node, following_error_window: int = None):
+    #6.2.105
+    check_init(locals())
+    #Defines the maximum allowed deviation between target and actual position.
+    #min=0, max=2.147.483.647
+    node.sdo[0x6065][0x00].raw = following_error_window if following_error_window is not None else 2000
+
+def following_error_timeout_init(node, following_error_timeout: int = None):
+    #6.2.106
+    check_init(locals())
+    # Indicates the configured time for a following error condition. If exceeded, a following error will occur.
+    # The value is given in milliseconds [ms].
+    node.sdo[0x6066][0x00].raw = following_error_timeout if following_error_timeout is not None else 0
+
+
+def position_window_init(node, position_window: int = None):
+    #6.2.107
+    check_init(locals())
+    #Defines a symmetric range of accepted position values relatively to target position.
+    #min=0, max=2147483647, disable=4294967295
+    node.sdo[0x6067][0x00].raw = position_window if position_window is not None else 4294967295
+
+def position_window_time_init(node, position_window_time: int = None):
+    #6.2.108
+    check_init(locals())
+    # Indicates the configured position window time for the target reached condition. If the actual position is within the Position
+    # window during the set time, the corresponding bit 10 (target reached) in the Statusword will be set to “1”.
+    # The value is given in milliseconds [ms].
+    node.sdo[0x6068][0x00].raw = position_window_time if position_window_time is not None else 0
+
 
 
 def motor_setup(node, operating_mode: int):
@@ -346,9 +432,6 @@ def main():
     motor_run_cst(mc1, 1000, 2)
     # Shutdown the CANopen network after use
     network_shutdown()
-
-
-
 
     
 
