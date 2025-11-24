@@ -3,10 +3,11 @@ import canopen
 import keyboard
 import can
 from can.io import LimitedSend
-import warnings as warning
+import warnings
 
-net = None
 """
+net = None
+
 def network_scan(node_channel: str):
     global net
     if net == None:
@@ -22,29 +23,65 @@ def network_scan(node_channel: str):
         print(f"Found node: {nid}")
 """
 
+############################################################################
+#AUXILIARY FUNCTIONS
+############################################################################
+
 
 # Custom exception for uninitialized objects
 class InitializationError(Exception):
     pass
 
+
+def removekey(d, key):
+    r = dict(d)
+    del r[key]
+    return r
+
 def confirm(prompt="Continue? [y/N]: "):
+    """prompts user to cofirm contunue.
+
+    Args:
+        prompt (str, optional): _description_. Defaults to "Continue? [y/N]: ".
+
+    Returns:
+        Bool: True if user confirms, False otherwise.
+    """
     ans = input(prompt).strip().lower()
     yes_answers = {"y", "yes", "j", "ja"}
     return ans in yes_answers
 
 # Function to check initialization of an object
 def check_init(objects):
-    for name, value in objects.items():
+    """Checks if all objects of function to be checked have been initialized correctly.
+
+    Args:
+        objects (dict): dictionary of objects to be checked. Name, Value pairs.
+
+    Raises:
+        InitializationError: After Warning, user must confirm Default value or enter new value. InitializationError is raised if value is still not valid.
+        InitializationError: Raised if no default value available. FATAL ERROR 67.
+
+    Returns:
+        BOOl: True
+    """    
+    objects_clean = removekey(objects, 'node')
+    for name, value in objects_clean.items():
         # warn user about default value
         if value is None:
-            warning.warn(f"{name} is set to default value.", UserWarning)
-            return confirm()
+            warnings.warn(f"{name} is set to default value.", UserWarning)
+            if not confirm("Continue with default value? [y/N]: "):
+                new_value = input(f"Enter a valid value for {name}: ")
+                try:
+                    objects[name] = int(new_value)
+                except ValueError:
+                    raise InitializationError(f"{name} must be int.")
+            else:
+                continue
         # fatal, user must init value correctly
         if value is not None and value == "67":
             raise InitializationError(f"{name} is not initialized correctly. Please enter a valid value for {name}.")
-    
-    print("Unknown init error")
-    return False
+    return True 
             
 # Define a safe message rate to avoid buffer overflow
 RATE_LIMIT_MSGS_PER_SEC = 750 
@@ -374,49 +411,58 @@ def position_window_time_init(node, position_window_time: int = None):
 
 def shutdown_option_code(node, option_code: int = None):
     #6.2.97
+    check_init(locals())
     #What action is performed when state transtitions from Operation enabled to ready to switch on
     #1 is decelerate with slowdown ramp and disabling of drive function, 0 is disable drive function
     node.sdo[0x605B].raw = option_code if option_code is not None else 0
 
 def disable_operation_option_code(node, option_code: int = None):
     #6.2.98
+    check_init(locals())
     #Action performed when state transitions from Operation Enabled to Switched on
     #1 is decelerate with slowdown ramp and disabling of drive function, 0 is disable drive function
     node.sdo[0x605C].raw = option_code if option_code is not None else 1
 
 def halt_option_code(node, option_code: int = None):
     #6.2.99
+    check_init(locals())
     #Action performed when halt function is activated
     #1 is decelerate with slowdown ramp and stay in operation enabled, 2 is decelerate with quick stop ramp and stay in operation enabled
     node.sdo[0x605D].raw = option_code if option_code is not None else 1
 
 def fault_reaction_option_code(node, option_code: int = None):
     #6.2.100
+    check_init(locals())
     #Action to be performed if one of the errors labeled in "f" will be detected, "f" contains most errors except communication errors
     #2 is decelerate with quickstop ramp and disabling of drive function, 1 is decelerate with slowdown ramp and disabling of drive function, 0 is disable drive function
     node.sdo[0x605E].raw = option_code if option_code is not None else 2
 
 def control_word(node, control_word: int = None):
     #6.2.94
+    check_init(locals())
     node.sdo[0x6040].raw = control_word
 
 def target_torque(node, torque: int = None):
     #6.2.111
+    check_init(locals())
     #indicates the configured target torque value for the controller in CST mode, value is given in per thousand of motor rated torque
     node.sdo[0x6071].raw = torque if torque is not None else 0
 
 def motor_rated_torque(node, rated_torque: int = None):
     #6.2.112
+    check_init(locals())
     #holds value to which all torque objects are related to, value is defined as nominal current * torque constant, value is in mNm
     node.sdo[0x6076].raw = rated_torque if rated_torque is not None else 0
 
 def target_position(node, position: int = None):
     #6.2.114
+    check_init(locals())
     #represents the position that the drive is supposed to move to using the motion control parameters
     node.sdo[0x607A].raw = position if position is not None else 0
 
 def software_position_limit(node, min_pos_limit: int = None, max_pos_limit: int = None):
     #6.2.117
+    check_init(locals())
     #defines the min and max allowed position values for the position controller, if exceeded a position error is generated
     #min position limit
     node.sdo[0x607D][1].raw = min_pos_limit if min_pos_limit is not None else 0
@@ -425,36 +471,43 @@ def software_position_limit(node, min_pos_limit: int = None, max_pos_limit: int 
 
 def max_profile_velocity(node, max_velocity: int = None):
     #6.2.118
+    check_init(locals())
     #used as a velocity limit in a ppm or pvm move, value is given in rpm
     node.sdo[0x607F].raw = max_velocity if max_velocity is not None else 50000
 
 def max_motor_speed(node, max_velocity: int = None):
     #6.2.119
+    check_init(locals())
     #indicates maximum allowed motor speed, value is given in rpm
     node.sdo[0x6080].raw = max_velocity if max_velocity is not None else 50000
 
 def profile_velocity(node, prof_velocity: int = None):
     #6.2.120
+    check_init(locals())
     #represents the velocity normally attained at the end of the accleeratiion ramp during a profiled move (ppm, pvm), value is given in rpm
     node.sdo[0x6081].raw = prof_velocity if prof_velocity is not None else 1000
 
 def profile_acceleration(node, prof_acc: int = None):
     #6.2.121
+    check_init(locals())
     #defines the acceleration used during a profiled move (ppm, pvm), value is given in rpm/s
     node.sdo[0x6083].raw = prof_acc if prof_acc is not None else 10000
 
 def profile_deceleration(node, prof_dec: int = None):
     #6.2.122
+    check_init(locals())
     #defines the deceleration used during a profiled move (ppm, pvm), value is given in rpm/s
     node.sdo[0x6084].raw = prof_dec if prof_dec is not None else 10000
 
 def quick_stop_deceleration(node, prof_dec: int = None):
     #6.2.123
+    check_init(locals())
     #defines the deceleration used during a profiled move (ppm, pvm), value is given in rpm/s
     node.sdo[0x6085].raw = prof_dec if prof_dec is not None else 10000
 
 def homing_method_init(node, homing_method: int = None):
     #6.2.125
+    check_init(locals())
     #Used to select homing method (absolute SSI encoder = 37)
     node.sdo[0x6098].raw = homing_method if homing_method is not None else 37
 
