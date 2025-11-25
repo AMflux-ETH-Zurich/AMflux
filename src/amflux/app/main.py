@@ -126,14 +126,12 @@ def network_scan(node_channel: str):
             bustype='socketcan'
         )
 
-        # 2. Wrap the bus object to enforce a transmission rate limit
-        # This fixes the "Transmit buffer full" error during rapid scanning
-        rate_limited_bus = LimitedSend(bus, max_message_per_second=RATE_LIMIT_MSGS_PER_SEC) 
+        
         
         # 3. Create a CANopen network and assign the rate-limited bus
         # This allows CANopen to use the rate-limited transmission logic
         net = canopen.Network()
-        net.bus = rate_limited_bus 
+        net.bus = bus
 
     # Scan for nodes on the network. This call now respects the rate limit.
     net.scanner.search()
