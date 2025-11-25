@@ -1,57 +1,85 @@
+"""
+CANopen EPOS4 Configuration Utilities.
+
+This module provides a structured, high-level interface for initializing and
+configuring Maxon EPOS4 motor controllers via CANopen (CiA 301).
+
+It includes:
+    - CAN network setup and shutdown utilities
+    - Node scanning and rate-limited SDO access
+    - Initialization routines for motor, encoder, homing, control loops, etc.
+    - A validation system (`check_init`) to prevent uninitialized parameters
+    - Numerous EPOS4 configuration helpers following the Communication Guide
+
+Structure:
+    1. Auxiliary Helpers
+    2. CAN Network Management
+    3. Device Initialization Functions
+    4. Main Motor Control
+
+This module intentionally mirrors the structure of the EPOS4 documentation
+(Communication Guide, Firmware Specification), providing clear mapping from
+code to documentation section numbers (e.g., "6.2.58").
+"""
+
+
+# ======================================================================
+# Imports
+# ======================================================================
+
 import time
 import canopen
 import keyboard
 import can
 from can.io import LimitedSend
 import warnings
+from typing import Mapping, Hashable, Dict, Any
 
-"""
+
+# ======================================================================
+# Constants
+# ======================================================================
+
+# Global CANopen network instance
 net = None
 
-def network_scan(node_channel: str):
-    global net
-    if net == None:
-        # Create a CANopen network  
-        net = canopen.Network()
-        # Connect to a CAN interface (e.g., 'can0' for Linux SocketCAN)
-        net.connect(channel= node_channel, bustype='socketcan')
+# “FATAL default value” used by your system
+FATAL_DEFAULT_VALUE: int = 67
 
-    # Scan for nodes on the network
-    net.scanner.search()
-    # Print found nodes
-    for nid in net.scanner.nodes:
-        print(f"Found node: {nid}")
-"""
+# Safe transmission limit for SocketCAN
+RATE_LIMIT_MSGS_PER_SEC: int = 750
 
-############################################################################
-#AUXILIARY FUNCTIONS
-############################################################################
+# ======================================================================
+# Exceptions
+# ======================================================================
 
-
-# Custom exception for uninitialized objects
 class InitializationError(Exception):
+    """Raised when a configuration parameter has not been initialized correctly."""
     pass
 
 
-def removekey(d, key):
+# ======================================================================
+# Region: AUXILIARY FUNCTIONS
+# ======================================================================
+
+
+def removekey(d: Mapping[str, Any], key: Hashable) -> Dict[str, Any]:
+    """Return a shallow copy of mapping `d` with `key` removed."""
     r = dict(d)
-    del r[key]
+    # Use pop to avoid KeyError if `key` does not exist in the mapping
+    r.pop(key, None)
     return r
 
-def confirm(prompt="Continue? [y/N]: "):
-    """prompts user to cofirm contunue.
+def confirm(prompt: str = "Continue? [y/N]: ") -> bool:
+    """Prompt the user for a yes/no answer and return True for yes.
 
-    Args:
-        prompt (str, optional): _description_. Defaults to "Continue? [y/N]: ".
-
-    Returns:
-        Bool: True if user confirms, False otherwise.
+    Accepts 'y', 'yes', 'j', 'ja' (case-insensitive) as affirmative answers.
+    Any other response is treated as negative.
     """
     ans = input(prompt).strip().lower()
     yes_answers = {"y", "yes", "j", "ja"}
     return ans in yes_answers
 
-# Function to check initialization of an object
 def check_init(objects):
     """Checks if all objects of function to be checked have been initialized correctly.
 
@@ -62,9 +90,8 @@ def check_init(objects):
         InitializationError: After Warning, user must confirm Default value or enter new value. InitializationError is raised if value is still not valid.
         InitializationError: Raised if no default value available. FATAL ERROR 67.
 
-    Returns:
-        BOOl: True
-    """    
+    Returns True when validation is complete and execution may continue.
+    """
     objects_clean = removekey(objects, 'node')
     for name, value in objects_clean.items():
         # warn user about default value
@@ -79,12 +106,15 @@ def check_init(objects):
             else:
                 continue
         # fatal, user must init value correctly
-        if value is not None and value == "67":
+        if value is not None and (value == "67" or value == 67):
             raise InitializationError(f"{name} is not initialized correctly. Please enter a valid value for {name}.")
     return True 
             
-# Define a safe message rate to avoid buffer overflow
-RATE_LIMIT_MSGS_PER_SEC = 750 
+
+# ======================================================================
+# Region: CAN NETWORK MANAGEMENT
+# ======================================================================
+
 
 def network_scan(node_channel: str):
     global net
@@ -134,6 +164,30 @@ def network_shutdown():
         net = None
 
 
+# ======================================================================
+# Region: EPOS4 INITIALIZATION FUNCTIONS
+# ======================================================================
+
+""" 
+Initialization functions for EPOS4 motor controllers.
+Each Initialization function corresponds to a section in the EPOS4 Communication Guide.
+If no arguments are given, default values are chosen
+    1. axis_configuration_init
+    2. motor_init
+    3. ssi_abs_encoder_init
+    4. electrical_system_init
+    5. current_control_parameter_init
+    6. position_control_parameter_init
+    7. velocity_control_parameter_init
+    8. velocity_observer_parameter_init
+    9. dual_loop_position_control_parameter_init
+    10. home_position_init
+    11. home_offset_distance_init
+    12. Current_threshold_homing_init
+    13. standstill_window_init
+    14. standstill_window_time_init
+    15. standstill_window_timeout_init
+"""
 
 
 def axis_configuration_init(node, sens_res: int=None, sys_speed: int=None):
@@ -154,6 +208,7 @@ def axis_configuration_init(node, sens_res: int=None, sys_speed: int=None):
 
 def motor_init(node, motor_type: int=None, nominal_current: int=None, current_lim: int=None, 
                         pole_pairs: int=None, therm_const: int=None, tor_const: int=None):
+    
     
     check_init(locals())
     #6.2.53
@@ -511,10 +566,13 @@ def homing_method_init(node, homing_method: int = None):
     #Used to select homing method (absolute SSI encoder = 37)
     node.sdo[0x6098].raw = homing_method if homing_method is not None else 37
 
+# ======================================================================
+# Region: GARAGE
+# ======================================================================
 
 
-"""
-def motor_run_cst(node, torque: int, duration: float):
+def OLD_motor_run_cst(node, torque: int, duration: float):
+
     # Give system time for setup
     time.sleep(0.1)
     # Torque Command, Torque in mNm (Firmware-Specification, p223)
@@ -538,12 +596,25 @@ def motor_run_cst(node, torque: int, duration: float):
     time.sleep(0.1)
     # Disable drive
     node.sdo[0x6040].raw = 0x0000
-"""
-    
-    
+
+def OLD_network_scan(node_channel: str):
+    global net
+    if net == None:
+        # Create a CANopen network  
+        net = canopen.Network()
+        # Connect to a CAN interface (e.g., 'can0' for Linux SocketCAN)
+        net.connect(channel= node_channel, bustype='socketcan')
+
+    # Scan for nodes on the network
+    net.scanner.search()
+    # Print found nodes
+    for nid in net.scanner.nodes:
+        print(f"Found node: {nid}")
 
 
-
+# ======================================================================
+# Region: Main
+# ======================================================================
 
 def main():
     global net
