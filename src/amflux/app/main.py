@@ -566,6 +566,98 @@ def homing_method_init(node, homing_method: int = None):
     #Used to select homing method (absolute SSI encoder = 37)
     node.sdo[0x6098].raw = homing_method if homing_method is not None else 37
 
+def homing_speeds(node, speed_sw_srch: int = None, speed_zero_srch: int = None):
+    #6.2.126
+    check_init(locals())
+    #Speed for switch search given in rpm
+    node.sdo[0x6099][1].raw = speed_sw_srch if speed_sw_srch is not None else 100
+    #Speed for zero search given in rpm, used to search the index in a homing sequence
+    node.sdo[0x6099][2].raw = speed_zero_srch if speed_zero_srch is not None else 10
+
+def homing_acceleration(node, homing_acc: int = None):
+    #6.2.127
+    check_init(locals())
+    #Acceleration used during homing procedure, value is given in rpm/s
+    node.sdo[0x609A].raw = homing_acc if homing_acc is not None else 1000
+
+def si_unit_position(node, si_unit_pos: int = None):
+    #6.2.128
+    check_init(locals())
+    #Defines the position units
+    node.sdo[0x60A8].raw = si_unit_pos if si_unit_pos is not None else 0x00B50000
+
+def si_unit_velocity(node, si_unit_vel: int = None):
+    #6.2.129
+    check_init(locals())
+    #Defines the velocity units
+    node.sdo[0x60A9].raw = si_unit_vel if si_unit_vel is not None else 0x00B44700
+
+def si_unit_acceleration(node, si_unit_acc: int = None):
+    #6.2.130
+    check_init(locals())
+    #Defines the acceleration units
+    node.sdo[0x60AA].raw = si_unit_acc if si_unit_acc is not None else 0x00C00300
+
+def position_offset(node, pos_offset: int = None):
+    #6.2.131
+    check_init(locals())
+    #Defines an offset that is added to the actual position value
+    node.sdo[0x60B0].raw = pos_offset if pos_offset is not None else 0
+
+def velocity_offset(node, vel_offset: int = None):
+    #6.2.132
+    check_init(locals())
+    #Defines an offset that is added to the actual velocity value
+    node.sdo[0x60B1].raw = vel_offset if vel_offset is not None else 0
+
+def torque_offset(node, tor_offset: int = None):
+    #6.2.133
+    check_init(locals())
+    #Defines an offset that is added to the actual torque value
+    node.sdo[0x60B2].raw = tor_offset if tor_offset is not None else 0
+
+#touch probe 6.2.134 - 6.2.137 and 6.2.140 - 6.2.142 not implemented
+
+def interpolation_time_period(node, time_period_val: int = None, time_index: int = None):
+    #6.2.138
+    check_init(locals())
+    #interpolation time period value indicates the time between two PDOs, values > 0 enable the demand value interpolation in CSP and CSV
+    #is is of importance that the setpoint is written cyclically with the inerpolation time period.
+    #the value is given in s*10^time_index, value of 0 disables the demand value interpolation
+    node.sdo[0x60C2][1].raw = time_period_val if time_period_val is not None else 0
+    #time_index
+    node.sdo[0x60C2][2].raw = time_index if time_index is not None else -3
+
+def max_acceleration(node, max_acc: int = None):
+    #6.2.139
+    check_init(locals())
+    #used to limit the max allowed acceleration to prevent mechanical damage, represents limit of all acceleration objects of the axis
+    #IN CYCLIC MODES THIS VALUE IS NOT TAKEN INTO ACCOUNT
+    node.sdo[0x60C5].raw = max_acc if max_acc is not None else 4294967295
+
+def digital_outputs(node, phys_outputs: int = None):
+    #6.2.148
+    check_init(locals())
+    #configures the state of the digital output functionalities, if a bit is set to “1“ and the polarity is set to “0“, the signal at the corresponding pin is high
+    node.sdo[0x60FE][1].raw = phys_outputs if phys_outputs is not None else 0
+
+def target_velocity(node, vel: int = None):
+    #6.2.149
+    check_init(locals())
+    #in PVM the object indicates the configured target velocity and is used as input for the trajectory generation, value is given in rpm
+    node.sdo[0x60FF].raw = vel if vel is not None else 0
+
+def motor_type(node, motor_type: int = None):
+    #6.2.150
+    check_init(locals())
+    #motor type (DC = 1, Sinusoidal PM BL motor = 10, Trapezoidal PM BL motor = 11)
+    node.sdo[0x6402].raw = motor_type if motor_type is not None else 10
+
+
+
+
+
+
 # ======================================================================
 # Region: GARAGE
 # ======================================================================
