@@ -31,7 +31,7 @@ import time
 import canopen
 import keyboard
 import can
-from can.io import LimitedSend
+
 import warnings
 from typing import Mapping, Hashable, Dict, Any
 
