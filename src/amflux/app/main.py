@@ -168,11 +168,13 @@ def network_shutdown():
 # Region: EPOS4 INITIALIZATION FUNCTIONS
 # ======================================================================
 
-""" 
-Initialization functions for EPOS4 motor controllers.
-Each Initialization function corresponds to a section in the EPOS4 Communication Guide.
-If no arguments are given, default values are chosen
-    1. axis_configuration_init
+"""
+Initialization and configuration functions for EPOS4 motor controllers.
+Each initialization or configuration function corresponds to a section in the EPOS4 Communication Guide. 
+If no arguments are given, default values are chosen.
+
+Initialization & Configuration Functions
+   1. axis_configuration_init
     2. motor_init
     3. ssi_abs_encoder_init
     4. electrical_system_init
@@ -187,6 +189,43 @@ If no arguments are given, default values are chosen
     13. standstill_window_init
     14. standstill_window_time_init
     15. standstill_window_timeout_init
+    16. abort_connection_option_init
+    17. mode_of_operation_init
+    18. following_error_window_init
+    19. following_error_timeout_init
+    20. position_window_init
+    21. position_window_time_init
+    22. shutdown_option_code
+    23. disable_operation_option_code
+    24. halt_option_code
+    25. fault_reaction_option_code
+    26. control_word
+    27. target_torque
+    28. motor_rated_torque
+    29. target_position
+    30. software_position_limit
+    31. max_profile_velocity
+    32. max_motor_speed
+    33. profile_velocity
+    34. profile_acceleration
+    35. profile_deceleration
+    36. quick_stop_deceleration
+    37. homing_method_init
+    38. homing_speeds
+    39. homing_acceleration
+    40. si_unit_position
+    41. si_unit_velocity
+    42. si_unit_acceleration
+    43. position_offset
+    44. velocity_offset
+    45. torque_offset
+    46. interpolation_time_period
+    47. max_acceleration
+    48. digital_outputs
+    49. target_velocity
+    50. motor_type
+
+Touch Probe (6.2.134–6.2.137, 6.2.140–6.2.142) not implemented.
 """
 
 
