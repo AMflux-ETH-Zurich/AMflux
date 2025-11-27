@@ -708,7 +708,7 @@ def sword(node) -> int:
 
 def quick_statusword_test(channel: str = "can", node_id: int=1):
     # Adjust EDS path if needed
-    eds_path = "/home/amflux/AMflux/src/amflux/app/Epos4_70_15.eds"
+    eds_path = "/home/amfluxpi/AMflux/src/amflux/app/Epos4_70_15.eds"
     
 
     net, node = network_setup(node_id, eds_path, channel)
@@ -798,7 +798,7 @@ def OLD_network_scan(node_channel: str):
 def main():
     global net
     # Setup our CANopen network
-    network, mc1 = network_setup(1, '/home/amflux/AMflux/src/amflux/app/Epos4_70_15.eds', 'can0')
+    network, mc1 = network_setup(1, '/home/amfluxpi/AMflux/src/amflux/app/Epos4_70_15.eds', 'can0')
     # Setup our Motor Controller
     # CST mode is under int=10 (Firmware-Specification, p219)
     motor_setup(mc1, 10)
