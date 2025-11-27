@@ -31,7 +31,7 @@ import time
 import canopen
 import keyboard
 import can
-from can.io import LimitedSend
+
 import warnings
 from typing import Mapping, Hashable, Dict, Any
 
@@ -126,14 +126,11 @@ def network_scan(node_channel: str):
             bustype='socketcan'
         )
 
-        # 2. Wrap the bus object to enforce a transmission rate limit
-        # This fixes the "Transmit buffer full" error during rapid scanning
-        rate_limited_bus = LimitedSend(bus, max_message_per_second=RATE_LIMIT_MSGS_PER_SEC) 
         
         # 3. Create a CANopen network and assign the rate-limited bus
         # This allows CANopen to use the rate-limited transmission logic
         net = canopen.Network()
-        net.bus = rate_limited_bus 
+        net.bus = bus
 
     # Scan for nodes on the network. This call now respects the rate limit.
     net.scanner.search()
@@ -567,6 +564,56 @@ def homing_method_init(node, homing_method: int = None):
     node.sdo[0x6098].raw = homing_method if homing_method is not None else 37
 
 # ======================================================================
+# Region: DEVICE CONTROL FUNCTIONS
+# ======================================================================
+
+
+def cword(node, value: int):
+    node.sdo[0x6040].raw = value
+
+def sword(node) -> int:
+    return node.sdo[0x6041].raw
+
+def quick_statusword_test(channel: str = "can", node_id: int=1):
+    # Adjust EDS path if needed
+    eds_path = "/home/amflux/AMflux/src/amflux/app/Epos4_70_15.eds"
+    
+
+    net, node = network_setup(node_id, eds_path, channel)
+
+    try:
+        sw = sword(node)
+        # Optional: quick decode of basic state bits (0–3)
+        ready_to_switch_on = bool(sw & (1 << 0))
+        switched_on        = bool(sw & (1 << 1))
+        operation_enabled  = bool(sw & (1 << 2))
+        fault              = bool(sw & (1 << 3))
+
+        print("Decoded state bits:")
+        print(f"  Ready to switch on : {ready_to_switch_on}")
+        print(f"  Switched on        : {switched_on}")
+        print(f"  Operation enabled  : {operation_enabled}")
+        print(f"  Fault              : {fault}")
+    finally:
+        network_shutdown()
+
+
+
+def wait_for_state(node, desired_state: int, timeout: float = 5.0):
+    start_time = time.time()
+    while True:                                                                    
+        current_state = node.sdo[0x6041].raw & 0x006F  # Mask to get relevant bits  0000 0000 0110 1111
+        if current_state == desired_state:
+            break
+        if time.time() - start_time > timeout:
+            raise TimeoutError(f"Timeout waiting for state {desired_state:#04x}, current state is {current_state:#04x}")
+        time.sleep(0.01)  # Avoid busy waiting
+
+
+
+
+
+# ======================================================================
 # Region: GARAGE
 # ======================================================================
 
@@ -632,4 +679,5 @@ def main():
 
 if __name__ == "__main__":
     #main()
-    network_scan('can0')
+    #network_scan('can0')
+    quick_statusword_test('can0', 1)
