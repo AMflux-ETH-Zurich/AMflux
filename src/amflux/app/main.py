@@ -529,10 +529,10 @@ def fault_reaction_option_code(node, option_code: int = None):
     #2 is decelerate with quickstop ramp and disabling of drive function, 1 is decelerate with slowdown ramp and disabling of drive function, 0 is disable drive function
     node.sdo[0x605E].raw = option_code if option_code is not None else 2
 
-def control_word(node, control_word: int = None):
-    #6.2.94
-    check_init(locals())
-    node.sdo[0x6040].raw = control_word
+#def control_word(node, control_word: int = None):
+#   #6.2.94
+#    check_init(locals())
+#    node.sdo[0x6040].raw = control_word
 
 def target_torque(node, torque: int = None):
     #6.2.111
@@ -694,19 +694,257 @@ def motor_type(node, motor_type: int = None):
 
 
 
-
+# ======================================================================
 # ======================================================================
 # Region: DEVICE CONTROL FUNCTIONS
 # ======================================================================
+# ======================================================================
 
 
-def cword(node, value: int):
+
+def cword_write(node, value: int):
     node.sdo[0x6040].raw = value
+
+def cword_read(node) -> int:
+    return node.sdo[0x6040].raw
 
 def sword(node) -> int:
     return node.sdo[0x6041].raw
 
-def quick_statusword_test(channel: str = "can", node_id: int=1):
+
+# ======================================================================
+# Sub-Region: DRIVE STATE FUNCTIONS
+# ======================================================================
+
+class DriveStateError(Exception):
+    """Raised when Drive State cannot be determined."""
+    pass
+
+
+class DriveState:
+    NOT_READY_TO_SWITCH_ON = 0
+    SWITCH_ON_DISABLED     = 1
+    READY_TO_SWITCH_ON     = 2
+    SWITCHED_ON            = 3
+    OPERATION_ENABLED      = 4
+    QUICK_STOP_ACTIVE      = 5
+    FAULT_REACTION_ACTIVE  = 6
+    FAULT                  = 7
+    map = dict()
+
+
+
+def get_DriveState(node) -> DriveState:
+
+    statusword = sword(node)
+
+    b0 = (statusword >> 0) & 1  # Ready to switch on
+    b1 = (statusword >> 1) & 1  # Switched on
+    b2 = (statusword >> 2) & 1  # Operation enabled
+    b3 = (statusword >> 3) & 1  # Fault
+    b5 = (statusword >> 5) & 1  # Quick stop
+    b6 = (statusword >> 6) & 1  # Switch on disabled
+
+    DriveStateError = True
+
+    # Not ready to switch on
+    if (b6 == 0 and b5 == 0 and b3 == 0 and b2 == 0 and b1 == 0 and b0 == 0):
+        return DriveState.NOT_READY_TO_SWITCH_ON
+
+    # Switch on disabled
+    if (b6 == 1 and b5 == 1 and b3 == 0 and b2 == 0 and b1 == 0 and b0 == 0):
+        return DriveState.SWITCH_ON_DISABLED
+
+    # Ready to switch on
+    if (b6 == 0 and b5 == 1 and b3 == 0 and b2 == 0 and b1 == 0 and b0 == 1):
+        return DriveState.READY_TO_SWITCH_ON
+
+    # Switched on
+    if (b6 == 0 and b5 == 1 and b3 == 0 and b2 == 0 and b1 == 1 and b0 == 1):
+        return DriveState.SWITCHED_ON
+
+    # Operation enabled
+    if (b6 == 0 and b5 == 1 and b3 == 0 and b2 == 1 and b1 == 1 and b0 == 1):
+        return DriveState.OPERATION_ENABLED
+
+    # Quick stop active
+    if (b6 == 0 and b5 == 0 and b3 == 0 and b2 == 1 and b1 == 1 and b0 == 1):
+        return DriveState.QUICK_STOP_ACTIVE
+
+    # Fault reaction active
+    if (b6 == 0 and b5 == 1 and b3 == 1 and b2 == 1 and b1 == 1 and b0 == 1):
+        return DriveState.FAULT_REACTION_ACTIVE
+
+    # Fault
+    if (b6 == 0 and b5 == 1 and b3 == 1 and b2 == 0 and b1 == 0 and b0 == 0):
+        return DriveState.FAULT
+    
+    raise DriveStateError(f"Unknown drive state with statusword: {statusword:#04x}")
+    
+
+# ======================================================================
+# Sub-Region: DRIVE COMMAND FUNCTIONS
+# ======================================================================
+
+class DriveStatePathError(Exception):
+    """Raised if no valid Path is found/used"""
+    pass
+
+
+class DriveCommand: 
+    SHUTDOWN            = 0x006
+    SWITCH_ON           = 0x007
+    ENABLE_OPERATION    = 0x00F
+    DISABLE_VOLTAGE     = 0x000
+    QUICK_STOP          = 0x002
+    DISABLE_OPERATION   = 0x007
+    FAULT_RESET         = 0x100
+
+#write initialization of drivestate map, when DriveState = NotReadyToSwitchOn   
+DriveState.map = {DriveState.NOT_READY_TO_SWITCH_ON : [(DriveCommand.SWITCH_ON, DriveState.OPERATION_ENABLED)], 
+                  DriveState.SWITCH_ON_DISABLED     : [(DriveCommand.SHUTDOWN, DriveState.READY_TO_SWITCH_ON)], 
+                  DriveState.READY_TO_SWITCH_ON     : [(DriveCommand.DISABLE_VOLTAGE, DriveState.SWITCH_ON_DISABLED), 
+                                                       (DriveCommand.SWITCH_ON, DriveState.SWITCHED_ON), 
+                                                       (DriveCommand.ENABLE_OPERATION, DriveState.OPERATION_ENABLED)],
+                  DriveState.SWITCHED_ON            : [(DriveCommand.SHUTDOWN, DriveState.READY_TO_SWITCH_ON),
+                                                       (DriveCommand.DISABLE_OPERATION, DriveState.SWITCH_ON_DISABLED), 
+                                                       (DriveCommand.ENABLE_OPERATION, DriveState.OPERATION_ENABLED)],
+                  DriveState.OPERATION_ENABLED      : [(DriveCommand.DISABLE_OPERATION, DriveState.SWITCHED_ON), 
+                                                       (DriveCommand.SHUTDOWN, DriveState.READY_TO_SWITCH_ON), 
+                                                       (DriveCommand.DISABLE_VOLTAGE, DriveState.SWITCH_ON_DISABLED), 
+                                                       (DriveCommand.QUICK_STOP, DriveState.QUICK_STOP_ACTIVE)],
+                  DriveState.QUICK_STOP_ACTIVE      : [(DriveCommand.ENABLE_OPERATION, DriveState.OPERATION_ENABLED), 
+                                                       (DriveCommand.DISABLE_VOLTAGE, DriveState.SWITCH_ON_DISABLED)],
+                  DriveState.FAULT                  : [(DriveCommand.FAULT_RESET, DriveState.SWITCH_ON_DISABLED)]}
+
+
+
+def wait_for_state(node, desired_state: int, timeout: float = 5.0):
+    start_time = time.time()
+    while True:                                                                    
+        current_state = sword() & 0x006F  # Mask to get relevant bits  0000 0000 0110 1111
+        if current_state == desired_state:
+            return True
+        if time.time() - start_time > timeout:
+            raise TimeoutError(f"Timeout waiting for state {desired_state:#04x}, current state is {current_state:#04x}")
+        time.sleep(0.01)  # Avoid busy waiting
+
+
+def do_DriveCommand(node, command: int, target, timeout) -> None:
+
+    current_cword = cword_read(node)
+
+    # Special case: Fault reset (set bit 7, keep all other bits)
+    if command == DriveCommand.FAULT_RESET:
+        new_cword = current_cword | 0x0080  
+        cword_write(node, new_cword)
+        return
+
+    low  = command & 0x00FF
+    high = current_cword & 0xFF00
+    new_cword = high | low
+
+    cword_write(node, new_cword)
+
+
+
+    """Drive CiA-402 state machine until the drive reaches `target` or raises TimeoutError."""
+    deadline = time.time() + timeout
+    cw = node.sdo[0x6040].raw  # start from current controlword
+
+    while time.time() < deadline:
+        sw = sword(node)
+        state = get_DriveState(sw)
+
+        if state == target:
+            return
+
+        # if fault: first clear it
+        if state == DriveState.FAULT:
+            cw = do_DriveCommand(cw, DriveCommand.FAULT_RESET)
+            cword_write(node, cw)
+            time.sleep(0.05)
+
+        if(wait_for_state(node, target, 0.5)):
+            return
+
+    raise TimeoutError(f"Failed to reach state {target} in time")
+
+
+
+def Drive_State_BFS(start_state, target_state, map):
+    
+    if start_state == target_state:
+        return []
+    
+    queue = [start_state]
+    visited = {start_state}
+    parent = {}
+
+    while queue:
+        current = queue.pop(0)
+
+        if current == target_state:
+            break
+        
+        for command, next_state in map.get(current, []):
+            if next_state not in visited:
+                visited.add(next_state)
+                parent[next_state] = (current, command)
+                queue.append(next_state)
+
+    
+    if target_state not in visited:
+        return None
+    
+    route = []
+    state = target_state
+
+    while state != start_state:
+        prev_state, command = parent[state]
+        route.append((command, state))
+        state = prev_state
+
+    route.reverse()
+    return route
+
+
+
+def state_planner(node, desired_state):
+    current_state = get_DriveState(node)
+
+    route = Drive_State_BFS(current_state, desired_state, DriveState.map)
+    return route
+
+
+def state_switch(node, next_state):
+    current_state = get_DriveState(node)
+
+    command = DriveState.map[current_state[next_state]]
+
+    if do_DriveCommand(node, command):
+        return True
+
+
+def goto_state(node, desired_state):
+    current_state = get_DriveState(node)
+
+    route = state_planner(node, desired_state)
+
+    if route == None:
+        raise DriveStatePathError(f"No valid path to {desired_state} was found")
+
+
+
+
+
+
+# ======================================================================
+# Region: GARAGE
+# ======================================================================
+
+
+def OLD_quick_statusword_test(channel: str = "can", node_id: int=1):
     # Adjust EDS path if needed
     eds_path = "/home/amfluxpi/AMflux/src/amflux/app/Epos4_70_15.eds"
     
@@ -721,6 +959,8 @@ def quick_statusword_test(channel: str = "can", node_id: int=1):
         operation_enabled  = bool(sw & (1 << 2))
         fault              = bool(sw & (1 << 3))
 
+        print(f"Statusword: {sw:#06x}")
+
         print("Decoded state bits:")
         print(f"  Ready to switch on : {ready_to_switch_on}")
         print(f"  Switched on        : {switched_on}")
@@ -728,27 +968,6 @@ def quick_statusword_test(channel: str = "can", node_id: int=1):
         print(f"  Fault              : {fault}")
     finally:
         network_shutdown()
-
-
-
-def wait_for_state(node, desired_state: int, timeout: float = 5.0):
-    start_time = time.time()
-    while True:                                                                    
-        current_state = node.sdo[0x6041].raw & 0x006F  # Mask to get relevant bits  0000 0000 0110 1111
-        if current_state == desired_state:
-            break
-        if time.time() - start_time > timeout:
-            raise TimeoutError(f"Timeout waiting for state {desired_state:#04x}, current state is {current_state:#04x}")
-        time.sleep(0.01)  # Avoid busy waiting
-
-
-
-
-
-# ======================================================================
-# Region: GARAGE
-# ======================================================================
-
 
 def OLD_motor_run_cst(node, torque: int, duration: float):
 
@@ -791,6 +1010,7 @@ def OLD_network_scan(node_channel: str):
         print(f"Found node: {nid}")
 
 
+
 # ======================================================================
 # Region: Main
 # ======================================================================
@@ -812,4 +1032,4 @@ def main():
 if __name__ == "__main__":
     #main()
     #network_scan('can0')
-    quick_statusword_test('can0', 1)
+    OLD_quick_statusword_test('can0', 1)
