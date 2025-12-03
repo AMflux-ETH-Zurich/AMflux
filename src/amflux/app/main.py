@@ -172,7 +172,7 @@ Each initialization or configuration function corresponds to a section in the EP
 If no arguments are given, default values are chosen.
 
 Initialization & Configuration Functions
-   1. axis_configuration_init
+    1. axis_configuration_init
     2. motor_init
     3. ssi_abs_encoder_init
     4. electrical_system_init
@@ -1020,13 +1020,19 @@ def main():
     # Setup our CANopen network
     network, mc1 = network_setup(1, '/home/amfluxpi/AMflux/src/amflux/app/Epos4_70_15.eds', 'can0')
     # Setup our Motor Controller
+    motor_init(node, nominal_current = 5000, current_lim = 7070, 
+                        pole_pairs = 10, therm_const: int=None, tor_const: int=None): #STILL NEED TO GET THERMAL AND TORQUE CONST FROM HAIXIAO
+
+
+
+    '''
     # CST mode is under int=10 (Firmware-Specification, p219)
     motor_setup(mc1, 10)
     # Run the motor in cst mode using a given amount of rpm
     motor_run_cst(mc1, 1000, 2)
     # Shutdown the CANopen network after use
     network_shutdown()
-
+    '''
     
 
 if __name__ == "__main__":
