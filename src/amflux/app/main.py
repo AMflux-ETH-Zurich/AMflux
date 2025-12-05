@@ -736,19 +736,16 @@ class DriveState:
     }
 
 
-
 def get_DriveState(node) -> DriveState:
 
     statusword = sword(node)
 
-    b0 = (statusword >> 0) & 1  # Ready to switch on
-    b1 = (statusword >> 1) & 1  # Switched on
+    b0 = (statusword >> 0) & 1  # Ready to switch on (compares right most bit)
+    b1 = (statusword >> 1) & 1  # Switched on (right most bit falls off, now compare second bit)
     b2 = (statusword >> 2) & 1  # Operation enabled
     b3 = (statusword >> 3) & 1  # Fault
     b5 = (statusword >> 5) & 1  # Quick stop
     b6 = (statusword >> 6) & 1  # Switch on disabled
-
-    DriveStateError = True
 
     # Not ready to switch on
     if (b6 == 0 and b5 == 0 and b3 == 0 and b2 == 0 and b1 == 0 and b0 == 0):
@@ -867,7 +864,7 @@ def do_DriveCommand(node, command: int, target, timeout) -> None:
             return
 
         # if fault: first clear it
-        if state == DriveState.FAULT:
+        if state == DriveState.FAULT: #MAYBE ADD THIS TO WAIT FOR STATE
             cw = do_DriveCommand(cw, DriveCommand.FAULT_RESET)
             cword_write(node, cw)
             time.sleep(0.05)
@@ -963,10 +960,11 @@ def goto_state(node, desired_state, timeout):
         finally:
            # Cleanup that always runs: e.g., disable watchdog, log state, etc.
             print(f"Attempted transition to {next_state}")
+
         
     
     final_state = get_DriveState()
-    if get_DriveState() is desired_state:
+    if final_state is desired_state:
         return True
     else:
         raise DesiredDriveStateError(f"{desired_state} state could not be reached. Current state: {final_state}")
