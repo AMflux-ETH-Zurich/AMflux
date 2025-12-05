@@ -731,6 +731,9 @@ class DriveState:
     FAULT_REACTION_ACTIVE  = 6
     FAULT                  = 7
     map = dict()
+    state_flags = {
+        0: False, 1:False, 2:False, 3:False, 4:False, 5:False, 6:False
+    }
 
 
 
@@ -790,14 +793,18 @@ class DriveStatePathError(Exception):
     """Raised if no valid Path is found/used"""
     pass
 
+class DesiredDriveStateError(Exception):
+    """Raised if desired DriveState is not reached"""
+    pass
+
 
 class DriveCommand: 
-    SHUTDOWN            = 0x006
+    SHUTDOWN            = 0x006 #maybe normal ints
     SWITCH_ON           = 0x007
     ENABLE_OPERATION    = 0x00F
     DISABLE_VOLTAGE     = 0x000
     QUICK_STOP          = 0x002
-    DISABLE_OPERATION   = 0x007
+    DISABLE_OPERATION   = 0x007           
     FAULT_RESET         = 0x100
 
 #write initialization of drivestate map, when DriveState = NotReadyToSwitchOn   
@@ -850,7 +857,7 @@ def do_DriveCommand(node, command: int, target, timeout) -> None:
 
     """Drive CiA-402 state machine until the drive reaches `target` or raises TimeoutError."""
     deadline = time.time() + timeout
-    cw = node.sdo[0x6040].raw  # start from current controlword
+    cw = cword_read(node)
 
     while time.time() < deadline:
         sw = sword(node)
@@ -917,22 +924,54 @@ def state_planner(node, desired_state):
     return route
 
 
-def state_switch(node, next_state):
+def state_switch(node, next_state, given_command, timeout):
     current_state = get_DriveState(node)
 
-    command = DriveState.map[current_state[next_state]]
+    check_command = DriveState.map[current_state[next_state]]
 
-    if do_DriveCommand(node, command):
-        return True
+    if given_command == check_command:
+        if do_DriveCommand(node, given_command, next_state, timeout):
+            return True
+    else:
+        raise Exception(f"route implementation is faulty")
 
 
-def goto_state(node, desired_state):
+def goto_state(node, desired_state, timeout):
     current_state = get_DriveState(node)
-
     route = state_planner(node, desired_state)
 
-    if route == None:
+    if route is None:
         raise DriveStatePathError(f"No valid path to {desired_state} was found")
+    
+    for step in route:
+        next_command = step[0]
+        next_state = step[1]
+        try:
+            state_switch(node, next_state, next_command, timeout)
+        except DriveStateError as e:
+            # Specific drive-state errors you expect
+            print(f"Drive state error: {e}")
+            raise
+        except TimeoutError as e:
+            # Timeout errors from nested calls
+            print(f"Timeout during state transition: {e}")
+            raise
+        except Exception as e:
+            # Unexpected errors—log and fail fast
+            print(f"Unexpected error: {e} current State: {get_DriveState()}")
+            raise
+        finally:
+           # Cleanup that always runs: e.g., disable watchdog, log state, etc.
+            print(f"Attempted transition to {next_state}")
+        
+    
+    final_state = get_DriveState()
+    if get_DriveState() is desired_state:
+        return True
+    else:
+        raise DesiredDriveStateError(f"{desired_state} state could not be reached. Current state: {final_state}")
+    
+
 
 
 
