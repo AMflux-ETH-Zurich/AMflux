@@ -913,7 +913,7 @@ def Drive_State_BFS(start_state, target_state, map):
     return route
 
 
-
+#maybe clean up state planner
 def state_planner(node, desired_state):
     current_state = get_DriveState(node)
 
@@ -1015,20 +1015,6 @@ def drive_run(node, desired_op_mode):
         goto_state(node, desired_state=4, timeout=5)
 
 
-
-
-
-
-    
-
-
-
-
-
-
-
-
-
 # ======================================================================
 # Region: GARAGE
 # ======================================================================
@@ -1113,7 +1099,7 @@ def main():
     motor_init(node, nominal_current = 5000, current_lim = 7070, 
                         pole_pairs = 10, therm_const: int=None, tor_const: int=None): #STILL NEED TO GET THERMAL AND TORQUE CONST FROM HAIXIAO
 
-
+    drive_run()
 
     '''
     # CST mode is under int=10 (Firmware-Specification, p219)
@@ -1128,4 +1114,4 @@ def main():
 if __name__ == "__main__":
     #main()
     #network_scan('can0')
-    drive_run()
+    
