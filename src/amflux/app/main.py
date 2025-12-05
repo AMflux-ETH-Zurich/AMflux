@@ -971,6 +971,59 @@ def goto_state(node, desired_state, timeout):
     
 
 
+# ======================================================================
+# Region: OPERATING MODES
+# ======================================================================
+
+"""
+Die Pussy het das nonig welle mache. wird uf spöter verschoe
+
+
+import object_dictionary as od
+
+
+class Operation_Modes:
+    ProfilePositionMode = {"configuration_params": [software_position_limit, max_profile_velocity], "commanding_params": []}
+
+def init_obj_dict():
+    for func in Operation_Modes.ProfilePositionMode["configuration_params"]:
+        func(od.ProfilePositionMode.configuration_params.)
+
+"""
+
+
+def init_obj_dictionary(node, desired_op_mode):
+    ssi_abs_encoder_init(node, data_rate=None, data_bits=None)
+    electrical_system_init(node, electrical_resistance=None, electrical_inductance=None)
+    current_control_parameter_init(node, p_gain=None, i_gain=None)
+    mode_of_operation_init(node, op_mode=desired_op_mode)
+    #
+    #
+    #
+    #
+    #
+    #
+    return True
+
+    
+
+def drive_run(node, desired_op_mode):
+    
+    #power check? arduino ok check?
+
+    if init_obj_dictionary(desired_op_mode):
+        goto_state(node, desired_state=4, timeout=5)
+
+
+
+
+
+
+    
+
+
+
+
 
 
 
@@ -1075,4 +1128,4 @@ def main():
 if __name__ == "__main__":
     #main()
     #network_scan('can0')
-    OLD_quick_statusword_test('can0', 1)
+    drive_run()
