@@ -997,12 +997,52 @@ def init_obj_dictionary(node, desired_op_mode):
     electrical_system_init(node, electrical_resistance=None, electrical_inductance=None)
     current_control_parameter_init(node, p_gain=None, i_gain=None)
     mode_of_operation_init(node, op_mode=desired_op_mode)
-    #
-    #
-    #
-    #
-    #
-    #
+    current_control_parameter_init(node)
+    position_control_parameter_init(node)
+    velocity_control_parameter_init(node)
+    velocity_observer_parameter_init(node)
+    dual_loop_position_control_parameter_init(node)
+    home_position_init(node)
+    home_offset_distance_init(node)
+    Current_threshold_homing_init(node)
+    standstill_window_init(node)
+    standstill_window_time_init(node)
+    standstill_window_timeout_init(node)
+    abort_connection_option_init(node)
+    mode_of_operation_init(node)
+    following_error_window_init(node)
+    following_error_timeout_init(node)
+    position_window_init(node)
+    position_window_time_init(node)
+    shutdown_option_code(node)
+    disable_operation_option_code(node)
+    halt_option_code(node)
+    fault_reaction_option_code(node)
+    target_torque(node)
+    motor_rated_torque(node)
+    target_position(node)
+    software_position_limit(node)
+    max_profile_velocity(node)
+    max_motor_speed(node)
+    profile_velocity(node)
+    profile_acceleration(node)
+    profile_deceleration(node)
+    quick_stop_deceleration(node)
+    homing_method_init(node)
+    homing_speeds(node)
+    homing_acceleration(node)
+    si_unit_position(node)
+    si_unit_velocity(node)
+    si_unit_acceleration(node)
+    position_offset(node)
+    velocity_offset(node)
+    torque_offset(node)
+    interpolation_time_period(node)
+    max_acceleration(node)
+    digital_outputs(node)
+    target_velocity(node)
+    motor_type(node)
+    
     return True
 
     
@@ -1097,7 +1137,7 @@ def main():
     network, mc1 = network_setup(1, '/home/amfluxpi/AMflux/src/amflux/app/Epos4_70_15.eds', 'can0')
     # Setup our Motor Controller
     motor_init(node, nominal_current = 5000, current_lim = 7070, 
-                        pole_pairs = 10, therm_const: int=None, tor_const: int=None): #STILL NEED TO GET THERMAL AND TORQUE CONST FROM HAIXIAO
+                        pole_pairs = 10, therm_const = None, tor_const = None): # type: ignore #STILL NEED TO GET THERMAL AND TORQUE CONST FROM HAIXIAO
 
     drive_run()
 
@@ -1114,4 +1154,4 @@ def main():
 if __name__ == "__main__":
     #main()
     #network_scan('can0')
-    
+    main()
