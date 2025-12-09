@@ -825,7 +825,7 @@ DriveState.map = {DriveState.NOT_READY_TO_SWITCH_ON : [(DriveCommand.SWITCH_ON, 
 
 def wait_for_state(node, desired_state: int, timeout: float = 5.0):
     
-    current_state = get_DriveState()
+    current_state = get_DriveState(node)
 
     if current_state == DriveState.FAULT: 
             do_DriveCommand(node, DriveCommand.FAULT_RESET, timeout)##########
@@ -842,7 +842,7 @@ def wait_for_state(node, desired_state: int, timeout: float = 5.0):
         time.sleep(0.01)  # Avoid busy waiting
 
 
-def do_DriveCommand(node, command: int, target, timeout) -> None:
+def do_DriveCommand(node, command: int, target, timeout) -> True:
 
     current_cword = cword_read(node)
 
@@ -858,10 +858,11 @@ def do_DriveCommand(node, command: int, target, timeout) -> None:
 
     cword_write(node, new_cword)
 
-    if(wait_for_state(node, target, 0.5)):
+    if(wait_for_state(node, target, timeout)):
         return True
 
     raise TimeoutError(f"Failed to reach state {target} in time")
+    
 
 
 
@@ -903,7 +904,7 @@ def Drive_State_BFS(start_state, target_state, map):
 
 
 def goto_state(node, desired_state, timeout):
-    current_state = get_DriveState
+    current_state = get_DriveState(node)
     route = Drive_State_BFS(current_state, desired_state, DriveState.map)
 
     if route is None:
@@ -924,7 +925,7 @@ def goto_state(node, desired_state, timeout):
             raise
         except Exception as e:
             # Unexpected errors—log and fail fast
-            print(f"Unexpected error: {e} current State: {get_DriveState()}")
+            print(f"Unexpected error: {e} current State: {get_DriveState(node)}")
             raise
         finally:
            # Cleanup that always runs: e.g., disable watchdog, log state, etc.
@@ -932,8 +933,8 @@ def goto_state(node, desired_state, timeout):
 
         
     
-    final_state = get_DriveState()
-    if final_state is desired_state:
+    final_state = get_DriveState(node)
+    if final_state == desired_state:
         return True
     else:
         raise DesiredDriveStateError(f"{desired_state} state could not be reached. Current state: {final_state}")
@@ -1020,7 +1021,7 @@ def drive_run(node, desired_op_mode):
     
     #power check? arduino ok check?
 
-    if init_obj_dictionary(desired_op_mode):
+    if init_obj_dictionary(node, desired_op_mode):
         goto_state(node, desired_state=4, timeout=5)
 
 
