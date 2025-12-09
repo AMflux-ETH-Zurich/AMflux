@@ -455,6 +455,7 @@ def standstill_window_timeout_init(node, standstill_window_timeout: int = None):
     #Defines the point of time standstill is supposed to be reached, even if the standstill conditions are not yet fulfilled.
     node.sdo[0x30E0][0x03].raw = standstill_window_timeout if standstill_window_timeout is not None else 1000
 
+
 def abort_connection_option_init(node, abort_option: int = None):
     #6.2.92
     check_init(locals())
@@ -463,6 +464,7 @@ def abort_connection_option_init(node, abort_option: int = None):
     # 3 -> Decelerate with quick stop ramp; disabling of the drive function
     node.sdo[0x605B][0x00].raw = abort_option if abort_option is not None else 3
 
+
 def mode_of_operation_init(node, op_mode: int):
     #6.2.101
     check_init(locals())
@@ -470,12 +472,14 @@ def mode_of_operation_init(node, op_mode: int):
     #default: 1 -> Profile position mode
     node.sdo[0x6060][0x00].raw = op_mode if op_mode is not None else 1 
 
+
 def following_error_window_init(node, following_error_window: int = None):
     #6.2.105
     check_init(locals())
     #Defines the maximum allowed deviation between target and actual position.
     #min=0, max=2.147.483.647
     node.sdo[0x6065][0x00].raw = following_error_window if following_error_window is not None else 2000
+
 
 def following_error_timeout_init(node, following_error_timeout: int = None):
     #6.2.106
@@ -491,6 +495,7 @@ def position_window_init(node, position_window: int = None):
     #Defines a symmetric range of accepted position values relatively to target position.
     #min=0, max=2147483647, disable=4294967295
     node.sdo[0x6067][0x00].raw = position_window if position_window is not None else 4294967295
+
 
 def position_window_time_init(node, position_window_time: int = None):
     #6.2.108
@@ -508,12 +513,14 @@ def shutdown_option_code(node, option_code: int = None):
     #1 is decelerate with slowdown ramp and disabling of drive function, 0 is disable drive function
     node.sdo[0x605B].raw = option_code if option_code is not None else 0
 
+
 def disable_operation_option_code(node, option_code: int = None):
     #6.2.98
     check_init(locals())
     #Action performed when state transitions from Operation Enabled to Switched on
     #1 is decelerate with slowdown ramp and disabling of drive function, 0 is disable drive function
     node.sdo[0x605C].raw = option_code if option_code is not None else 1
+
 
 def halt_option_code(node, option_code: int = None):
     #6.2.99
@@ -522,6 +529,7 @@ def halt_option_code(node, option_code: int = None):
     #1 is decelerate with slowdown ramp and stay in operation enabled, 2 is decelerate with quick stop ramp and stay in operation enabled
     node.sdo[0x605D].raw = option_code if option_code is not None else 1
 
+
 def fault_reaction_option_code(node, option_code: int = None):
     #6.2.100
     check_init(locals())
@@ -529,10 +537,6 @@ def fault_reaction_option_code(node, option_code: int = None):
     #2 is decelerate with quickstop ramp and disabling of drive function, 1 is decelerate with slowdown ramp and disabling of drive function, 0 is disable drive function
     node.sdo[0x605E].raw = option_code if option_code is not None else 2
 
-#def control_word(node, control_word: int = None):
-#   #6.2.94
-#    check_init(locals())
-#    node.sdo[0x6040].raw = control_word
 
 def target_torque(node, torque: int = None):
     #6.2.111
@@ -540,17 +544,20 @@ def target_torque(node, torque: int = None):
     #indicates the configured target torque value for the controller in CST mode, value is given in per thousand of motor rated torque
     node.sdo[0x6071].raw = torque if torque is not None else 0
 
+
 def motor_rated_torque(node, rated_torque: int = None):
     #6.2.112
     check_init(locals())
     #holds value to which all torque objects are related to, value is defined as nominal current * torque constant, value is in mNm
     node.sdo[0x6076].raw = rated_torque if rated_torque is not None else 0
 
+
 def target_position(node, position: int = None):
     #6.2.114
     check_init(locals())
     #represents the position that the drive is supposed to move to using the motion control parameters
     node.sdo[0x607A].raw = position if position is not None else 0
+
 
 def software_position_limit(node, min_pos_limit: int = None, max_pos_limit: int = None):
     #6.2.117
@@ -561,11 +568,13 @@ def software_position_limit(node, min_pos_limit: int = None, max_pos_limit: int 
     #max position limit
     node.sdo[0x607D][2].raw = max_pos_limit if max_pos_limit is not None else 0
 
+
 def max_profile_velocity(node, max_velocity: int = None):
     #6.2.118
     check_init(locals())
     #used as a velocity limit in a ppm or pvm move, value is given in rpm
     node.sdo[0x607F].raw = max_velocity if max_velocity is not None else 50000
+
 
 def max_motor_speed(node, max_velocity: int = None):
     #6.2.119
@@ -573,11 +582,13 @@ def max_motor_speed(node, max_velocity: int = None):
     #indicates maximum allowed motor speed, value is given in rpm
     node.sdo[0x6080].raw = max_velocity if max_velocity is not None else 50000
 
+
 def profile_velocity(node, prof_velocity: int = None):
     #6.2.120
     check_init(locals())
     #represents the velocity normally attained at the end of the accleeratiion ramp during a profiled move (ppm, pvm), value is given in rpm
     node.sdo[0x6081].raw = prof_velocity if prof_velocity is not None else 1000
+
 
 def profile_acceleration(node, prof_acc: int = None):
     #6.2.121
@@ -585,11 +596,13 @@ def profile_acceleration(node, prof_acc: int = None):
     #defines the acceleration used during a profiled move (ppm, pvm), value is given in rpm/s
     node.sdo[0x6083].raw = prof_acc if prof_acc is not None else 10000
 
+
 def profile_deceleration(node, prof_dec: int = None):
     #6.2.122
     check_init(locals())
     #defines the deceleration used during a profiled move (ppm, pvm), value is given in rpm/s
     node.sdo[0x6084].raw = prof_dec if prof_dec is not None else 10000
+
 
 def quick_stop_deceleration(node, prof_dec: int = None):
     #6.2.123
@@ -597,11 +610,13 @@ def quick_stop_deceleration(node, prof_dec: int = None):
     #defines the deceleration used during a profiled move (ppm, pvm), value is given in rpm/s
     node.sdo[0x6085].raw = prof_dec if prof_dec is not None else 10000
 
+
 def homing_method_init(node, homing_method: int = None):
     #6.2.125
     check_init(locals())
     #Used to select homing method (absolute SSI encoder = 37)
     node.sdo[0x6098].raw = homing_method if homing_method is not None else 37
+
 
 def homing_speeds(node, speed_sw_srch: int = None, speed_zero_srch: int = None):
     #6.2.126
@@ -611,11 +626,13 @@ def homing_speeds(node, speed_sw_srch: int = None, speed_zero_srch: int = None):
     #Speed for zero search given in rpm, used to search the index in a homing sequence
     node.sdo[0x6099][2].raw = speed_zero_srch if speed_zero_srch is not None else 10
 
+
 def homing_acceleration(node, homing_acc: int = None):
     #6.2.127
     check_init(locals())
     #Acceleration used during homing procedure, value is given in rpm/s
     node.sdo[0x609A].raw = homing_acc if homing_acc is not None else 1000
+
 
 def si_unit_position(node, si_unit_pos: int = None):
     #6.2.128
@@ -623,11 +640,13 @@ def si_unit_position(node, si_unit_pos: int = None):
     #Defines the position units
     node.sdo[0x60A8].raw = si_unit_pos if si_unit_pos is not None else 0x00B50000
 
+
 def si_unit_velocity(node, si_unit_vel: int = None):
     #6.2.129
     check_init(locals())
     #Defines the velocity units
     node.sdo[0x60A9].raw = si_unit_vel if si_unit_vel is not None else 0x00B44700
+
 
 def si_unit_acceleration(node, si_unit_acc: int = None):
     #6.2.130
@@ -635,11 +654,13 @@ def si_unit_acceleration(node, si_unit_acc: int = None):
     #Defines the acceleration units
     node.sdo[0x60AA].raw = si_unit_acc if si_unit_acc is not None else 0x00C00300
 
+
 def position_offset(node, pos_offset: int = None):
     #6.2.131
     check_init(locals())
     #Defines an offset that is added to the actual position value
     node.sdo[0x60B0].raw = pos_offset if pos_offset is not None else 0
+
 
 def velocity_offset(node, vel_offset: int = None):
     #6.2.132
@@ -647,13 +668,16 @@ def velocity_offset(node, vel_offset: int = None):
     #Defines an offset that is added to the actual velocity value
     node.sdo[0x60B1].raw = vel_offset if vel_offset is not None else 0
 
+
 def torque_offset(node, tor_offset: int = None):
     #6.2.133
     check_init(locals())
     #Defines an offset that is added to the actual torque value
     node.sdo[0x60B2].raw = tor_offset if tor_offset is not None else 0
 
+
 #touch probe 6.2.134 - 6.2.137 and 6.2.140 - 6.2.142 not implemented
+
 
 def interpolation_time_period(node, time_period_val: int = None, time_index: int = None):
     #6.2.138
@@ -665,6 +689,7 @@ def interpolation_time_period(node, time_period_val: int = None, time_index: int
     #time_index
     node.sdo[0x60C2][2].raw = time_index if time_index is not None else -3
 
+
 def max_acceleration(node, max_acc: int = None):
     #6.2.139
     check_init(locals())
@@ -672,17 +697,20 @@ def max_acceleration(node, max_acc: int = None):
     #IN CYCLIC MODES THIS VALUE IS NOT TAKEN INTO ACCOUNT
     node.sdo[0x60C5].raw = max_acc if max_acc is not None else 4294967295
 
+
 def digital_outputs(node, phys_outputs: int = None):
     #6.2.148
     check_init(locals())
     #configures the state of the digital output functionalities, if a bit is set to “1“ and the polarity is set to “0“, the signal at the corresponding pin is high
     node.sdo[0x60FE][1].raw = phys_outputs if phys_outputs is not None else 0
 
+
 def target_velocity(node, vel: int = None):
     #6.2.149
     check_init(locals())
     #in PVM the object indicates the configured target velocity and is used as input for the trajectory generation, value is given in rpm
     node.sdo[0x60FF].raw = vel if vel is not None else 0
+
 
 def motor_type(node, motor_type: int = None):
     #6.2.150
@@ -691,15 +719,11 @@ def motor_type(node, motor_type: int = None):
     node.sdo[0x6402].raw = motor_type if motor_type is not None else 10
 
 
-
-
-
 # ======================================================================
 # ======================================================================
 # Region: DEVICE CONTROL FUNCTIONS
 # ======================================================================
 # ======================================================================
-
 
 
 def cword_write(node, value: int):
@@ -713,12 +737,33 @@ def sword(node) -> int:
 
 
 # ======================================================================
-# Sub-Region: DRIVE STATE FUNCTIONS
+# Sub-Region: ERROR CODE FUNCTIONS
 # ======================================================================
 
-class DriveStateError(Exception):
+
+class DriveStateDetError(Exception):
     """Raised when Drive State cannot be determined."""
     pass
+
+
+class DriveStatePathError(Exception):
+    """Raised if no valid Path is found/used"""
+    pass
+
+
+class DesiredDriveStateError(Exception):
+    """Raised if desired DriveState is not reached"""
+    pass
+
+
+class DriveStateResetError(Exception):
+    """Raised if DriveState cannot be reset from FAULT"""
+    pass
+
+
+# ======================================================================
+# Sub-Region: DRIVE STATE FUNCTIONS
+# ======================================================================
 
 
 class DriveState:
@@ -730,7 +775,21 @@ class DriveState:
     QUICK_STOP_ACTIVE      = 5
     FAULT_REACTION_ACTIVE  = 6
     FAULT                  = 7
-    map = dict()
+    map = {DriveState.NOT_READY_TO_SWITCH_ON : [(DriveCommand.SWITCH_ON, DriveState.OPERATION_ENABLED)], 
+                  DriveState.SWITCH_ON_DISABLED     : [(DriveCommand.SHUTDOWN, DriveState.READY_TO_SWITCH_ON)], 
+                  DriveState.READY_TO_SWITCH_ON     : [(DriveCommand.DISABLE_VOLTAGE, DriveState.SWITCH_ON_DISABLED), 
+                                                       (DriveCommand.SWITCH_ON, DriveState.SWITCHED_ON), 
+                                                       (DriveCommand.ENABLE_OPERATION, DriveState.OPERATION_ENABLED)],
+                  DriveState.SWITCHED_ON            : [(DriveCommand.SHUTDOWN, DriveState.READY_TO_SWITCH_ON),
+                                                       (DriveCommand.DISABLE_OPERATION, DriveState.SWITCH_ON_DISABLED), 
+                                                       (DriveCommand.ENABLE_OPERATION, DriveState.OPERATION_ENABLED)],
+                  DriveState.OPERATION_ENABLED      : [(DriveCommand.DISABLE_OPERATION, DriveState.SWITCHED_ON), 
+                                                       (DriveCommand.SHUTDOWN, DriveState.READY_TO_SWITCH_ON), 
+                                                       (DriveCommand.DISABLE_VOLTAGE, DriveState.SWITCH_ON_DISABLED), 
+                                                       (DriveCommand.QUICK_STOP, DriveState.QUICK_STOP_ACTIVE)],
+                  DriveState.QUICK_STOP_ACTIVE      : [(DriveCommand.ENABLE_OPERATION, DriveState.OPERATION_ENABLED), 
+                                                       (DriveCommand.DISABLE_VOLTAGE, DriveState.SWITCH_ON_DISABLED)],
+                  DriveState.FAULT                  : [(DriveCommand.FAULT_RESET, DriveState.SWITCH_ON_DISABLED)]}
     state_flags = {
         0: False, 1:False, 2:False, 3:False, 4:False, 5:False, 6:False
     }
@@ -779,20 +838,12 @@ def get_DriveState(node) -> DriveState:
     if (b6 == 0 and b5 == 1 and b3 == 1 and b2 == 0 and b1 == 0 and b0 == 0):
         return DriveState.FAULT
     
-    raise DriveStateError(f"Unknown drive state with statusword: {statusword:#04x}")
+    raise DriveStateDetError(f"Unknown drive state with statusword: {statusword:#04x}")
     
 
 # ======================================================================
 # Sub-Region: DRIVE COMMAND FUNCTIONS
 # ======================================================================
-
-class DriveStatePathError(Exception):
-    """Raised if no valid Path is found/used"""
-    pass
-
-class DesiredDriveStateError(Exception):
-    """Raised if desired DriveState is not reached"""
-    pass
 
 
 class DriveCommand: 
@@ -804,8 +855,9 @@ class DriveCommand:
     DISABLE_OPERATION   = 0x007           
     FAULT_RESET         = 0x100
 
+
 #write initialization of drivestate map, when DriveState = NotReadyToSwitchOn   
-DriveState.map = {DriveState.NOT_READY_TO_SWITCH_ON : [(DriveCommand.SWITCH_ON, DriveState.OPERATION_ENABLED)], 
+'''DriveState.map = {DriveState.NOT_READY_TO_SWITCH_ON : [(DriveCommand.SWITCH_ON, DriveState.OPERATION_ENABLED)], 
                   DriveState.SWITCH_ON_DISABLED     : [(DriveCommand.SHUTDOWN, DriveState.READY_TO_SWITCH_ON)], 
                   DriveState.READY_TO_SWITCH_ON     : [(DriveCommand.DISABLE_VOLTAGE, DriveState.SWITCH_ON_DISABLED), 
                                                        (DriveCommand.SWITCH_ON, DriveState.SWITCHED_ON), 
@@ -819,16 +871,26 @@ DriveState.map = {DriveState.NOT_READY_TO_SWITCH_ON : [(DriveCommand.SWITCH_ON, 
                                                        (DriveCommand.QUICK_STOP, DriveState.QUICK_STOP_ACTIVE)],
                   DriveState.QUICK_STOP_ACTIVE      : [(DriveCommand.ENABLE_OPERATION, DriveState.OPERATION_ENABLED), 
                                                        (DriveCommand.DISABLE_VOLTAGE, DriveState.SWITCH_ON_DISABLED)],
-                  DriveState.FAULT                  : [(DriveCommand.FAULT_RESET, DriveState.SWITCH_ON_DISABLED)]}
+                  DriveState.FAULT                  : [(DriveCommand.FAULT_RESET, DriveState.SWITCH_ON_DISABLED)]}'''
 
+
+def fault_reset(node, reset_tries: int = 1, timeout: float = 5.0) -> None:
+    for attempt in range(reset_tries):
+        current_cword = cword_read(node)
+        new_cword = current_cword | 0x0080
+        cword_write(node, new_cword)
+        time.sleep(0.1)
+        if get_DriveState(node) ==  DriveState.SWITCH_ON_DISABLED:
+            return
+    raise DriveStateResetError(f"Failed to reach Fault_RESET in {reset_tries} attempts")
 
 
 def wait_for_state(node, desired_state: int, timeout: float = 5.0):
     
-    current_state = get_DriveState()
+    current_state = get_DriveState(node)
 
     if current_state == DriveState.FAULT: 
-            do_DriveCommand(node, DriveCommand.FAULT_RESET, timeout)##########
+            fault_reset(node, reset_tries=3, timeout=timeout)
             time.sleep(0.05)
     
     start_time = time.time()
@@ -842,15 +904,14 @@ def wait_for_state(node, desired_state: int, timeout: float = 5.0):
         time.sleep(0.01)  # Avoid busy waiting
 
 
-def do_DriveCommand(node, command: int, target, timeout) -> None:
+def do_DriveCommand(node, command: int, target, timeout) -> True:
 
     current_cword = cword_read(node)
 
     # Special case: Fault reset (set bit 7, keep all other bits)
     if command == DriveCommand.FAULT_RESET:
-        new_cword = current_cword | 0x0080  
-        cword_write(node, new_cword)
-        return
+        fault_reset(node, reset_tries=3, timeout=timeout)
+        return True
 
     low  = command & 0x00FF
     high = current_cword & 0xFF00
@@ -862,7 +923,6 @@ def do_DriveCommand(node, command: int, target, timeout) -> None:
         return True
 
     raise TimeoutError(f"Failed to reach state {target} in time")
-
 
 
 def Drive_State_BFS(start_state, target_state, map):
@@ -914,9 +974,9 @@ def goto_state(node, desired_state, timeout):
         next_state = step[1]
         try:
             do_DriveCommand(node, next_command, next_state, timeout)
-        except DriveStateError as e:
+        except DriveStateDetError as e:
             # Specific drive-state errors you expect
-            print(f"Drive state error: {e}")
+            print(f"Drive state determination error: {e}")
             raise
         except TimeoutError as e:
             # Timeout errors from nested calls
@@ -1093,7 +1153,6 @@ def OLD_network_scan(node_channel: str):
     # Print found nodes
     for nid in net.scanner.nodes:
         print(f"Found node: {nid}")
-
 
 
 # ======================================================================
