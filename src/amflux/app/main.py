@@ -729,8 +729,10 @@ def motor_type(node, motor_type: int = None):
 def cword_write(node, value: int):
     node.sdo[0x6040].raw = value
 
+
 def cword_read(node) -> int:
     return node.sdo[0x6040].raw
+
 
 def sword(node) -> int:
     return node.sdo[0x6041].raw
@@ -907,7 +909,6 @@ def do_DriveCommand(node, command: int, target, timeout) -> True:
     raise TimeoutError(f"Failed to reach state {target} in time")
     
 
-
 def Drive_State_BFS(start_state, target_state, map):
     
     if start_state == target_state:
@@ -980,7 +981,6 @@ def goto_state(node, desired_state, timeout):
         return True
     else:
         raise DesiredDriveStateError(f"{desired_state} state could not be reached. Current state: {final_state}")
-    
 
 
 # ======================================================================
