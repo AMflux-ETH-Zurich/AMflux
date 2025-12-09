@@ -1097,6 +1097,7 @@ def OLD_quick_statusword_test(channel: str = "can", node_id: int=1):
     finally:
         network_shutdown()
 
+
 def OLD_motor_run_cst(node, torque: int, duration: float):
 
     # Give system time for setup
@@ -1122,6 +1123,7 @@ def OLD_motor_run_cst(node, torque: int, duration: float):
     time.sleep(0.1)
     # Disable drive
     node.sdo[0x6040].raw = 0x0000
+
 
 def OLD_network_scan(node_channel: str):
     global net
