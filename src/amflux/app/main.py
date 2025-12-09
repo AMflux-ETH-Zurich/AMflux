@@ -856,24 +856,6 @@ class DriveCommand:
     FAULT_RESET         = 0x100
 
 
-#write initialization of drivestate map, when DriveState = NotReadyToSwitchOn   
-'''DriveState.map = {DriveState.NOT_READY_TO_SWITCH_ON : [(DriveCommand.SWITCH_ON, DriveState.OPERATION_ENABLED)], 
-                  DriveState.SWITCH_ON_DISABLED     : [(DriveCommand.SHUTDOWN, DriveState.READY_TO_SWITCH_ON)], 
-                  DriveState.READY_TO_SWITCH_ON     : [(DriveCommand.DISABLE_VOLTAGE, DriveState.SWITCH_ON_DISABLED), 
-                                                       (DriveCommand.SWITCH_ON, DriveState.SWITCHED_ON), 
-                                                       (DriveCommand.ENABLE_OPERATION, DriveState.OPERATION_ENABLED)],
-                  DriveState.SWITCHED_ON            : [(DriveCommand.SHUTDOWN, DriveState.READY_TO_SWITCH_ON),
-                                                       (DriveCommand.DISABLE_OPERATION, DriveState.SWITCH_ON_DISABLED), 
-                                                       (DriveCommand.ENABLE_OPERATION, DriveState.OPERATION_ENABLED)],
-                  DriveState.OPERATION_ENABLED      : [(DriveCommand.DISABLE_OPERATION, DriveState.SWITCHED_ON), 
-                                                       (DriveCommand.SHUTDOWN, DriveState.READY_TO_SWITCH_ON), 
-                                                       (DriveCommand.DISABLE_VOLTAGE, DriveState.SWITCH_ON_DISABLED), 
-                                                       (DriveCommand.QUICK_STOP, DriveState.QUICK_STOP_ACTIVE)],
-                  DriveState.QUICK_STOP_ACTIVE      : [(DriveCommand.ENABLE_OPERATION, DriveState.OPERATION_ENABLED), 
-                                                       (DriveCommand.DISABLE_VOLTAGE, DriveState.SWITCH_ON_DISABLED)],
-                  DriveState.FAULT                  : [(DriveCommand.FAULT_RESET, DriveState.SWITCH_ON_DISABLED)]}'''
-
-
 def fault_reset(node, reset_tries: int = 1, timeout: float = 5.0) -> None:
     for attempt in range(reset_tries):
         current_cword = cword_read(node)
