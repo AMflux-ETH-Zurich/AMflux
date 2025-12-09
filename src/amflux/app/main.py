@@ -824,9 +824,17 @@ DriveState.map = {DriveState.NOT_READY_TO_SWITCH_ON : [(DriveCommand.SWITCH_ON, 
 
 
 def wait_for_state(node, desired_state: int, timeout: float = 5.0):
+    
+    current_state = get_DriveState()
+
+    if current_state == DriveState.FAULT: 
+            do_DriveCommand(node, DriveCommand.FAULT_RESET, timeout)##########
+            time.sleep(0.05)
+    
     start_time = time.time()
+
     while True:                                                                    
-        current_state = sword() & 0x006F  # Mask to get relevant bits  0000 0000 0110 1111
+        current_state = get_DriveState(node) 
         if current_state == desired_state:
             return True
         if time.time() - start_time > timeout:
@@ -850,27 +858,8 @@ def do_DriveCommand(node, command: int, target, timeout) -> None:
 
     cword_write(node, new_cword)
 
-
-
-    """Drive CiA-402 state machine until the drive reaches `target` or raises TimeoutError."""
-    deadline = time.time() + timeout
-    cw = cword_read(node)
-
-    while time.time() < deadline:
-        sw = sword(node)
-        state = get_DriveState(sw)
-
-        if state == target:
-            return
-
-        # if fault: first clear it
-        if state == DriveState.FAULT: #MAYBE ADD THIS TO WAIT FOR STATE
-            cw = do_DriveCommand(cw, DriveCommand.FAULT_RESET)
-            cword_write(node, cw)
-            time.sleep(0.05)
-
-        if(wait_for_state(node, target, 0.5)):
-            return
+    if(wait_for_state(node, target, 0.5)):
+        return True
 
     raise TimeoutError(f"Failed to reach state {target} in time")
 
@@ -913,29 +902,9 @@ def Drive_State_BFS(start_state, target_state, map):
     return route
 
 
-#maybe clean up state planner
-def state_planner(node, desired_state):
-    current_state = get_DriveState(node)
-
-    route = Drive_State_BFS(current_state, desired_state, DriveState.map)
-    return route
-
-
-def state_switch(node, next_state, given_command, timeout):
-    current_state = get_DriveState(node)
-
-    check_command = DriveState.map[current_state[next_state]]
-
-    if given_command == check_command:
-        if do_DriveCommand(node, given_command, next_state, timeout):
-            return True
-    else:
-        raise Exception(f"route implementation is faulty")
-
-
 def goto_state(node, desired_state, timeout):
-    current_state = get_DriveState(node)
-    route = state_planner(node, desired_state)
+    current_state = get_DriveState
+    route = Drive_State_BFS(current_state, desired_state, DriveState.map)
 
     if route is None:
         raise DriveStatePathError(f"No valid path to {desired_state} was found")
@@ -944,7 +913,7 @@ def goto_state(node, desired_state, timeout):
         next_command = step[0]
         next_state = step[1]
         try:
-            state_switch(node, next_state, next_command, timeout)
+            do_DriveCommand(node, next_command, next_state, timeout)
         except DriveStateError as e:
             # Specific drive-state errors you expect
             print(f"Drive state error: {e}")
@@ -991,7 +960,7 @@ def init_obj_dict():
 
 """
 
-
+ 
 def init_obj_dictionary(node, desired_op_mode):
     ssi_abs_encoder_init(node, data_rate=None, data_bits=None)
     electrical_system_init(node, electrical_resistance=None, electrical_inductance=None)
