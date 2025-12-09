@@ -58,6 +58,26 @@ class InitializationError(Exception):
     pass
 
 
+class DriveStateDetError(Exception):
+    """Raised when Drive State cannot be determined."""
+    pass
+
+
+class DriveStatePathError(Exception):
+    """Raised if no valid Path is found/used"""
+    pass
+
+
+class DesiredDriveStateError(Exception):
+    """Raised if desired DriveState is not reached"""
+    pass
+
+
+class DriveStateResetError(Exception):
+    """Raised if DriveState cannot be reset from FAULT"""
+    pass
+
+
 # ======================================================================
 # Region: AUXILIARY FUNCTIONS
 # ======================================================================
@@ -736,31 +756,6 @@ def cword_read(node) -> int:
 
 def sword(node) -> int:
     return node.sdo[0x6041].raw
-
-
-# ======================================================================
-# Sub-Region: ERROR CODE FUNCTIONS
-# ======================================================================
-
-
-class DriveStateDetError(Exception):
-    """Raised when Drive State cannot be determined."""
-    pass
-
-
-class DriveStatePathError(Exception):
-    """Raised if no valid Path is found/used"""
-    pass
-
-
-class DesiredDriveStateError(Exception):
-    """Raised if desired DriveState is not reached"""
-    pass
-
-
-class DriveStateResetError(Exception):
-    """Raised if DriveState cannot be reset from FAULT"""
-    pass
 
 
 # ======================================================================
