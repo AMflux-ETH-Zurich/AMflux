@@ -843,16 +843,6 @@ def get_DriveState(node) -> DriveState:
 # Sub-Region: DRIVE COMMAND FUNCTIONS
 # ======================================================================
 
-class DriveStatePathError(Exception):
-    """Raised if no valid Path is found/used"""
-    pass
-
-
-class DesiredDriveStateError(Exception):
-    """Raised if desired DriveState is not reached"""
-    pass
-
-
 class DriveCommand: 
     SHUTDOWN            = 0x006 #maybe normal ints
     SWITCH_ON           = 0x007
@@ -951,7 +941,7 @@ def Drive_State_BFS(start_state, target_state, map):
     return route
 
 
-def goto_state(node, desired_state, timeout):
+def goto_state(node, desired_state, timeout, operation_time):
     current_state = get_DriveState(node)
     route = Drive_State_BFS(current_state, desired_state, DriveState.map)
 
@@ -982,8 +972,14 @@ def goto_state(node, desired_state, timeout):
         
     
     final_state = get_DriveState(node)
+    start_time = time.time()
     if final_state == desired_state:
-        return True
+        while True:
+            current_time = time.time()
+            if (current_time - start_time) > operation_time:
+                print("Operation was completed faultless")
+                return
+            time.sleep(1)
     else:
         raise DesiredDriveStateError(f"{desired_state} state could not be reached. Current state: {final_state}")
 
@@ -1131,8 +1127,12 @@ def drive_run(node, desired_op_mode):
     
     #power check? arduino ok check?
 
-    if init_obj_dictionary(node, desired_op_mode):
+    if init_obj_dict(node, desired_op_mode):
         goto_state(node, desired_state=4, timeout=5)
+        return
+    else:
+        print("Object Dicitonary not initialized")
+        return
 
 
 # ======================================================================
@@ -1216,11 +1216,11 @@ def main():
     global net
     # Setup our CANopen network
     network, mc1 = network_setup(1, '/home/amfluxpi/AMflux/src/amflux/app/Epos4_70_15.eds', 'can0')
-    # Setup our Motor Controller
-    motor_init(node, nominal_current = 5000, current_lim = 7070, 
-                        pole_pairs = 10, therm_const = None, tor_const = None): # type: ignore #STILL NEED TO GET THERMAL AND TORQUE CONST FROM HAIXIAO
+    
 
-    drive_run()
+    drive_run(mc1, Operation_Modes.CyclicSynchronousPosition)
+
+    print("Drive completed run. Network will be shutdown")
 
     '''
     # CST mode is under int=10 (Firmware-Specification, p219)
