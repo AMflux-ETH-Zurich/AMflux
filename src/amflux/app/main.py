@@ -1125,12 +1125,12 @@ def init_obj_dict(node, desired_mode):
 
 
 
-def drive_run(node, desired_op_mode):
+def drive_run(node, desired_op_mode, timeout, operation_time):
     
     #power check? arduino ok check?
 
     if init_obj_dict(node, desired_op_mode):
-        goto_state(node, desired_state=4, timeout=5)
+        goto_state(node, desired_state=4, timeout=timeout, operation_time=operation_time)
         return
     else:
         print("Object Dicitonary not initialized")
@@ -1150,7 +1150,7 @@ def main():
     network, mc1 = network_setup(1, '/home/amfluxpi/AMflux/src/amflux/app/Epos4_70_15.eds', 'can0')
     
 
-    drive_run(mc1, Operation_Modes.CyclicSynchronousPosition)
+    drive_run(mc1, Operation_Modes.CyclicSynchronousPosition, timeout=5, operation_time=5)
 
     print("Drive completed run. Network will be shutdown")
 
