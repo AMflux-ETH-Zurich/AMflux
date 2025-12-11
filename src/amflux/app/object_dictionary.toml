@@ -1,0 +1,307 @@
+# =========================================================
+# MOTOR
+# =========================================================
+
+[motor.axis_configuration_init]
+sens_res  = 67
+sys_speed = 67
+
+[motor.motor_init]
+motor_type      = 67
+nominal_current = 67
+current_lim     = 67
+pole_pairs      = 67
+therm_const     = 67
+tor_const       = 67
+
+[motor.electrical_system_init]
+electrical_resistance = 67
+electrical_inductance = 67
+
+[motor.velocity_observer_parameter_init]
+pos_corr_gain  = 67
+vel_corr_gain  = 67
+load_corr_gain = 67
+friction       = 67
+inertia        = 67
+
+[motor.dual_loop_position_control_parameter_init]
+main_loop_p_gain_low              = 67
+main_loop_p_gain_high             = 67
+main_loop_gain_scheduler          = 67
+main_loop_filter_coeff_a          = 67
+main_loop_filter_coeff_b          = 67
+main_loop_filter_coeff_c          = 67
+main_loop_filter_coeff_d          = 67
+main_loop_filter_coeff_e          = 67
+auxiliary_loop_p_gain             = 67
+auxiliary_loop_i_gain             = 67
+auxiliary_loop_ff_velocity_gain   = 67
+auxiliary_loop_ff_acceleration_gain = 67
+auxiliary_loop_observer_pos_corr_gain = 67
+auxiliary_loop_observer_vel_corr_gain = 67
+auxiliary_loop_observer_load_corr_gain = 67
+auxiliary_loop_observer_friction  = 67
+auxiliary_loop_observer_inertia   = 67
+dual_loop_miscellaneous           = 67
+
+[motor.si_unit_position]
+si_unit_pos = 67
+
+[motor.si_unit_velocity]
+si_unit_vel = 67
+
+[motor.si_unit_acceleration]
+si_unit_acc = 67
+
+[motor.position_offset]
+pos_offset = 67
+
+[motor.velocity_offset]
+vel_offset = 67
+
+[motor.torque_offset]
+tor_offset = 67
+
+[motor.digital_outputs]
+phys_outputs = 67
+
+[motor.motor_rated_torque]
+rated_torque = 67
+
+[motor.motor_type]
+motor_type = 67
+
+
+# =========================================================
+# ENCODER
+# =========================================================
+
+[encoder.ssi_abs_encoder_init]
+data_rate                   = 67
+data_bits                   = 67
+encoding_type               = 67
+timeout_time                = 67
+power_up_time               = 67
+commutation_offset_value    = 67
+position_bits               = 67
+communication_additional_delay = 67
+
+
+# =========================================================
+# SAFETY / LIMITS / GENERIC PROTECTION
+# =========================================================
+
+[safety.abort_connection_option_init]
+abort_option = 67
+
+[safety.mode_of_operation_init]
+op_mode = 67
+
+[safety.following_error_window_init]
+following_error_window = 67
+
+[safety.following_error_timeout_init]
+following_error_timeout = 67
+
+[safety.position_window_init]
+position_window = 67
+
+[safety.position_window_time_init]
+position_window_time = 67
+
+[safety.shutdown_option_code]
+option_code = 67
+
+[safety.disable_operation_option_code]
+option_code = 67
+
+[safety.halt_option_code]
+option_code = 67
+
+[safety.fault_reaction_option_code]
+option_code = 67
+
+[safety.software_position_limit]
+min_pos_limit = 67
+max_pos_limit = 67
+
+[safety.max_profile_velocity]
+max_velocity = 67
+
+[safety.max_motor_speed]
+max_velocity = 67
+
+[safety.max_acceleration]
+max_acc = 67
+
+
+# =========================================================
+# MODE-SPECIFIC PARAMETERS
+# =========================================================
+
+# ----------------------------
+# Profile Position Mode (PPM)
+# ----------------------------
+
+[mode.PPM]
+
+[mode.PPM.current_control_parameter_init]
+p_gain = 67
+i_gain = 67
+
+[mode.PPM.position_control_parameter_init]
+p_gain         = 67
+i_gain         = 67
+d_gain         = 67
+ffv_gain       = 67
+ffa_gain       = 67
+i_gain_si_unit = 67
+
+[mode.PPM.profile_velocity]
+prof_velocity = 67
+
+[mode.PPM.profile_acceleration]
+prof_acc = 67
+
+[mode.PPM.profile_deceleration]
+prof_dec = 67
+
+[mode.PPM.quick_stop_deceleration]
+prof_dec = 67
+
+[mode.PPM.target_position]
+position = 67
+
+
+# ----------------------------
+# Homing Mode (HHM)
+# ----------------------------
+
+[mode.HHM]
+
+[mode.HHM.home_position_init]
+homeposition = 67
+
+[mode.HHM.home_offset_distance_init]
+home_offset_distance = 67
+
+[mode.HHM.Current_threshold_homing_init]
+current_threshold_homing = 67
+
+[mode.HHM.standstill_window_init]
+standstill_window = 67
+
+[mode.HHM.standstill_window_time_init]
+standstill_window_time = 67
+
+[mode.HHM.standstill_window_timeout_init]
+standstill_window_timeout = 67
+
+[mode.HHM.homing_method_init]
+homing_method = 67
+
+[mode.HHM.homing_speeds]
+speed_sw_srch   = 67
+speed_zero_srch = 67
+
+[mode.HHM.homing_acceleration]
+homing_acc = 67
+
+
+# ----------------------------
+# Profile Velocity Mode (PVM)
+# ----------------------------
+
+[mode.PVM]
+
+[mode.PVM.current_control_parameter_init]
+p_gain = 67
+i_gain = 67
+
+[mode.PVM.velocity_control_parameter_init]
+p_gain   = 67
+i_gain   = 67
+ffv_gain = 67
+ffa_gain = 67
+f_cutoff = 67
+
+[mode.PVM.profile_velocity]
+prof_velocity = 67
+
+[mode.PVM.profile_acceleration]
+prof_acc = 67
+
+[mode.PVM.profile_deceleration]
+prof_dec = 67
+
+[mode.PVM.quick_stop_deceleration]
+prof_dec = 67
+
+[mode.PVM.target_velocity]
+vel = 67
+
+
+# ----------------------------
+# Cyclic Synchronous Position (CSP)
+# ----------------------------
+
+[mode.CSP]
+
+[mode.CSP.current_control_parameter_init]
+p_gain = 67
+i_gain = 67
+
+[mode.CSP.position_control_parameter_init]
+p_gain         = 67
+i_gain         = 67
+d_gain         = 67
+ffv_gain       = 67
+ffa_gain       = 67
+i_gain_si_unit = 67
+
+[mode.CSP.interpolation_time_period]
+time_period_val = 67
+time_index      = 67
+
+[mode.CSP.target_position]
+position = 67
+
+
+# ----------------------------
+# Cyclic Synchronous Velocity (CSV)
+# ----------------------------
+
+[mode.CSV]
+
+[mode.CSV.current_control_parameter_init]
+p_gain = 67
+i_gain = 67
+
+[mode.CSV.velocity_control_parameter_init]
+p_gain   = 67
+i_gain   = 67
+ffv_gain = 67
+ffa_gain = 67
+f_cutoff = 67
+
+[mode.CSV.interpolation_time_period]
+time_period_val = 67
+time_index      = 67
+
+[mode.CSV.target_velocity]
+vel = 67
+
+
+# ----------------------------
+# Cyclic Synchronous Torque (CST)
+# ----------------------------
+
+[mode.CST]
+
+[mode.CST.current_control_parameter_init]
+p_gain = 67
+i_gain = 67
+
+[mode.CST.target_torque]
+torque = 67
