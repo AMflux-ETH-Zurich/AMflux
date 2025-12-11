@@ -31,6 +31,7 @@ import time
 import canopen
 import keyboard
 import can
+import toml
 
 import warnings
 from typing import Mapping, Hashable, Dict, Any
@@ -842,6 +843,15 @@ def get_DriveState(node) -> DriveState:
 # Sub-Region: DRIVE COMMAND FUNCTIONS
 # ======================================================================
 
+class DriveStatePathError(Exception):
+    """Raised if no valid Path is found/used"""
+    pass
+
+
+class DesiredDriveStateError(Exception):
+    """Raised if desired DriveState is not reached"""
+    pass
+
 
 class DriveCommand: 
     SHUTDOWN            = 0x006 #maybe normal ints
@@ -982,77 +992,140 @@ def goto_state(node, desired_state, timeout):
 # Region: OPERATING MODES
 # ======================================================================
 
-"""
-Die Pussy het das nonig welle mache. wird uf spöter verschoe
+
+class InitObjDict(Exception):
+    """Raised if object dictionary is not initializable"""
+    pass
 
 
-import object_dictionary as od
+class DesiredMode(Exception):
+    """Raised if object dictionary is not initializable"""
+    pass
 
+
+objdict_data = toml.load("./object_dictionary.toml")
 
 class Operation_Modes:
-    ProfilePositionMode = {"configuration_params": [software_position_limit, max_profile_velocity], "commanding_params": []}
+    ProfilePosition             = 0
+    Homing                      = 1
+    ProfileVelocity             = 2
+    CyclicSynchronousPosition   = 3
+    CyclicSynchronousVelocity   = 4
+    CyclicSynchronousTorque     = 5
 
-def init_obj_dict():
-    for func in Operation_Modes.ProfilePositionMode["configuration_params"]:
-        func(od.ProfilePositionMode.configuration_params.)
 
+""""#vergelich op mode and desired op mmode, handling
+    op_mode = Operation_Modes.get()
+
+    if op_mode == Operation_Modes.ProfilePosition:
+        for func in objdict_data["mode"]["PPM"]["PLACEHOLDER"]:
+            func(["mode"]["PPM"]["PLACEHOLDER"]["PLACEHOLDER2"])
 """
 
- 
-def init_obj_dictionary(node, desired_op_mode):
-    ssi_abs_encoder_init(node, data_rate=None, data_bits=None)
-    electrical_system_init(node, electrical_resistance=None, electrical_inductance=None)
-    current_control_parameter_init(node, p_gain=None, i_gain=None)
-    mode_of_operation_init(node, op_mode=desired_op_mode)
-    current_control_parameter_init(node)
-    position_control_parameter_init(node)
-    velocity_control_parameter_init(node)
-    velocity_observer_parameter_init(node)
-    dual_loop_position_control_parameter_init(node)
-    home_position_init(node)
-    home_offset_distance_init(node)
-    Current_threshold_homing_init(node)
-    standstill_window_init(node)
-    standstill_window_time_init(node)
-    standstill_window_timeout_init(node)
-    abort_connection_option_init(node)
-    mode_of_operation_init(node)
-    following_error_window_init(node)
-    following_error_timeout_init(node)
-    position_window_init(node)
-    position_window_time_init(node)
-    shutdown_option_code(node)
-    disable_operation_option_code(node)
-    halt_option_code(node)
-    fault_reaction_option_code(node)
-    target_torque(node)
-    motor_rated_torque(node)
-    target_position(node)
-    software_position_limit(node)
-    max_profile_velocity(node)
-    max_motor_speed(node)
-    profile_velocity(node)
-    profile_acceleration(node)
-    profile_deceleration(node)
-    quick_stop_deceleration(node)
-    homing_method_init(node)
-    homing_speeds(node)
-    homing_acceleration(node)
-    si_unit_position(node)
-    si_unit_velocity(node)
-    si_unit_acceleration(node)
-    position_offset(node)
-    velocity_offset(node)
-    torque_offset(node)
-    interpolation_time_period(node)
-    max_acceleration(node)
-    digital_outputs(node)
-    target_velocity(node)
-    motor_type(node)
+def init_obj_dict(node, desired_mode):
+    motor_data = objdict_data["motor"]
+    for func_name, params in motor_data.items():
+        func = globals().get(func_name)
+        try:
+            func(node, **params)
+        except InitObjDict as e:
+            print(f"There was a problem Initialiting {func}, check dictionary values.")
+            raise
+        else:
+            return
     
-    return True
+    encoder_data = objdict_data["encoder"]
+    for func_name, params in encoder_data.items():
+        func = globals().get(func_name)
+        try:
+            func(node, **params)
+        except InitObjDict as e:
+            print(f"There was a problem Initialiting {func}, check dictionary values.")
+            raise
+        else:
+            return
 
-    
+    safety_data = objdict_data["safety"]
+    for func_name, params in safety_data.items():
+        func = globals().get(func_name)
+        try:
+            func(node, **params)
+        except InitObjDict as e:
+            print(f"There was a problem Initialiting {func}, check dictionary values.")
+            raise
+        else:
+            return
+
+    if desired_mode == Operation_Modes.ProfilePosition:
+        PPM_data = objdict_data["model"]["PPM"]
+        for func_name, params in PPM_data.items():
+            func = globals().get(func_name)
+            try:
+                func(node, **params)
+            except InitObjDict as e:
+                print(f"There was a problem Initialiting {func}, check dictionary values.")
+                raise
+            else:
+                return
+    elif desired_mode == Operation_Modes.Homing:
+        HHM_data = objdict_data["model"]["HHM"]
+        for func_name, params in HHM_data.items():
+            func = globals().get(func_name)
+            try:
+                func(node, **params)
+            except InitObjDict as e:
+                print(f"There was a problem Initialiting {func}, check dictionary values.")
+                raise
+            else:
+                return
+    elif desired_mode == Operation_Modes.ProfileVelocity:
+        PVM_data = objdict_data["model"]["PVM"]
+        for func_name, params in PVM_data.items():
+            func = globals().get(func_name)
+            try:
+                func(node, **params)
+            except InitObjDict as e:
+                print(f"There was a problem Initialiting {func}, check dictionary values.")
+                raise
+            else:
+                return
+    elif desired_mode == Operation_Modes.CyclicSynchronousPosition:
+        CSP_data = objdict_data["model"]["CSP"]
+        for func_name, params in CSP_data.items():
+            func = globals().get(func_name)
+            try:
+                func(node, **params)
+            except InitObjDict as e:
+                print(f"There was a problem Initialiting {func}, check dictionary values.")
+                raise
+            else:
+                return
+    elif desired_mode == Operation_Modes.CyclicSynchronousVelocity:
+        CSV_data = objdict_data["model"]["CSV"]
+        for func_name, params in CSV_data.items():
+            func = globals().get(func_name)
+            try:
+                func(node, **params)
+            except InitObjDict as e:
+                print(f"There was a problem Initialiting {func}, check dictionary values.")
+                raise
+            else:
+                return
+    elif desired_mode == Operation_Modes.CyclicSynchronousTorque:
+        CST_data = objdict_data["model"]["CST"]
+        for func_name, params in CST_data.items():
+            func = globals().get(func_name)
+            try:
+                func(node, **params)
+            except InitObjDict as e:
+                print(f"There was a problem Initialiting {func}, check dictionary values.")
+                raise
+            else:
+                return
+    else: 
+        raise DesiredMode("No mode of operation selected, or selected mode is not prermittable. Please select a valid mode of operation")
+
+
 
 def drive_run(node, desired_op_mode):
     

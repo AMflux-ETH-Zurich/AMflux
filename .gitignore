@@ -27,3 +27,4 @@ dist/
 # Logs or temp
 *.log
 *.tmp
+.DS_Store
