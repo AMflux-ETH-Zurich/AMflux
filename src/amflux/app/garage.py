@@ -69,3 +69,28 @@ def OLD_network_scan(node_channel: str):
     # Print found nodes
     for nid in net.scanner.nodes:
         print(f"Found node: {nid}")
+
+
+def network_scan(node_channel: str):
+    global net
+    if net == None:
+        # 1. Create the base SocketCAN bus object
+        # This is the object that interacts with the Linux kernel
+        bus = can.interface.Bus(
+            channel=node_channel, 
+            bustype='socketcan'
+        )
+
+        
+        
+        # 3. Create a CANopen network and assign the rate-limited bus
+        # This allows CANopen to use the rate-limited transmission logic
+        net = canopen.Network()
+        net.bus = bus
+
+    # Scan for nodes on the network. This call now respects the rate limit.
+    net.scanner.search()
+    
+    # Print found nodes
+    for nid in net.scanner.nodes:
+        print(f"Found node: {nid}")

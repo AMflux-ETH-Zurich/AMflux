@@ -33,6 +33,7 @@ import keyboard
 import can
 import toml
 
+
 import warnings
 from typing import Mapping, Hashable, Dict, Any
 
@@ -87,7 +88,9 @@ class DesiredMode(Exception):
     """Raised if object dictionary is not initializable"""
     pass
 
-
+class SanityCheck(Exception):
+    """Raised if Sanity Check fails"""
+    pass
 # ======================================================================
 # Region: AUXILIARY FUNCTIONS
 # ======================================================================
@@ -100,6 +103,7 @@ def removekey(d: Mapping[str, Any], key: Hashable) -> Dict[str, Any]:
     r.pop(key, None)
     return r
 
+
 def confirm(prompt: str = "Continue? [y/N]: ") -> bool:
     """Prompt the user for a yes/no answer and return True for yes.
 
@@ -109,6 +113,7 @@ def confirm(prompt: str = "Continue? [y/N]: ") -> bool:
     ans = input(prompt).strip().lower()
     yes_answers = {"y", "yes", "j", "ja"}
     return ans in yes_answers
+
 
 def check_init(objects):
     """Checks if all objects of function to be checked have been initialized correctly.
@@ -145,31 +150,6 @@ def check_init(objects):
 # Region: CAN NETWORK MANAGEMENT
 # ======================================================================
 
-
-def network_scan(node_channel: str):
-    global net
-    if net == None:
-        # 1. Create the base SocketCAN bus object
-        # This is the object that interacts with the Linux kernel
-        bus = can.interface.Bus(
-            channel=node_channel, 
-            bustype='socketcan'
-        )
-
-        
-        
-        # 3. Create a CANopen network and assign the rate-limited bus
-        # This allows CANopen to use the rate-limited transmission logic
-        net = canopen.Network()
-        net.bus = bus
-
-    # Scan for nodes on the network. This call now respects the rate limit.
-    net.scanner.search()
-    
-    # Print found nodes
-    for nid in net.scanner.nodes:
-        print(f"Found node: {nid}")
-
 def network_setup(node_id: int, node_eds: str, node_channel: str):
     global net
     if net == None:
@@ -190,6 +170,33 @@ def network_shutdown():
         # Disconnect from the network
         net.disconnect()
         net = None
+
+
+def send_can_message(net, arbitration_id, data: list):
+    msg = can.Message(arbitration_id, data, is_extended_id=False)
+    net.bus.send(msg)
+
+   
+def sanity_check(net):
+    start = time.time()
+    send_can_message(net, 0x601, [0x40, 0x64, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00])
+    msg_soll = can.Message(
+        arbitration_id=0x581, 
+        data = [0x43, 0x64, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00], 
+        is_extended_id=False
+    )
+    while True:
+        msg_ist = net.recv(1)
+        current = time.time()
+        if (current - start) < 3:
+            if msg_ist is not None:
+                if msg_ist == msg_soll :
+                    return True
+                else: 
+                    raise SanityCheck(f"Sanity Check failed. Message : {msg_ist}")
+        else:
+            print("no answer received after 3 seconds")
+            return False
 
 
 # ======================================================================
@@ -1150,6 +1157,7 @@ def main():
     # Setup our CANopen network
     network, mc1 = network_setup(1, '/home/amfluxpi/AMflux/src/amflux/app/Epos4_70_15.eds', 'can0')
     
+    sanity_check(network)
 
     drive_run(mc1, Operation_Modes.CyclicSynchronousPosition, timeout=5, operation_time=5)
 
