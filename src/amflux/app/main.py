@@ -191,6 +191,7 @@ def sanity_check(net):
         if (current - start) < 3:
             if msg_ist is not None:
                 if (msg_ist.arbitration_id == 0x581 and msg_ist.data[:3] == bytes([0x43, 0x64, 0x60])):
+                    print("INFO:Sanity Check passed.")
                     return True
                 else: 
                     raise SanityCheck(f"Sanity Check failed. Message : {msg_ist}")
