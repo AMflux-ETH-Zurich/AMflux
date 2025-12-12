@@ -173,7 +173,7 @@ def network_shutdown():
 
 
 def send_can_message(net, arbitration_id, data: list):
-    msg = can.Message(arbitration_id, data, is_extended_id=False)
+    msg = can.Message(arbitration_id=arbitration_id, data=data, is_extended_id=False)
     net.bus.send(msg)
 
    
@@ -186,11 +186,11 @@ def sanity_check(net):
         is_extended_id=False
     )
     while True:
-        msg_ist = net.recv(1)
+        msg_ist = net.bus.recv(1)
         current = time.time()
         if (current - start) < 3:
             if msg_ist is not None:
-                if msg_ist == msg_soll :
+                if (msg_ist.arbitration_id == 0x581 and msg_ist.data[:3] == bytes([0x43, 0x64, 0x60])):
                     return True
                 else: 
                     raise SanityCheck(f"Sanity Check failed. Message : {msg_ist}")
