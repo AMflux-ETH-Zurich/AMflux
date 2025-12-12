@@ -78,6 +78,15 @@ class DriveStateResetError(Exception):
     """Raised if DriveState cannot be reset from FAULT"""
     pass
 
+class InitObjDict(Exception):
+    """Raised if object dictionary is not initializable"""
+    pass
+
+
+class DesiredMode(Exception):
+    """Raised if object dictionary is not initializable"""
+    pass
+
 
 # ======================================================================
 # Region: AUXILIARY FUNCTIONS
@@ -837,7 +846,7 @@ class DriveCommand:
     DISABLE_OPERATION   = 0x007           
     FAULT_RESET         = 0x100
 
-map = {DriveState.NOT_READY_TO_SWITCH_ON : [(DriveCommand.SWITCH_ON, DriveState.OPERATION_ENABLED)], 
+DriveStateMap = {DriveState.NOT_READY_TO_SWITCH_ON : [(DriveCommand.SWITCH_ON, DriveState.OPERATION_ENABLED)], 
                   DriveState.SWITCH_ON_DISABLED     : [(DriveCommand.SHUTDOWN, DriveState.READY_TO_SWITCH_ON)], 
                   DriveState.READY_TO_SWITCH_ON     : [(DriveCommand.DISABLE_VOLTAGE, DriveState.SWITCH_ON_DISABLED), 
                                                        (DriveCommand.SWITCH_ON, DriveState.SWITCHED_ON), 
@@ -879,7 +888,7 @@ def wait_for_state(node, desired_state: int, timeout: float = 5.0):
         if current_state == desired_state:
             return True
         if time.time() - start_time > timeout:
-            raise TimeoutError(f"Timeout waiting for state {desired_state:#04x}, current state is {current_state:#04x}")
+            raise TimeoutError(f"Timeout waiting for state {desired_state}, current state is {current_state}")
         time.sleep(0.01)  # Avoid busy waiting
 
 
@@ -943,7 +952,7 @@ def Drive_State_BFS(start_state, target_state, map):
 
 def goto_state(node, desired_state, timeout, operation_time):
     current_state = get_DriveState(node)
-    route = Drive_State_BFS(current_state, desired_state, DriveState.map)
+    route = Drive_State_BFS(current_state, desired_state, DriveStateMap)
 
     if route is None:
         raise DriveStatePathError(f"No valid path to {desired_state} was found")
@@ -989,19 +998,7 @@ def goto_state(node, desired_state, timeout, operation_time):
 # ======================================================================
 
 
-class InitObjDict(Exception):
-    """Raised if object dictionary is not initializable"""
-    pass
-
-
-class DesiredMode(Exception):
-    """Raised if object dictionary is not initializable"""
-    pass
-
-
 objdict_data = toml.load('/home/amfluxpi/AMflux/src/amflux/app/object_dictionary.toml')
-
-
 
 class Operation_Modes:
     ProfilePosition             = 0
@@ -1012,7 +1009,7 @@ class Operation_Modes:
     CyclicSynchronousTorque     = 5
 
 
-""""#vergelich op mode and desired op mmode, handling
+"""vergelich op mode and desired op mmode, handling
     op_mode = Operation_Modes.get()
 
     if op_mode == Operation_Modes.ProfilePosition:
@@ -1029,8 +1026,7 @@ def init_obj_dict(node, desired_mode):
         except InitObjDict as e:
             print(f"There was a problem Initialiting {func}, check dictionary values.")
             raise
-        else:
-            return
+        
     
     encoder_data = objdict_data["encoder"]
     for func_name, params in encoder_data.items():
@@ -1040,8 +1036,7 @@ def init_obj_dict(node, desired_mode):
         except InitObjDict as e:
             print(f"There was a problem Initialiting {func}, check dictionary values.")
             raise
-        else:
-            return
+        
 
     safety_data = objdict_data["safety"]
     for func_name, params in safety_data.items():
@@ -1051,11 +1046,11 @@ def init_obj_dict(node, desired_mode):
         except InitObjDict as e:
             print(f"There was a problem Initialiting {func}, check dictionary values.")
             raise
-        else:
-            return
+        
 
     if desired_mode == Operation_Modes.ProfilePosition:
-        PPM_data = objdict_data["model"]["PPM"]
+        PPM_data = objdict_data["mode"]["PPM"]
+        completion_flag = False
         for func_name, params in PPM_data.items():
             func = globals().get(func_name)
             try:
@@ -1064,9 +1059,10 @@ def init_obj_dict(node, desired_mode):
                 print(f"There was a problem Initialiting {func}, check dictionary values.")
                 raise
             else:
-                return
+                completion_flag = True
+            
     elif desired_mode == Operation_Modes.Homing:
-        HHM_data = objdict_data["model"]["HHM"]
+        HHM_data = objdict_data["mode"]["HHM"]
         for func_name, params in HHM_data.items():
             func = globals().get(func_name)
             try:
@@ -1075,9 +1071,10 @@ def init_obj_dict(node, desired_mode):
                 print(f"There was a problem Initialiting {func}, check dictionary values.")
                 raise
             else:
-                return
+                completion_flag = True
+            
     elif desired_mode == Operation_Modes.ProfileVelocity:
-        PVM_data = objdict_data["model"]["PVM"]
+        PVM_data = objdict_data["mode"]["PVM"]
         for func_name, params in PVM_data.items():
             func = globals().get(func_name)
             try:
@@ -1086,9 +1083,10 @@ def init_obj_dict(node, desired_mode):
                 print(f"There was a problem Initialiting {func}, check dictionary values.")
                 raise
             else:
-                return
+                completion_flag = True
+            
     elif desired_mode == Operation_Modes.CyclicSynchronousPosition:
-        CSP_data = objdict_data["model"]["CSP"]
+        CSP_data = objdict_data["mode"]["CSP"]
         for func_name, params in CSP_data.items():
             func = globals().get(func_name)
             try:
@@ -1097,9 +1095,10 @@ def init_obj_dict(node, desired_mode):
                 print(f"There was a problem Initialiting {func}, check dictionary values.")
                 raise
             else:
-                return
+                completion_flag = True
+            
     elif desired_mode == Operation_Modes.CyclicSynchronousVelocity:
-        CSV_data = objdict_data["model"]["CSV"]
+        CSV_data = objdict_data["mode"]["CSV"]
         for func_name, params in CSV_data.items():
             func = globals().get(func_name)
             try:
@@ -1108,9 +1107,10 @@ def init_obj_dict(node, desired_mode):
                 print(f"There was a problem Initialiting {func}, check dictionary values.")
                 raise
             else:
-                return
+                completion_flag = True
+            
     elif desired_mode == Operation_Modes.CyclicSynchronousTorque:
-        CST_data = objdict_data["model"]["CST"]
+        CST_data = objdict_data["mode"]["CST"]
         for func_name, params in CST_data.items():
             func = globals().get(func_name)
             try:
@@ -1119,10 +1119,11 @@ def init_obj_dict(node, desired_mode):
                 print(f"There was a problem Initialiting {func}, check dictionary values.")
                 raise
             else:
-                return
-    else: 
+                completion_flag = True
+    elif completion_flag == False: 
         raise DesiredMode("No mode of operation selected, or selected mode is not prermittable. Please select a valid mode of operation")
-
+    else:
+        return
 
 
 def drive_run(node, desired_op_mode, timeout, operation_time):
