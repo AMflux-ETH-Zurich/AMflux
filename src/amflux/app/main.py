@@ -151,6 +151,16 @@ def check_init(objects):
 # ======================================================================
 
 def network_setup(node_id: int, node_eds: str, node_channel: str):
+    """Sets up CANopen network and adds node.
+
+    Args:
+        node_id (int): CANopen Node ID of the device.
+        node_eds (str): Path to the EDS file for the device.
+        node_channel (str): CAN interface channel (e.g., 'can0' for Linux SocketCAN).
+
+    Returns:
+        CANopen Network and Node that was added
+    """
     global net
     if net == None:
         # Create a CANopen network
@@ -165,6 +175,7 @@ def network_setup(node_id: int, node_eds: str, node_channel: str):
 
 
 def network_shutdown():
+    """Shuts down the CANopen network after use"""
     global net
     if net != None:
         # Disconnect from the network
@@ -173,11 +184,18 @@ def network_shutdown():
 
 
 def send_can_message(net, arbitration_id, data: list):
+    """Sends and arbitrary CAN message on the CAN bus.
+    
+    Args:
+        arbitration_id (int): CAN ID for the message.
+        data (list): Data payload as a list of integers (0-255).
+    """
     msg = can.Message(arbitration_id=arbitration_id, data=data, is_extended_id=False)
     net.bus.send(msg)
 
    
 def sanity_check(net):
+    """Checks if CAN communication is running by sending a test message and checking for the expected response."""
     start = time.time()
     send_can_message(net, 0x601, [0x40, 0x64, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00])
     msg_soll = can.Message(
@@ -871,6 +889,16 @@ DriveStateMap = {DriveState.NOT_READY_TO_SWITCH_ON : [(DriveCommand.SWITCH_ON, D
                   DriveState.FAULT                  : [(DriveCommand.FAULT_RESET, DriveState.SWITCH_ON_DISABLED)]}
 
 def fault_reset(node, reset_tries: int = 1, timeout: float = 5.0) -> None:
+    """Resets the drive from a FAULT state to SWITCH_ON_DISABLED state.
+    
+    Args:
+        node: The CANopen node representing the drive.
+        reset_tries (int): Number of attempts to reset the fault.
+        timeout (float): Maximum time to wait for the reset to complete.
+        
+    Raises:
+        DriveStateResetError: If the drive does not reach SWITCH_ON_DISABLED state after the specified number of attempts.
+    """
     for attempt in range(reset_tries):
         current_cword = cword_read(node)
         new_cword = current_cword | 0x0080
@@ -882,7 +910,16 @@ def fault_reset(node, reset_tries: int = 1, timeout: float = 5.0) -> None:
 
 
 def wait_for_state(node, desired_state: int, timeout: float = 5.0):
+    """Gives the drive some time to reach the desired state.
     
+    Args:
+        node: The CANopen node representing the drive.
+        desired_state (int): The target drive state to wait for.
+        timeout (float): Maximum time to wait for the desired state.
+        
+    Raises:
+        TimeoutError: If the drive does not reach the desired state within the timeout period.
+    """
     current_state = get_DriveState(node)
 
     if current_state == DriveState.FAULT: 
@@ -1135,7 +1172,14 @@ def init_obj_dict(node, desired_mode):
 
 
 def drive_run(node, desired_op_mode, timeout, operation_time):
+    """Checks if OD is initialized for the desired op mode and runs it if so. Otherwise states OD not initialized
     
+    Args:
+        node: The CANopen node representing the drive.
+        desired_op_mode: The desired operation mode to run.
+        timeout: Maximum time to wait for state transitions.
+        operation_time: Time to maintain the desired operation state.
+    """
     #power check? arduino ok check?
 
     if init_obj_dict(node, desired_op_mode):
