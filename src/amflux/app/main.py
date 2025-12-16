@@ -783,14 +783,35 @@ def motor_type(node, motor_type: int = None):
 
 
 def cword_write(node, value: int):
+    """
+    Writes a value to Controlword.
+    
+    :param node: CANopen Network Node with Controlword instance
+    :param value: Value of Controlword [binary]
+    :type value: int
+    """
     node.sdo[0x6040].raw = value
 
 
 def cword_read(node) -> int:
+    """
+    Reads Controlword.
+    
+    :param node: CANopen Network Node with Controlword instance
+    :return: returns Controlword. [binary]
+    :rtype: int
+    """
     return node.sdo[0x6040].raw
 
 
 def sword(node) -> int:
+    """
+    Reads Statusword.
+    
+    :param node: CANopen Network Node with Statusword instance
+    :return: returns Statusword. [binary]
+    :rtype: int
+    """
     return node.sdo[0x6041].raw
 
 
@@ -800,6 +821,24 @@ def sword(node) -> int:
 
 
 class DriveState:
+    """
+    Represents the operational state of a drive system.
+
+    This class defines a finite state machine with 8 distinct states that a drive
+    can transition through, ranging from disabled/not ready to fully operational or fault
+    conditions. Each state represents a specific operational mode or condition of the drive.
+
+    Attributes:
+        NOT_READY_TO_SWITCH_ON (int): Drive is not ready to be switched on (state 0).
+        SWITCH_ON_DISABLED (int): Switching on is disabled (state 1).
+        READY_TO_SWITCH_ON (int): Drive is ready to be switched on (state 2).
+        SWITCHED_ON (int): Drive is switched on but not operating (state 3).
+        OPERATION_ENABLED (int): Drive is actively operating (state 4).
+        QUICK_STOP_ACTIVE (int): Quick stop is active, drive is stopping (state 5).
+        FAULT_REACTION_ACTIVE (int): Drive is reacting to a fault condition (state 6).
+        FAULT (int): Drive has encountered a fault (state 7).
+        state_flags (dict): Mapping of state indices to boolean flags for state tracking.
+    """ 
     NOT_READY_TO_SWITCH_ON = 0
     SWITCH_ON_DISABLED     = 1
     READY_TO_SWITCH_ON     = 2
@@ -814,7 +853,32 @@ class DriveState:
 
 
 def get_DriveState(node) -> DriveState:
+    """
+    Determine the drive state based on the statusword bits.
+    This function extracts specific bits from a statusword obtained from a node
+    and maps the bit pattern to a corresponding DriveState enum value. It evaluates
+    the state machine bits (Ready to switch on, Switched on, Operation enabled, Fault,
+    Quick stop, and Switch on disabled) to determine the current drive operational state.
 
+
+    Args:
+        node (int): The node object from which to retrieve the statusword.
+
+    Raises:
+        DriveStateDetError: If the statusword bit pattern does not match any known 
+        drive state, indicating an invalid or unexpected state combination.
+    
+    Returns:
+        DriveState:  An enum value representing the current drive state, which can be:
+                        - NOT_READY_TO_SWITCH_ON
+                        - SWITCH_ON_DISABLED
+                        - READY_TO_SWITCH_ON
+                        - SWITCHED_ON
+                        - OPERATION_ENABLED
+                        - QUICK_STOP_ACTIVE
+                        - FAULT_REACTION_ACTIVE
+                        - FAULT
+    """      
     statusword = sword(node)
 
     b0 = (statusword >> 0) & 1  # Ready to switch on (compares right most bit)
@@ -864,6 +928,14 @@ def get_DriveState(node) -> DriveState:
 # ======================================================================
 
 class DriveCommand: 
+    """
+    Enumeration of CiA 402 drive commands for motor control operations.
+
+    This class defines standard control commands used to manage the operational state
+    of a drive, including startup, shutdown, and fault handling procedures following
+    the CANopen DS402 device profile specification.
+    """
+    
     SHUTDOWN            = 0x006 #maybe normal ints
     SWITCH_ON           = 0x007
     ENABLE_OPERATION    = 0x00F
@@ -937,8 +1009,23 @@ def wait_for_state(node, desired_state: int, timeout: float = 5.0):
         time.sleep(0.01)  # Avoid busy waiting
 
 
-def do_DriveCommand(node, command: int, target, timeout) -> True:
+def do_DriveCommand(node, command: int, target: DriveState, timeout: int) -> True:
+    """
+    Sets the DS402 Controlword for the given command on node and waits until the drive reaches the target state within timeout. 
+    Special-cases FAULT_RESET by calling fault_reset() instead of writing the normal command bits.
+    
+    Args:
+        node (int): EPOS4 Node
+        command (DriveCommand): desired DriveCommand
+        target (DriveState): expected DriveState after completing function
+        timeout (int)
 
+    Raises:
+        TimeoutError: raises if State cannot be switched within timeout
+
+    Returns:
+        True: returns True if successfull, else Exception error is raised.
+    """    
     current_cword = cword_read(node)
 
     # Special case: Fault reset (set bit 7, keep all other bits)
@@ -958,7 +1045,19 @@ def do_DriveCommand(node, command: int, target, timeout) -> True:
     raise TimeoutError(f"Failed to reach state {target} in time")
     
 
-def Drive_State_BFS(start_state, target_state, map):
+def Drive_State_BFS(start_state, target_state, Drive_State_map):
+    """Naive breadth-firs-search algorithm to traverse DriveState map.  
+       ATTENTION: THIS FUNCTION IS 100% WRITTEN BY AI
+
+    Args:
+        start_state (DriveState): Current drive state.
+        target_state (DriveState): Desired drive state.
+        drive_state_map (dict): Mapping {state: [(command, next_state), ...]}.
+
+    Returns:
+        list[tuple[DriveCommand, DriveState]] | None:
+            A route as (command, reached_state) steps, or None if no path exists.
+    """    
     
     if start_state == target_state:
         return []
@@ -973,7 +1072,7 @@ def Drive_State_BFS(start_state, target_state, map):
         if current == target_state:
             break
         
-        for command, next_state in map.get(current, []):
+        for command, next_state in Drive_State_map.get(current, []):
             if next_state not in visited:
                 visited.add(next_state)
                 parent[next_state] = (current, command)
@@ -996,7 +1095,20 @@ def Drive_State_BFS(start_state, target_state, map):
 
 
 def goto_state(node, desired_state, timeout, operation_time):
+    """Traverses state-machine to get to desired DriveState
+
+    Args:
+        node (int): EPOS4 node
+        desired_state (DriveState): State to be reached.
+        timeout (int): timeout for do_DriveCommand()
+        operation_time (int): timeout for goto_state()
+
+    Raises:
+        DriveStatePathError: raised if route cannot be found/is not valid
+        DesiredDriveStateError: raised if goto_state() fails generally
+    """   
     current_state = get_DriveState(node)
+    
     route = Drive_State_BFS(current_state, desired_state, DriveStateMap)
 
     if route is None:
@@ -1045,7 +1157,7 @@ def goto_state(node, desired_state, timeout, operation_time):
 
 objdict_data = toml.load('/home/amfluxpi/AMflux/src/amflux/app/object_dictionary.toml')
 
-class Operation_Modes:
+class OperationModes:
     ProfilePosition             = 0
     Homing                      = 1
     ProfileVelocity             = 2
@@ -1055,14 +1167,23 @@ class Operation_Modes:
 
 
 """vergelich op mode and desired op mmode, handling
-    op_mode = Operation_Modes.get()
+    op_mode = OperationModes.get()
 
-    if op_mode == Operation_Modes.ProfilePosition:
+    if op_mode == OperationModes.ProfilePosition:
         for func in objdict_data["mode"]["PPM"]["PLACEHOLDER"]:
             func(["mode"]["PPM"]["PLACEHOLDER"]["PLACEHOLDER2"])
 """
 
 def init_obj_dict(node, desired_mode):
+    """Initializes all the object dictionary instances with helper functions. Values are read from object_dictionary.toml file.
+
+    Args:
+        node (int): EPOS4 node
+        desired_mode (OperationModes): OperationMode to be reached after initialization.
+
+    Raises:
+        DesiredMode: raised if no desired mode is given
+    """    
     motor_data = objdict_data["motor"]
     for func_name, params in motor_data.items():
         func = globals().get(func_name)
@@ -1093,7 +1214,7 @@ def init_obj_dict(node, desired_mode):
             raise
         
 
-    if desired_mode == Operation_Modes.ProfilePosition:
+    if desired_mode == OperationModes.ProfilePosition:
         PPM_data = objdict_data["mode"]["PPM"]
         completion_flag = False
         for func_name, params in PPM_data.items():
@@ -1106,7 +1227,7 @@ def init_obj_dict(node, desired_mode):
             else:
                 completion_flag = True
             
-    elif desired_mode == Operation_Modes.Homing:
+    elif desired_mode == OperationModes.Homing:
         HHM_data = objdict_data["mode"]["HHM"]
         for func_name, params in HHM_data.items():
             func = globals().get(func_name)
@@ -1118,7 +1239,7 @@ def init_obj_dict(node, desired_mode):
             else:
                 completion_flag = True
             
-    elif desired_mode == Operation_Modes.ProfileVelocity:
+    elif desired_mode == OperationModes.ProfileVelocity:
         PVM_data = objdict_data["mode"]["PVM"]
         for func_name, params in PVM_data.items():
             func = globals().get(func_name)
@@ -1130,7 +1251,7 @@ def init_obj_dict(node, desired_mode):
             else:
                 completion_flag = True
             
-    elif desired_mode == Operation_Modes.CyclicSynchronousPosition:
+    elif desired_mode == OperationModes.CyclicSynchronousPosition:
         CSP_data = objdict_data["mode"]["CSP"]
         for func_name, params in CSP_data.items():
             func = globals().get(func_name)
@@ -1142,7 +1263,7 @@ def init_obj_dict(node, desired_mode):
             else:
                 completion_flag = True
             
-    elif desired_mode == Operation_Modes.CyclicSynchronousVelocity:
+    elif desired_mode == OperationModes.CyclicSynchronousVelocity:
         CSV_data = objdict_data["mode"]["CSV"]
         for func_name, params in CSV_data.items():
             func = globals().get(func_name)
@@ -1154,7 +1275,7 @@ def init_obj_dict(node, desired_mode):
             else:
                 completion_flag = True
             
-    elif desired_mode == Operation_Modes.CyclicSynchronousTorque:
+    elif desired_mode == OperationModes.CyclicSynchronousTorque:
         CST_data = objdict_data["mode"]["CST"]
         for func_name, params in CST_data.items():
             func = globals().get(func_name)
@@ -1204,7 +1325,7 @@ def main():
     
     sanity_check(network)
 
-    drive_run(mc1, Operation_Modes.CyclicSynchronousPosition, timeout=5, operation_time=5)
+    drive_run(mc1, OperationModes.CyclicSynchronousPosition, timeout=5, operation_time=5)
 
     print("Drive completed run. Network will be shutdown")
 
