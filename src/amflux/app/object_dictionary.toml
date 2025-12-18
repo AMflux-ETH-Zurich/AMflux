@@ -144,34 +144,41 @@ max_acc = 67
 # Profile Position Mode (PPM)
 # ----------------------------
 
-[mode.PPM]
+#CONFIGURATION PARAMETERS
 
-[mode.PPM.current_control_parameter_init]
-p_gain = 67
-i_gain = 67
+    [mode.PPM.conf.software_position_limit]
+    min_pos_limit = 67
+    max_pos_limit = 67
 
-[mode.PPM.position_control_parameter_init]
-p_gain         = 67
-i_gain         = 67
-d_gain         = 67
-ffv_gain       = 67
-ffa_gain       = 67
-i_gain_si_unit = 67
+    [mode.PPM.conf.max_profile_velocity]
+    max_velocity = 67
 
-[mode.PPM.profile_velocity]
-prof_velocity = 67
+    [mode.PPM.conf.max_motor_speed]
+    max_velocity = 67
 
-[mode.PPM.profile_acceleration]
-prof_acc = 67
+    [mode.PPM.conf.quick_stop_deceleration]
+    prof_dec = 67
 
-[mode.PPM.profile_deceleration]
-prof_dec = 67
+    [mode.PPM.max_acceleration]
+    max_acc = 67
 
-[mode.PPM.quick_stop_deceleration]
-prof_dec = 67
 
-[mode.PPM.target_position]
-position = 67
+#COMMANDING PARAMETERS
+
+    [mode.PPM.comm.target_position]
+    position = 89
+
+    [mode.PPM.comm.profile_velocity]
+    prof_velocity = 89
+
+    [mode.PPM.comm.profile_acceleration]
+    prof_acc = 89
+
+    [mode.PPM.comm.profile_deceleration]
+    prof_dec = 89
+
+
+
 
 
 # ----------------------------
