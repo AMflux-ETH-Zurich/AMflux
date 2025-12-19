@@ -27,8 +27,8 @@ operation_modes = [
 
 def button_func(window: ControlWindow):
     opt.get()
-    if window
-    landing_text_var.set("")
+    if window == 0:
+        landing_text_var.set("")
 
 
 
