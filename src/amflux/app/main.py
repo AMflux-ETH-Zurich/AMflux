@@ -899,7 +899,7 @@ def get_DriveState(node) -> DriveState:
         return DriveState.NOT_READY_TO_SWITCH_ON
 
     # Switch on disabled
-    if (b6 == 1 and b5 == 1 and b3 == 0 and b2 == 0 and b1 == 0 and b0 == 0):
+    if (b6 == 1 and b5 == 0 and b3 == 0 and b2 == 0 and b1 == 0 and b0 == 0):
         return DriveState.SWITCH_ON_DISABLED
 
     # Ready to switch on
