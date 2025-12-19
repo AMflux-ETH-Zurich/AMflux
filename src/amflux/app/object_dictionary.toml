@@ -159,7 +159,7 @@ max_acc = 67
     [mode.PPM.conf.quick_stop_deceleration]
     prof_dec = 67
 
-    [mode.PPM.max_acceleration]
+    [mode.PPM.conf.max_acceleration]
     max_acc = 67
 
 

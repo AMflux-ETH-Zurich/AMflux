@@ -1305,7 +1305,7 @@ def drive_run(node, desired_op_mode, timeout, operation_time):
         timeout: Maximum time to wait for state transitions.
         operation_time: Time to maintain the desired operation state.
     """
-    #TODO: power check? arduino ok check? Mode of operation write and display
+    #TODO: power check? arduino ok check? Mode of operation write and display. adjust TOML file for COMM and CONF
 
     if init_obj_dict(node, desired_op_mode):
         mode_code = OperationModes.abreviation[desired_op_mode]
@@ -1335,9 +1335,7 @@ def drive_run(node, desired_op_mode, timeout, operation_time):
             current_time = time.time()
             #TODO: continous Control word and commanding params handling. Fault mode watching
             time.sleep()
-            
-
-
+          
 
 
 
