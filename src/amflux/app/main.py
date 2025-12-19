@@ -32,7 +32,9 @@ import canopen
 import keyboard
 import can
 import toml
-
+import utils
+import can_functions
+import object_dictionary_functions
 
 import warnings
 from typing import Mapping, Hashable, Dict, Any
@@ -91,10 +93,11 @@ class DesiredMode(Exception):
 class SanityCheck(Exception):
     """Raised if Sanity Check fails"""
     pass
+
 # ======================================================================
 # Region: AUXILIARY FUNCTIONS
 # ======================================================================
-
+'''
 
 def removekey(d: Mapping[str, Any], key: Hashable) -> Dict[str, Any]:
     """Return a shallow copy of mapping `d` with `key` removed."""
@@ -144,12 +147,12 @@ def check_init(objects):
         if value is not None and (value == "67" or value == 67):
             raise InitializationError(f"{name} is not initialized correctly. Please enter a valid value for {name}.")
     return True 
-            
+'''
 
 # ======================================================================
 # Region: CAN NETWORK MANAGEMENT
 # ======================================================================
-
+'''
 def network_setup(node_id: int, node_eds: str, node_channel: str):
     """Sets up CANopen network and adds node.
 
@@ -216,12 +219,12 @@ def sanity_check(net):
         else:
             print("no answer received after 3 seconds")
             return False
-
+'''
 
 # ======================================================================
 # Region: EPOS4 INITIALIZATION FUNCTIONS
 # ======================================================================
-
+'''
 """
 Initialization and configuration functions for EPOS4 motor controllers.
 Each initialization or configuration function corresponds to a section in the EPOS4 Communication Guide. 
@@ -666,6 +669,12 @@ def quick_stop_deceleration(node, prof_dec: int = None):
     #defines the deceleration used during a profiled move (ppm, pvm), value is given in rpm/s
     node.sdo[0x6085].raw = prof_dec if prof_dec is not None else 10000
 
+def motion_profile_type(node, profile: int = None):
+    #6.2.124
+    check_init(locals())
+    #defines the deceleration used during a profiled move (ppm, pvm), value is given in rpm/s
+    node.sdo[0x6086].raw = profile if profile is not None else 0
+
 
 def homing_method_init(node, homing_method: int = None):
     #6.2.125
@@ -773,7 +782,7 @@ def motor_type(node, motor_type: int = None):
     check_init(locals())
     #motor type (DC = 1, Sinusoidal PM BL motor = 10, Trapezoidal PM BL motor = 11)
     node.sdo[0x6402].raw = motor_type if motor_type is not None else 10
-
+'''
 
 # ======================================================================
 # ======================================================================
@@ -848,7 +857,6 @@ class DriveState:
     FAULT_REACTION_ACTIVE  = 6
     FAULT                  = 7
     
-
 
 def get_DriveState(node) -> DriveState:
     """
@@ -942,6 +950,7 @@ class DriveCommand:
     DISABLE_OPERATION   = 0x007           
     FAULT_RESET         = 0x100
 
+
 DriveStateMap = {DriveState.NOT_READY_TO_SWITCH_ON : [(DriveCommand.SWITCH_ON, DriveState.OPERATION_ENABLED)], 
                   DriveState.SWITCH_ON_DISABLED     : [(DriveCommand.SHUTDOWN, DriveState.READY_TO_SWITCH_ON)], 
                   DriveState.READY_TO_SWITCH_ON     : [(DriveCommand.DISABLE_VOLTAGE, DriveState.SWITCH_ON_DISABLED), 
@@ -957,6 +966,7 @@ DriveStateMap = {DriveState.NOT_READY_TO_SWITCH_ON : [(DriveCommand.SWITCH_ON, D
                   DriveState.QUICK_STOP_ACTIVE      : [(DriveCommand.ENABLE_OPERATION, DriveState.OPERATION_ENABLED), 
                                                        (DriveCommand.DISABLE_VOLTAGE, DriveState.SWITCH_ON_DISABLED)],
                   DriveState.FAULT                  : [(DriveCommand.FAULT_RESET, DriveState.SWITCH_ON_DISABLED)]}
+
 
 def fault_reset(node, reset_tries: int = 1, timeout: float = 5.0) -> None:
     """Resets the drive from a FAULT state to SWITCH_ON_DISABLED state.
@@ -1170,12 +1180,11 @@ class OperationModes:
     CyclicSynchronousTorque     = 5
     abreviation = {
         ProfilePosition:            "PPM", 
-        Homing:                     "HHM",
+        Homing:                     "HMM",
         ProfileVelocity:            "PVM",
         CyclicSynchronousPosition:  "CSP",
         CyclicSynchronousVelocity:  "CVP", 
         CyclicSynchronousTorque:    "CTP"}
-
 
 
 def init_obj_dict(node, desired_mode):
@@ -1190,7 +1199,7 @@ def init_obj_dict(node, desired_mode):
     """    
     motor_data = objdict_data["motor"]
     for func_name, params in motor_data.items():
-        func = globals().get(func_name)
+        func = globals().get(object_dictionary_functions.func_name)
         try:
             func(node, **params)
         except InitObjDict as e:
@@ -1200,7 +1209,7 @@ def init_obj_dict(node, desired_mode):
     
     encoder_data = objdict_data["encoder"]
     for func_name, params in encoder_data.items():
-        func = globals().get(func_name)
+        func = globals().get(object_dictionary_functions.func_name)
         try:
             func(node, **params)
         except InitObjDict as e:
@@ -1210,7 +1219,7 @@ def init_obj_dict(node, desired_mode):
 
     safety_data = objdict_data["safety"]
     for func_name, params in safety_data.items():
-        func = globals().get(func_name)
+        func = globals().get(object_dictionary_functions.func_name)
         try:
             func(node, **params)
         except InitObjDict as e:
@@ -1222,7 +1231,7 @@ def init_obj_dict(node, desired_mode):
         PPM_data = objdict_data["mode"]["PPM"]["conf"]
         completion_flag = False
         for func_name, params in PPM_data.items():
-            func = globals().get(func_name)
+            func = globals().get(object_dictionary_functions.func_name)
             try:
                 func(node, **params)
             except InitObjDict as e:
@@ -1232,9 +1241,9 @@ def init_obj_dict(node, desired_mode):
                 completion_flag = True
             
     elif desired_mode == OperationModes.Homing:
-        HHM_data = objdict_data["mode"]["HHM"]["conf"]
-        for func_name, params in HHM_data.items():
-            func = globals().get(func_name)
+        HMM_data = objdict_data["mode"]["HMM"]["conf"]
+        for func_name, params in HMM_data.items():
+            func = globals().get(object_dictionary_functions.func_name)
             try:
                 func(node, **params)
             except InitObjDict as e:
@@ -1246,7 +1255,7 @@ def init_obj_dict(node, desired_mode):
     elif desired_mode == OperationModes.ProfileVelocity:
         PVM_data = objdict_data["mode"]["PVM"]["conf"]
         for func_name, params in PVM_data.items():
-            func = globals().get(func_name)
+            func = globals().get(object_dictionary_functions.func_name)
             try:
                 func(node, **params)
             except InitObjDict as e:
@@ -1258,7 +1267,7 @@ def init_obj_dict(node, desired_mode):
     elif desired_mode == OperationModes.CyclicSynchronousPosition:
         CSP_data = objdict_data["mode"]["CSP"]["conf"]
         for func_name, params in CSP_data.items():
-            func = globals().get(func_name)
+            func = globals().get(object_dictionary_functions.func_name)
             try:
                 func(node, **params)
             except InitObjDict as e:
@@ -1270,7 +1279,7 @@ def init_obj_dict(node, desired_mode):
     elif desired_mode == OperationModes.CyclicSynchronousVelocity:
         CSV_data = objdict_data["mode"]["CSV"]["conf"]
         for func_name, params in CSV_data.items():
-            func = globals().get(func_name)
+            func = globals().get(object_dictionary_functions.func_name)
             try:
                 func(node, **params)
             except InitObjDict as e:
@@ -1282,7 +1291,7 @@ def init_obj_dict(node, desired_mode):
     elif desired_mode == OperationModes.CyclicSynchronousTorque:
         CST_data = objdict_data["mode"]["CST"]["conf"]
         for func_name, params in CST_data.items():
-            func = globals().get(func_name)
+            func = globals().get(object_dictionary_functions.func_name)
             try:
                 func(node, **params)
             except InitObjDict as e:
@@ -1310,7 +1319,7 @@ def drive_run(node, desired_op_mode, timeout, operation_time):
     if init_obj_dict(node, desired_op_mode):
         mode_code = OperationModes.abreviation[desired_op_mode]
         for func_name, instance in objdict_data["mode"][mode_code]["comm"].items():
-            func = globals().get(func_name)
+            func = globals().get(object_dictionary_functions.func_name)
             kwargs = {}
             for variable, default_val in instance.items(): 
                 user_val = input(f"Please enter value for {func_name} -> {variable}.\n Press Enter, if {default_val} is ok.").strip()
@@ -1356,15 +1365,15 @@ def drive_run(node, desired_op_mode, timeout, operation_time):
 def main():
     global net
     # Setup our CANopen network
-    network, mc1 = network_setup(1, '/home/amfluxpi/AMflux/src/amflux/app/Epos4_70_15.eds', 'can0')
+    network, mc1 = can_functions.network_setup(1, '/home/amfluxpi/AMflux/src/amflux/app/Epos4_70_15.eds', 'can0')
     
-    sanity_check(network)
+    can_functions.sanity_check(network)
 
     drive_run(mc1, OperationModes.CyclicSynchronousPosition, timeout=5, operation_time=5)
 
     print("Drive completed run. Network will be shutdown")
 
-    network_shutdown()
+    can_functions.network_shutdown()
 
     '''
     # CST mode is under int=10 (Firmware-Specification, p219)
