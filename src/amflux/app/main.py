@@ -15,7 +15,7 @@ Structure:
     1. Auxiliary Helpers
     2. CAN Network Management
     3. Device Initialization Functions
-    4. Main Motor Control
+    4. State Machine Control
 
 This module intentionally mirrors the structure of the EPOS4 documentation
 (Communication Guide, Firmware Specification), providing clear mapping from
@@ -32,7 +32,9 @@ import canopen
 import keyboard
 import can
 import toml
-
+import utils
+import can_functions
+import object_dictionary_functions
 
 import warnings
 from typing import Mapping, Hashable, Dict, Any
@@ -91,10 +93,11 @@ class DesiredMode(Exception):
 class SanityCheck(Exception):
     """Raised if Sanity Check fails"""
     pass
+
 # ======================================================================
 # Region: AUXILIARY FUNCTIONS
 # ======================================================================
-
+'''
 
 def removekey(d: Mapping[str, Any], key: Hashable) -> Dict[str, Any]:
     """Return a shallow copy of mapping `d` with `key` removed."""
@@ -144,12 +147,12 @@ def check_init(objects):
         if value is not None and (value == "67" or value == 67):
             raise InitializationError(f"{name} is not initialized correctly. Please enter a valid value for {name}.")
     return True 
-            
+'''
 
 # ======================================================================
 # Region: CAN NETWORK MANAGEMENT
 # ======================================================================
-
+'''
 def network_setup(node_id: int, node_eds: str, node_channel: str):
     """Sets up CANopen network and adds node.
 
@@ -216,12 +219,12 @@ def sanity_check(net):
         else:
             print("no answer received after 3 seconds")
             return False
-
+'''
 
 # ======================================================================
 # Region: EPOS4 INITIALIZATION FUNCTIONS
 # ======================================================================
-
+'''
 """
 Initialization and configuration functions for EPOS4 motor controllers.
 Each initialization or configuration function corresponds to a section in the EPOS4 Communication Guide. 
@@ -666,6 +669,12 @@ def quick_stop_deceleration(node, prof_dec: int = None):
     #defines the deceleration used during a profiled move (ppm, pvm), value is given in rpm/s
     node.sdo[0x6085].raw = prof_dec if prof_dec is not None else 10000
 
+def motion_profile_type(node, profile: int = None):
+    #6.2.124
+    check_init(locals())
+    #defines the deceleration used during a profiled move (ppm, pvm), value is given in rpm/s
+    node.sdo[0x6086].raw = profile if profile is not None else 0
+
 
 def homing_method_init(node, homing_method: int = None):
     #6.2.125
@@ -773,7 +782,7 @@ def motor_type(node, motor_type: int = None):
     check_init(locals())
     #motor type (DC = 1, Sinusoidal PM BL motor = 10, Trapezoidal PM BL motor = 11)
     node.sdo[0x6402].raw = motor_type if motor_type is not None else 10
-
+'''
 
 # ======================================================================
 # ======================================================================
@@ -847,10 +856,7 @@ class DriveState:
     QUICK_STOP_ACTIVE      = 5
     FAULT_REACTION_ACTIVE  = 6
     FAULT                  = 7
-    state_flags = {
-        0: False, 1:False, 2:False, 3:False, 4:False, 5:False, 6:False
-    }
-
+    
 
 def get_DriveState(node) -> DriveState:
     """
@@ -944,6 +950,7 @@ class DriveCommand:
     DISABLE_OPERATION   = 0x007           
     FAULT_RESET         = 0x100
 
+
 DriveStateMap = {DriveState.NOT_READY_TO_SWITCH_ON : [(DriveCommand.SWITCH_ON, DriveState.OPERATION_ENABLED)], 
                   DriveState.SWITCH_ON_DISABLED     : [(DriveCommand.SHUTDOWN, DriveState.READY_TO_SWITCH_ON)], 
                   DriveState.READY_TO_SWITCH_ON     : [(DriveCommand.DISABLE_VOLTAGE, DriveState.SWITCH_ON_DISABLED), 
@@ -960,6 +967,7 @@ DriveStateMap = {DriveState.NOT_READY_TO_SWITCH_ON : [(DriveCommand.SWITCH_ON, D
                                                        (DriveCommand.DISABLE_VOLTAGE, DriveState.SWITCH_ON_DISABLED)],
                   DriveState.FAULT                  : [(DriveCommand.FAULT_RESET, DriveState.SWITCH_ON_DISABLED)]}
 
+
 def fault_reset(node, reset_tries: int = 1, timeout: float = 5.0) -> None:
     """Resets the drive from a FAULT state to SWITCH_ON_DISABLED state.
     
@@ -971,7 +979,7 @@ def fault_reset(node, reset_tries: int = 1, timeout: float = 5.0) -> None:
     Raises:
         DriveStateResetError: If the drive does not reach SWITCH_ON_DISABLED state after the specified number of attempts.
     """
-    for attempt in range(reset_tries):
+    for _ in range(reset_tries):
         current_cword = cword_read(node)
         new_cword = current_cword | 0x0080
         cword_write(node, new_cword)
@@ -992,16 +1000,16 @@ def wait_for_state(node, desired_state: int, timeout: float = 5.0):
     Raises:
         TimeoutError: If the drive does not reach the desired state within the timeout period.
     """
-    current_state = get_DriveState(node)
-
-    if current_state == DriveState.FAULT: 
-            fault_reset(node, reset_tries=3, timeout=timeout)
-            time.sleep(0.05)
     
     start_time = time.time()
 
     while True:                                                                    
         current_state = get_DriveState(node) 
+        if current_state == DriveState.FAULT: 
+            print("ATTENTION: Fault Reaction Active. Reset Drive? (3 tries)")
+            if confirm():
+                fault_reset(node, reset_tries=3, timeout=timeout)
+                time.sleep(0.05)
         if current_state == desired_state:
             return True
         if time.time() - start_time > timeout:
@@ -1033,16 +1041,25 @@ def do_DriveCommand(node, command: int, target: DriveState, timeout: int) -> Tru
         fault_reset(node, reset_tries=3, timeout=timeout)
         return True
 
-    low  = command & 0x00FF
+    low  = command & 0x00FF #Otto sagt aufpassen!
     high = current_cword & 0xFF00
     new_cword = high | low
 
     cword_write(node, new_cword)
 
     if(wait_for_state(node, target, timeout)):
-        return True
+        return #True
 
     raise TimeoutError(f"Failed to reach state {target} in time")
+
+
+def shutdown_drive(node):
+    current_state = get_DriveState()
+
+    if current_state == DriveState.OPERATION_ENABLED or current_state == DriveState.QUICK_STOP_ACTIVE:
+        do_DriveCommand(DriveCommand.DISABLE_VOLTAGE)
+    elif current_state == DriveState.SWITCHED_ON:
+        do_DriveCommand(DriveCommand.SHUTDOWN)
     
 
 def Drive_State_BFS(start_state, target_state, Drive_State_map):
@@ -1094,14 +1111,13 @@ def Drive_State_BFS(start_state, target_state, Drive_State_map):
     return route
 
 
-def goto_state(node, desired_state, timeout, operation_time):
+def goto_state(node, desired_state, timeout):
     """Traverses state-machine to get to desired DriveState
 
     Args:
         node (int): EPOS4 node
         desired_state (DriveState): State to be reached.
         timeout (int): timeout for do_DriveCommand()
-        operation_time (int): timeout for goto_state()
 
     Raises:
         DriveStatePathError: raised if route cannot be found/is not valid
@@ -1121,14 +1137,17 @@ def goto_state(node, desired_state, timeout, operation_time):
             do_DriveCommand(node, next_command, next_state, timeout)
         except DriveStateDetError as e:
             # Specific drive-state errors you expect
+            shutdown_drive()
             print(f"Drive state determination error: {e}")
             raise
         except TimeoutError as e:
             # Timeout errors from nested calls
+            shutdown_drive()
             print(f"Timeout during state transition: {e}")
             raise
         except Exception as e:
             # Unexpected errors—log and fail fast
+            shutdown_drive()
             print(f"Unexpected error: {e} current State: {get_DriveState(node)}")
             raise
         finally:
@@ -1136,16 +1155,10 @@ def goto_state(node, desired_state, timeout, operation_time):
             print(f"Attempted transition to {next_state}")
 
         
-    
     final_state = get_DriveState(node)
-    start_time = time.time()
+    
     if final_state == desired_state:
-        while True:
-            current_time = time.time()
-            if (current_time - start_time) > operation_time:
-                print("Operation was completed faultless")
-                return
-            time.sleep(1)
+        return
     else:
         raise DesiredDriveStateError(f"{desired_state} state could not be reached. Current state: {final_state}")
 
@@ -1154,8 +1167,9 @@ def goto_state(node, desired_state, timeout, operation_time):
 # Region: OPERATING MODES
 # ======================================================================
 
+with open('/home/amfluxpi/AMflux/src/amflux/app/object_dictionary.toml', 'r') as data:
+    objdict_data = toml.load(data)
 
-objdict_data = toml.load('/home/amfluxpi/AMflux/src/amflux/app/object_dictionary.toml')
 
 class OperationModes:
     ProfilePosition             = 0
@@ -1164,15 +1178,14 @@ class OperationModes:
     CyclicSynchronousPosition   = 3
     CyclicSynchronousVelocity   = 4
     CyclicSynchronousTorque     = 5
+    abreviation = {
+        ProfilePosition:            "PPM", 
+        Homing:                     "HMM",
+        ProfileVelocity:            "PVM",
+        CyclicSynchronousPosition:  "CSP",
+        CyclicSynchronousVelocity:  "CVP", 
+        CyclicSynchronousTorque:    "CTP"}
 
-
-"""vergelich op mode and desired op mmode, handling
-    op_mode = OperationModes.get()
-
-    if op_mode == OperationModes.ProfilePosition:
-        for func in objdict_data["mode"]["PPM"]["PLACEHOLDER"]:
-            func(["mode"]["PPM"]["PLACEHOLDER"]["PLACEHOLDER2"])
-"""
 
 def init_obj_dict(node, desired_mode):
     """Initializes all the object dictionary instances with helper functions. Values are read from object_dictionary.toml file.
@@ -1186,7 +1199,7 @@ def init_obj_dict(node, desired_mode):
     """    
     motor_data = objdict_data["motor"]
     for func_name, params in motor_data.items():
-        func = globals().get(func_name)
+        func = globals().get(object_dictionary_functions.func_name)
         try:
             func(node, **params)
         except InitObjDict as e:
@@ -1196,7 +1209,7 @@ def init_obj_dict(node, desired_mode):
     
     encoder_data = objdict_data["encoder"]
     for func_name, params in encoder_data.items():
-        func = globals().get(func_name)
+        func = globals().get(object_dictionary_functions.func_name)
         try:
             func(node, **params)
         except InitObjDict as e:
@@ -1206,7 +1219,7 @@ def init_obj_dict(node, desired_mode):
 
     safety_data = objdict_data["safety"]
     for func_name, params in safety_data.items():
-        func = globals().get(func_name)
+        func = globals().get(object_dictionary_functions.func_name)
         try:
             func(node, **params)
         except InitObjDict as e:
@@ -1215,10 +1228,10 @@ def init_obj_dict(node, desired_mode):
         
 
     if desired_mode == OperationModes.ProfilePosition:
-        PPM_data = objdict_data["mode"]["PPM"]
+        PPM_data = objdict_data["mode"]["PPM"]["conf"]
         completion_flag = False
         for func_name, params in PPM_data.items():
-            func = globals().get(func_name)
+            func = globals().get(object_dictionary_functions.func_name)
             try:
                 func(node, **params)
             except InitObjDict as e:
@@ -1228,9 +1241,9 @@ def init_obj_dict(node, desired_mode):
                 completion_flag = True
             
     elif desired_mode == OperationModes.Homing:
-        HHM_data = objdict_data["mode"]["HHM"]
-        for func_name, params in HHM_data.items():
-            func = globals().get(func_name)
+        HMM_data = objdict_data["mode"]["HMM"]["conf"]
+        for func_name, params in HMM_data.items():
+            func = globals().get(object_dictionary_functions.func_name)
             try:
                 func(node, **params)
             except InitObjDict as e:
@@ -1240,9 +1253,9 @@ def init_obj_dict(node, desired_mode):
                 completion_flag = True
             
     elif desired_mode == OperationModes.ProfileVelocity:
-        PVM_data = objdict_data["mode"]["PVM"]
+        PVM_data = objdict_data["mode"]["PVM"]["conf"]
         for func_name, params in PVM_data.items():
-            func = globals().get(func_name)
+            func = globals().get(object_dictionary_functions.func_name)
             try:
                 func(node, **params)
             except InitObjDict as e:
@@ -1252,9 +1265,9 @@ def init_obj_dict(node, desired_mode):
                 completion_flag = True
             
     elif desired_mode == OperationModes.CyclicSynchronousPosition:
-        CSP_data = objdict_data["mode"]["CSP"]
+        CSP_data = objdict_data["mode"]["CSP"]["conf"]
         for func_name, params in CSP_data.items():
-            func = globals().get(func_name)
+            func = globals().get(object_dictionary_functions.func_name)
             try:
                 func(node, **params)
             except InitObjDict as e:
@@ -1264,9 +1277,9 @@ def init_obj_dict(node, desired_mode):
                 completion_flag = True
             
     elif desired_mode == OperationModes.CyclicSynchronousVelocity:
-        CSV_data = objdict_data["mode"]["CSV"]
+        CSV_data = objdict_data["mode"]["CSV"]["conf"]
         for func_name, params in CSV_data.items():
-            func = globals().get(func_name)
+            func = globals().get(object_dictionary_functions.func_name)
             try:
                 func(node, **params)
             except InitObjDict as e:
@@ -1276,9 +1289,9 @@ def init_obj_dict(node, desired_mode):
                 completion_flag = True
             
     elif desired_mode == OperationModes.CyclicSynchronousTorque:
-        CST_data = objdict_data["mode"]["CST"]
+        CST_data = objdict_data["mode"]["CST"]["conf"]
         for func_name, params in CST_data.items():
-            func = globals().get(func_name)
+            func = globals().get(object_dictionary_functions.func_name)
             try:
                 func(node, **params)
             except InitObjDict as e:
@@ -1286,10 +1299,10 @@ def init_obj_dict(node, desired_mode):
                 raise
             else:
                 completion_flag = True
-    elif completion_flag == False: 
+    elif completion_flag == False: #TODO: check if this works wit else/completion flag. does it get called?
         raise DesiredMode("No mode of operation selected, or selected mode is not prermittable. Please select a valid mode of operation")
     else:
-        return
+        return True
 
 
 def drive_run(node, desired_op_mode, timeout, operation_time):
@@ -1301,10 +1314,41 @@ def drive_run(node, desired_op_mode, timeout, operation_time):
         timeout: Maximum time to wait for state transitions.
         operation_time: Time to maintain the desired operation state.
     """
-    #power check? arduino ok check?
+    #TODO: power check? arduino ok check? Mode of operation write and display. adjust TOML file for COMM and CONF
 
     if init_obj_dict(node, desired_op_mode):
-        goto_state(node, desired_state=4, timeout=timeout, operation_time=operation_time)
+        mode_code = OperationModes.abreviation[desired_op_mode]
+        for func_name, instance in objdict_data["mode"][mode_code]["comm"].items():
+            func = globals().get(object_dictionary_functions.func_name)
+            kwargs = {}
+            for variable, default_val in instance.items(): 
+                user_val = input(f"Please enter value for {func_name} -> {variable}.\n Press Enter, if {default_val} is ok.").strip()
+                if user_val == "":
+                    write_val = default_val
+                else:
+                    try:
+                        write_val = int(user_val)
+                    except Warning:
+                        try:
+                            write_val = int(input(f"please enter a valid INT64 value for {variable}").strip())
+                        except Exception:
+                            print(f"invalid value for {variable}, using default value: {default_val}")
+                    
+                kwargs[variable] = write_val
+            
+            func(node, **kwargs)
+
+        goto_state(node, desired_state=4, timeout=timeout)
+        start_time = time.time()
+        while (current_time - start_time) < operation_time:
+            current_time = time.time()
+            #TODO: continous Control word and commanding params handling. Fault mode watching
+            time.sleep()
+          
+
+
+
+        shutdown_drive(node)
         return
     else:
         print("Object Dicitonary not initialized")
@@ -1321,13 +1365,15 @@ def drive_run(node, desired_op_mode, timeout, operation_time):
 def main():
     global net
     # Setup our CANopen network
-    network, mc1 = network_setup(1, '/home/amfluxpi/AMflux/src/amflux/app/Epos4_70_15.eds', 'can0')
+    network, mc1 = can_functions.network_setup(1, '/home/amfluxpi/AMflux/src/amflux/app/Epos4_70_15.eds', 'can0')
     
-    sanity_check(network)
+    can_functions.sanity_check(network)
 
     drive_run(mc1, OperationModes.CyclicSynchronousPosition, timeout=5, operation_time=5)
 
     print("Drive completed run. Network will be shutdown")
+
+    can_functions.network_shutdown()
 
     '''
     # CST mode is under int=10 (Firmware-Specification, p219)
