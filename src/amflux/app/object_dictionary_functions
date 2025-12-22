@@ -268,7 +268,7 @@ def home_offset_distance_init(node, home_offset_distance: int = None):
     node.sdo[0x30B1][0x00].raw = home_offset_distance if home_offset_distance is not None else 0
 
 
-def Current_threshold_homing_init(node, current_threshold_homing: int = None):
+def current_threshold_homing_init(node, current_threshold_homing: int = None):
     #6.2.68
     check_init(locals())
     #Used for homing methods «−1», «−2», «−3», and «−4».
@@ -563,3 +563,40 @@ def motor_type(node, motor_type: int = None):
     check_init(locals())
     #motor type (DC = 1, Sinusoidal PM BL motor = 10, Trapezoidal PM BL motor = 11)
     node.sdo[0x6402].raw = motor_type if motor_type is not None else 10
+
+
+#####HOMING MODE ADDITIONAL FUNCTIONS#####
+def digital_input_properties_init(node, polarity: int = None):
+    #6.2.74
+    check_init(locals())
+    #index 1 is RO
+    #if a bit is set to "1" the corresponding digital input is active high
+    node.sdo[0x3141][2].raw = polarity if polarity is not None else 0x0000
+
+
+def config_digital_inputs_init(node, input_1_config: int = None, input_2_config: int = None,
+                              input_3_config: int = None, input_4_config: int = None,
+                              input_5_config: int = None, input_6_config: int = None,
+                              input_7_config: int = None, input_8_config: int = None):
+    #6.2.75
+    check_init(locals())
+    #maps functions to digital inputs, each function can only be assigned once, if sensor 2 is configured then digital inputs from 1 to 4 will bes disabled
+    #index corresponds to relevant digital input
+    #input 1 (DgIn1)
+    node.sdo[0x3142][1].raw = input_1_config if input_1_config is not None else 0
+    #input 2 (DgIn2)
+    node.sdo[0x3142][2].raw = input_2_config if input_2_config is not None else 1
+    #input 3 (DgIn3)
+    node.sdo[0x3142][3].raw = input_3_config if input_3_config is not None else 2
+    #input 4 (DgIn4)
+    node.sdo[0x3142][4].raw = input_4_config if input_4_config is not None else 19
+    #input 5 (HsDgIn1)
+    node.sdo[0x3142][5].raw = input_5_config if input_5_config is not None else 255
+    #input 6 (HsDgIn2)
+    node.sdo[0x3142][5].raw = input_6_config if input_6_config is not None else 255
+    #input 7 (HsDgIn3)
+    node.sdo[0x3142][5].raw = input_7_config if input_7_config is not None else 255
+    #input 8 (HsDgIn4)
+    node.sdo[0x3142][5].raw = input_8_config if input_8_config is not None else 255
+
+
