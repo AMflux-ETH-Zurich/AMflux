@@ -36,9 +36,10 @@ import utils
 import can_functions
 import object_dictionary_functions
 
+
 import warnings
 from typing import Mapping, Hashable, Dict, Any
-
+from errors import InitializationError, DriveStateDetError, DriveStatePathError, DesiredDriveStateError, DriveStateResetError, InitObjDict, DesiredMode, SanityCheck
 
 # ======================================================================
 # Constants
@@ -56,26 +57,22 @@ RATE_LIMIT_MSGS_PER_SEC: int = 750
 # ======================================================================
 # Exceptions
 # ======================================================================
-
+'''
 class InitializationError(Exception):
     """Raised when a configuration parameter has not been initialized correctly."""
     pass
-
 
 class DriveStateDetError(Exception):
     """Raised when Drive State cannot be determined."""
     pass
 
-
 class DriveStatePathError(Exception):
     """Raised if no valid Path is found/used"""
     pass
 
-
 class DesiredDriveStateError(Exception):
     """Raised if desired DriveState is not reached"""
     pass
-
 
 class DriveStateResetError(Exception):
     """Raised if DriveState cannot be reset from FAULT"""
@@ -85,7 +82,6 @@ class InitObjDict(Exception):
     """Raised if object dictionary is not initializable"""
     pass
 
-
 class DesiredMode(Exception):
     """Raised if object dictionary is not initializable"""
     pass
@@ -93,6 +89,9 @@ class DesiredMode(Exception):
 class SanityCheck(Exception):
     """Raised if Sanity Check fails"""
     pass
+
+
+'''
 
 # ======================================================================
 # Region: AUXILIARY FUNCTIONS
@@ -1007,7 +1006,7 @@ def wait_for_state(node, desired_state: int, timeout: float = 5.0):
         current_state = get_DriveState(node) 
         if current_state == DriveState.FAULT: 
             print("ATTENTION: Fault Reaction Active. Reset Drive? (3 tries)")
-            if confirm():
+            if utils.confirm():
                 fault_reset(node, reset_tries=3, timeout=timeout)
                 time.sleep(0.05)
         if current_state == desired_state:
