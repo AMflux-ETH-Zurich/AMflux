@@ -7,7 +7,7 @@ from tkinter import ttk
 #HELPERS
 
 class ControlWindow:
-    Home                     = 6
+    Home                        = 6
     ProfilePosition             = 0
     Homing                      = 1
     ProfileVelocity             = 2
