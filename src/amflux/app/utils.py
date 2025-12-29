@@ -53,3 +53,23 @@ def check_init(objects):
         if value is not None and (value == "67" or value == 67):
             raise InitializationError(f"{name} is not initialized correctly. Please enter a valid value for {name}.")
     return True 
+
+def SSI_encoder_output_check(node, Interval:float = 0.25, Duration: int = 60):
+    """Checks if the SSI encoder is outputting data.
+
+    Args:
+        node: canopen Node object representing the SSI encoder.
+    
+    Returns:
+        Prints SSI absolute position every [Interval] seconds until [Duration] is up.
+    """
+
+    start_time = time.time()
+    while (time.time()-start_time) < Duration:
+        pos_val = node.sdo[0x3012][0x0D].raw
+        print(f"Current SSI absolute position: {pos_val}")
+        time.sleep(Interval)
+    
+
+
+

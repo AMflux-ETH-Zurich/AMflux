@@ -1369,9 +1369,12 @@ def main():
     
     can_functions.sanity_check(network)
 
-    drive_run(mc1, OperationModes.CyclicSynchronousPosition, timeout=5, operation_time=5)
+    ###drive_run(mc1, OperationModes.CyclicSynchronousPosition, timeout=5, operation_time=5)
 
-    print("Drive completed run. Network will be shutdown")
+    ###print("Drive completed run. Network will be shutdown")
+
+    #OUTPUT CHECK SSI ENCODER
+    utils.SSI_encoder_output_check(mc1, interval = 0.2, duration = 100)
 
     can_functions.network_shutdown()
 
@@ -1383,6 +1386,7 @@ def main():
     # Shutdown the CANopen network after use
     network_shutdown()
     '''
+
     
 
 if __name__ == "__main__":
