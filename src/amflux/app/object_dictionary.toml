@@ -78,14 +78,14 @@
 # =========================================================
 
     [encoder.ssi_abs_encoder_init]
-    data_rate                   = 67
-    data_bits                   = 67
-    encoding_type               = 67
-    timeout_time                = 67
-    power_up_time               = 67
-    commutation_offset_value    = 67
-    position_bits               = 67
-    communication_additional_delay = 67
+    data_rate                   = 100
+    data_bits                   = 0x00000C00
+    encoding_type               = 0000000000000000
+    timeout_time                = 200
+    power_up_time               = 300
+    commutation_offset_value    = 0
+    position_bits               = 0x0000000C
+    communication_additional_delay = -1
 
 
 # =========================================================
