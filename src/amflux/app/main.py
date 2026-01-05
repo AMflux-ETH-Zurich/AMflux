@@ -1182,8 +1182,8 @@ class OperationModes:
         Homing:                     "HMM",
         ProfileVelocity:            "PVM",
         CyclicSynchronousPosition:  "CSP",
-        CyclicSynchronousVelocity:  "CVP", 
-        CyclicSynchronousTorque:    "CTP"}
+        CyclicSynchronousVelocity:  "CSV", 
+        CyclicSynchronousTorque:    "CST"}
 
 
 def init_obj_dict(node, desired_mode):
