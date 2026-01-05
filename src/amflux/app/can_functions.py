@@ -7,7 +7,8 @@ import toml
 from errors import InitializationError, DriveStateDetError, DriveStatePathError, DesiredDriveStateError, DriveStateResetError, InitObjDict, DesiredMode, SanityCheck
 
 
-def network_setup(node_id: int, node_eds: str, node_channel: str):
+
+def network_setup(node_id: int, node_eds: str, node_channel: str, net):
     """Sets up CANopen network and adds node.
 
     Args:
@@ -18,7 +19,6 @@ def network_setup(node_id: int, node_eds: str, node_channel: str):
     Returns:
         CANopen Network and Node that was added
     """
-    global net
     if net == None:
         # Create a CANopen network
         net = canopen.Network()
@@ -31,9 +31,8 @@ def network_setup(node_id: int, node_eds: str, node_channel: str):
     return net, node
 
 
-def network_shutdown():
+def network_shutdown(net):
     """Shuts down the CANopen network after use"""
-    global net
     if net != None:
         # Disconnect from the network
         net.disconnect()

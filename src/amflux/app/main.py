@@ -1364,7 +1364,7 @@ def drive_run(node, desired_op_mode, timeout, operation_time):
 def main():
     global net
     # Setup our CANopen network
-    network, mc1 = can_functions.network_setup(1, '/home/amfluxpi/AMflux/src/amflux/app/Epos4_70_15.eds', 'can0')
+    network, mc1 = can_functions.network_setup(1, '/home/amfluxpi/AMflux/src/amflux/app/Epos4_70_15.eds', 'can0', net)
     
     can_functions.sanity_check(network)
 
@@ -1375,7 +1375,7 @@ def main():
     #OUTPUT CHECK SSI ENCODER
     utils.SSI_encoder_output_check(mc1, interval = 0.2, duration = 100)
 
-    can_functions.network_shutdown()
+    can_functions.network_shutdown(net)
 
     '''
     # CST mode is under int=10 (Firmware-Specification, p219)
