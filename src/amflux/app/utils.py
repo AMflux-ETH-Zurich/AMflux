@@ -57,7 +57,7 @@ def check_init(objects):
             raise InitializationError(f"{name} is not initialized correctly. Please enter a valid value for {name}.")
     return True 
 
-def SSI_encoder_output_check(node, Interval:float = 0.25, Duration: int = 60):
+def SSI_encoder_output_check(node, interval:float = 0.25, duration: int = 60):
     """Checks if the SSI encoder is outputting data.
 
     Args:
