@@ -1373,7 +1373,7 @@ def main():
     ###print("Drive completed run. Network will be shutdown")
 
     #OUTPUT CHECK SSI ENCODER
-    utils.SSI_encoder_output_check(mc1, interval = 0.01, duration = 100)
+    utils.SSI_encoder_output_check(mc1, interval = 0.01, duration = 20)
 
     can_functions.network_shutdown(net)
 
