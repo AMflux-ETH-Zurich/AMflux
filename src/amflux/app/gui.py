@@ -63,7 +63,7 @@ def build_param_editor(parent, param_dict):
 
         for row, (name, value) in enumerate(param_dict.items()):
             tk.Label(parent, text=name).grid(
-                row=row, column=0, sticky="e", padx=5, pady=2
+                row=row, column=0, padx=5, pady=2
             )
 
             var = tk.IntVar(value=value)
@@ -137,22 +137,29 @@ def HomePage(app, parent):
 
 def ModePageBuilder(app, parent, modeint, modename): 
     #Grid
-    parent.grid_columnconfigure(0, weight=2)
-    parent.grid_columnconfigure(1, weight=0)
+    parent.grid_columnconfigure(0, weight=10)
+    parent.grid_columnconfigure(1, weight=5)
     parent.grid_columnconfigure(2, weight=0)
     parent.grid_columnconfigure(3, weight=0)
-    parent.grid_columnconfigure(4, weight=2)
-
-    parent.grid_rowconfigure(0, weight=2)
-    parent.grid_rowconfigure(1, weight=0)
+    parent.grid_columnconfigure(4, weight=0)
+    parent.grid_columnconfigure(5, weight=5)
+    parent.grid_columnconfigure(6, weight=10)
+    
+    
+    parent.grid_rowconfigure(0, weight=10)
+    parent.grid_rowconfigure(1, weight=5)
     parent.grid_rowconfigure(2, weight=0)
     parent.grid_rowconfigure(3, weight=0)
-    parent.grid_rowconfigure(4, weight=2)
+    parent.grid_rowconfigure(4, weight=0)
+    parent.grid_rowconfigure(5, weight=5)
+    parent.grid_rowconfigure(6, weight=10)
+    
+
 
     
     #Title Text
     header = tk.Frame(parent)
-    header.grid(row=0, column=2)
+    header.grid(row=0, column=3)
 
     landing_text_var = tk.StringVar()
     landing_text_var.set(f"{modename}\n Please enter operation variables")
@@ -173,11 +180,11 @@ def ModePageBuilder(app, parent, modeint, modename):
         relief=tk.RAISED,           
         wraplength=250         
     )
-    label.grid(row=0, column=0, pady=20, sticky="w")
+    label.grid(row=0, column=0, pady=20)
 
     #Parameter Editor
     editing = tk.Frame(parent)
-    editing.grid(row=2, column=2, sticky="e")
+    editing.grid(row=2, column=3)
 
     mode_code = PageState.abreviation[modeint]
 
@@ -186,7 +193,7 @@ def ModePageBuilder(app, parent, modeint, modename):
 
     #Command Buttons
     commanding = tk.Frame(parent)
-    commanding.grid(row=2, column=3, padx=50)
+    commanding.grid(row=2, column=4, padx=50)
 
     commanding.grid_columnconfigure(0, weight=1)
     commanding.grid_columnconfigure(1, weight=0)
@@ -220,7 +227,7 @@ def ModePageBuilder(app, parent, modeint, modename):
         text="Back", 
         command = lambda: app.set_state(PageState.Home)
     )
-    back_button.grid(row=0, column=0, padx=50)
+    back_button.grid(row=0, column=1, padx=50)
 
     #Motor Status
     motor_gui = MotorGUI(parent)
@@ -235,8 +242,11 @@ class MotorGUI:
         
         #self is an argument that refers to the instance of the class itself
         self.root_window = tk.Frame(parent)
+
+        #self.root_window.grid_propagate(False)
+        #self.root_window.configure(width=450, height=260)
         
-        self.root_window.grid(row=5, column=2)
+        self.root_window.grid(row=6, column=3)
 
         #setup the grid for the two widgets side by side
         self.root_window.grid_rowconfigure(0, weight=0)
@@ -262,7 +272,7 @@ class MotorGUI:
         #==========================================================
 
         #create the corresponding matplotlib figures
-        fig = Figure(figsize=(12, 4), dpi=100)
+        fig = Figure(figsize=(4, 2.5), dpi=100)
 
         #creates two subplots side by side (row, column, index of subplot)
         self.ax_torque = fig.add_subplot(1,2,1)
@@ -290,7 +300,7 @@ class MotorGUI:
         #get_tk_widget() returns the Tkinter widget containing the plot and pack() adds it to the window
         #self.canvas_plot.get_tk_widget().pack(side="left")
 
-        self.canvas_plot.get_tk_widget().grid(row=0, column=0, sticky="nsew")
+        self.canvas_plot.get_tk_widget().grid(row=0, column=0)
 
         #==========================================================
 
@@ -299,7 +309,7 @@ class MotorGUI:
         self.canvas_widget = tk.Canvas(self.root_window, width=200, height=200, bg="white")
         #pady adds vertical padding around the canvas
         #self.canvas_widget.pack(side="left")
-        self.canvas_widget.grid(row=0, column=1, sticky="nsew")
+        self.canvas_widget.grid(row=0, column=1)
         # center of the canvas
         self.center = (100, 100)
         # radius for the motor position circle
@@ -378,7 +388,6 @@ class MotorGUI:
         self.canvas_widget.coords(self.dot, x - 5, y - 5, x + 5, y + 5)
         if(App.state != 0):
             self.root_window.after(200, self.update)
-
         
 
 
