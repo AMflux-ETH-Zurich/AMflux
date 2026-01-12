@@ -3,7 +3,7 @@ import toml
 import object_dictionary_functions
 from errors import InitializationError, DriveStateDetError, DriveStatePathError, DesiredDriveStateError, DriveStateResetError, InitObjDict, DesiredMode, SanityCheck
 from threading import Thread, Event
-from main import goto_state
+
 import time
 
 

@@ -36,10 +36,11 @@ import utils
 import can_functions
 import object_dictionary_functions
 
-
+import organiser
 import warnings
 from typing import Mapping, Hashable, Dict, Any
 from errors import InitializationError, DriveStateDetError, DriveStatePathError, DesiredDriveStateError, DriveStateResetError, InitObjDict, DesiredMode, SanityCheck
+import gui
 
 # ======================================================================
 # Constants
@@ -64,6 +65,12 @@ def main():
     # Setup our CANopen network
     network, mc1 = can_functions.network_setup(1, '/home/amfluxpi/AMflux/src/amflux/app/Epos4_70_15.eds', 'can0', net)
     
+    EPOS4 = organiser.DriveOrganiser(1, network=network)
+
+    app = gui.App(network=network, drive=EPOS4)
+
+    app.mainloop()
+    '''
     can_functions.sanity_check(network)
 
 
@@ -83,8 +90,8 @@ def main():
 
     #OUTPUT CHECK SSI ENCODER
     utils.SSI_encoder_output_check(mc1, interval = 0.01, duration = 20)
-
-    can_functions.network_shutdown(net)
+    '''
+    #can_functions.network_shutdown(net)
 
     '''
     # CST mode is under int=10 (Firmware-Specification, p219)

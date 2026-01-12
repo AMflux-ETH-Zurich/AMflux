@@ -10,7 +10,7 @@ from threading import Thread, Event
 from drive import goto_state
 import time
 import numpy as np
-from drive import DriveState, DriveCommand, Drive
+from drive import DriveState, DriveCommand
 
 
 
@@ -55,7 +55,7 @@ def init_obj_dict(node, desired_mode):
     """    
     motor_data = objdict_data["motor"]
     for func_name, params in motor_data.items():
-        func = globals().get(object_dictionary_functions.func_name)
+        func = getattr(object_dictionary_functions, func_name)
         try:
             func(node, **params)
         except InitObjDict as e:
@@ -65,7 +65,7 @@ def init_obj_dict(node, desired_mode):
     
     encoder_data = objdict_data["encoder"]
     for func_name, params in encoder_data.items():
-        func = globals().get(object_dictionary_functions.func_name)
+        func = getattr(object_dictionary_functions, func_name)
         try:
             func(node, **params)
         except InitObjDict as e:
@@ -75,7 +75,7 @@ def init_obj_dict(node, desired_mode):
 
     safety_data = objdict_data["safety"]
     for func_name, params in safety_data.items():
-        func = globals().get(object_dictionary_functions.func_name)
+        func = getattr(object_dictionary_functions, func_name)
         try:
             func(node, **params)
         except InitObjDict as e:
@@ -87,7 +87,7 @@ def init_obj_dict(node, desired_mode):
         PPM_data = objdict_data["mode"]["PPM"]["conf"]
         completion_flag = False
         for func_name, params in PPM_data.items():
-            func = globals().get(object_dictionary_functions.func_name)
+            func = getattr(object_dictionary_functions, func_name)
             try:
                 func(node, **params)
             except InitObjDict as e:
@@ -99,7 +99,7 @@ def init_obj_dict(node, desired_mode):
     elif desired_mode == OperationModes.Homing:
         HMM_data = objdict_data["mode"]["HMM"]["conf"]
         for func_name, params in HMM_data.items():
-            func = globals().get(object_dictionary_functions.func_name)
+            func = getattr(object_dictionary_functions, func_name)
             try:
                 func(node, **params)
             except InitObjDict as e:
@@ -111,7 +111,7 @@ def init_obj_dict(node, desired_mode):
     elif desired_mode == OperationModes.ProfileVelocity:
         PVM_data = objdict_data["mode"]["PVM"]["conf"]
         for func_name, params in PVM_data.items():
-            func = globals().get(object_dictionary_functions.func_name)
+            func = getattr(object_dictionary_functions, func_name)
             try:
                 func(node, **params)
             except InitObjDict as e:
@@ -123,7 +123,7 @@ def init_obj_dict(node, desired_mode):
     elif desired_mode == OperationModes.CyclicSynchronousPosition:
         CSP_data = objdict_data["mode"]["CSP"]["conf"]
         for func_name, params in CSP_data.items():
-            func = globals().get(object_dictionary_functions.func_name)
+            func = getattr(object_dictionary_functions, func_name)
             try:
                 func(node, **params)
             except InitObjDict as e:
@@ -135,7 +135,7 @@ def init_obj_dict(node, desired_mode):
     elif desired_mode == OperationModes.CyclicSynchronousVelocity:
         CSV_data = objdict_data["mode"]["CSV"]["conf"]
         for func_name, params in CSV_data.items():
-            func = globals().get(object_dictionary_functions.func_name)
+            func = getattr(object_dictionary_functions, func_name)
             try:
                 func(node, **params)
             except InitObjDict as e:
@@ -147,7 +147,7 @@ def init_obj_dict(node, desired_mode):
     elif desired_mode == OperationModes.CyclicSynchronousTorque:
         CST_data = objdict_data["mode"]["CST"]["conf"]
         for func_name, params in CST_data.items():
-            func = globals().get(object_dictionary_functions.func_name)
+            func = getattr(object_dictionary_functions, func_name)
             try:
                 func(node, **params)
             except InitObjDict as e:
@@ -203,7 +203,7 @@ class DriveOrganiser:
         if self.set_mode(self, self.current_mode) and init_obj_dict(self.node, self.current_mode):
             mode_code = OperationModes.abreviation[self.current_mode]
             for func_name, instance in objdict_data["mode"][mode_code]["comm"].items():
-                func = globals().get(object_dictionary_functions.func_name)
+                func = getattr(object_dictionary_functions, func_name)
                 kwargs = {}
                 for variable, default_val in instance.items(): 
                     user_val = None #TODO take value from GUI
@@ -279,10 +279,10 @@ class DriveOrganiser:
         """
         while not self._stop_event.is_set():
             # Process any queued parameter updates
-            self._process_param_updates()
+            self.process_param_updates()
             
             # Read telemetry
-            telemetry = self._read_telemetry()
+            telemetry = self.read_telemetry()
             
             # Store for get_status()
             self._latest_telemetry = telemetry
@@ -290,13 +290,13 @@ class DriveOrganiser:
             time.sleep(0.02)  # 50Hz update rate
     
 
-    def _process_param_updates(self):
+    def process_param_updates(self):
         """
         Drain queue and write each param to controller OD.
         """
-        while not self._param_update_queue.empty():
-            param_name, value = self._param_update_queue.get()
-            object_dictionary_functions.param_name = value
+        while not self.param_update_queue.empty():
+            param_name, value = self.param_update_queue.get()
+            getattr(object_dictionary_functions, param_name)(self.node, value)
             
             
     def read_telemetry(self) -> dict:
@@ -320,7 +320,7 @@ class DriveOrganiser:
         #Current mode display
         current_mode_disp = self.node.sdo[0x6061]
         
-        self.recent_telemetry = [position, torque, velocity, status_word, current_mode_disp]
+        self.recent_telemetry = [torque, velocity, position, status_word, current_mode_disp]
         
     def get_status(self) -> dict:
         """

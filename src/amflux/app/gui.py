@@ -18,6 +18,10 @@ from matplotlib.figure import Figure
 
 import random
 
+from organiser import DriveOrganiser
+
+
+
 
 #'/home/amfluxpi/AMflux/src/amflux/app/object_dictionary.toml'
 with open('/Users/wendelinroth/Desktop/Code/GitHub/AMflux/src/amflux/app/object_dictionary.toml', 'r') as data:
@@ -112,19 +116,18 @@ def HomePage(app, parent):
     def start_button_func():
         selected = opt.get()
 
-        match selected:
-            case "ProfilePosition":
-                app.set_state(PageState.ProfilePosition)
-            case "Homing":
-                app.set_state(PageState.Homing)
-            case "ProfileVelocity":
-                app.set_state(PageState.ProfileVelocity)
-            case "CyclicSynchronousPosition":
-                app.set_state(PageState.CyclicSynchronousPosition)
-            case "CyclicSynchronousVelocity":
-                app.set_state(PageState.CyclicSynchronousVelocity)
-            case "CyclicSynchronousTorque":
-                app.set_state(PageState.CyclicSynchronousTorque)
+        if selected == "ProfilePosition":
+            app.set_state(PageState.ProfilePosition)
+        elif selected == "Homing":
+            app.set_state(PageState.Homing)
+        elif selected == "ProfileVelocity":
+            app.set_state(PageState.ProfileVelocity)
+        elif selected == "CyclicSynchronousPosition":
+            app.set_state(PageState.CyclicSynchronousPosition)
+        elif selected == "CyclicSynchronousVelocity":
+            app.set_state(PageState.CyclicSynchronousVelocity)
+        elif selected == "CyclicSynchronousTorque":
+            app.set_state(PageState.CyclicSynchronousTorque)
 
     button = ttk.Button(
         parent,
@@ -136,6 +139,7 @@ def HomePage(app, parent):
 
 
 def ModePageBuilder(app, parent, modeint, modename): 
+    
     #Grid
     parent.grid_columnconfigure(0, weight=10)
     parent.grid_columnconfigure(1, weight=5)
@@ -188,8 +192,22 @@ def ModePageBuilder(app, parent, modeint, modename):
 
     mode_code = PageState.abreviation[modeint]
 
-    build_param_editor(editing, objdict_data["mode"][mode_code]["comm"])
+    vars = build_param_editor(editing, objdict_data["mode"][mode_code]["comm"])
 
+    def update_params():
+        if app.drive is None:
+            print("Warning: Network not initialized, cannot update parameters")
+            return
+        for param_name, tk_var in vars.items():
+            value = tk_var.get()  
+            app.drive.update_parameter(param_name, value)
+            
+    update_button = ttk.Button(
+        editing, 
+        text = "UPDATE",
+        command = update_params
+    )
+    update_button.grid(column=1)
 
     #Command Buttons
     commanding = tk.Frame(parent)
@@ -230,16 +248,16 @@ def ModePageBuilder(app, parent, modeint, modename):
     back_button.grid(row=0, column=1, padx=50)
 
     #Motor Status
-    motor_gui = MotorGUI(parent)
+    motor_gui = MotorTelemetry(parent, app.drive)
     
 
 
-class MotorGUI:
-    #runs when an instance of MotorGUI is created
-    def __init__(self, parent):
-        """initialize the MotorGUI class"""
+class MotorTelemetry:
+    #runs when an instance of MotorTelemetry is created
+    def __init__(self, parent, drive):
+        """initialize the MotorTelemetry class"""
 
-        
+        self.drive = drive
         #self is an argument that refers to the instance of the class itself
         self.root_window = tk.Frame(parent)
 
@@ -325,10 +343,10 @@ class MotorGUI:
         self.update()
 
     def read_motor_data(self):
-        """read motor data"""
-        """
-        #TODO DriveOrganiser.read_telemetry
-        """
+        
+        if self.drive is not None:
+            telemetry = self.drive.get_status()
+        
 
         
         #ATTENTION ATTENTION ATTENTION ATTENTION ATTENTION ATTENTION ATTENTION
@@ -379,8 +397,8 @@ class MotorGUI:
 
         #update the position of the motor dot
         self.canvas_widget.coords(self.dot, x - 5, y - 5, x + 5, y + 5)
-        if(App.state != 0):
-            self.root_window.after(200, self.update)
+        # Continue updating if not on home page
+        self.root_window.after(200, self.update)
         
 
 
@@ -388,13 +406,15 @@ class MotorGUI:
 # Application Controller
 # -----------------------------
 class App(tk.Tk):
-    def __init__(self):
+    def __init__(self, drive):
         super().__init__()
         
         self.title("EPOS4 Control Window")
         self.geometry("800x500")
         self.configure(bg="#363131") 
 
+        #Drive
+        self.drive = drive
         # current state
         self.state = PageState.Home
 
@@ -415,25 +435,25 @@ class App(tk.Tk):
     def render_page(self):
         self.clear_container()
 
-        match self.state:
-            case 0:
-                HomePage(self, self.container)
-            case 1:
-                ModePageBuilder(self, self.container, self.state, "Profile Position Mode")
-            case 2:
-                ModePageBuilder(self, self.container, self.state, "Homing Mode")
-            case 3:
-                ModePageBuilder(self, self.container, self.state, "Profile Velocity Mode")
-            case 4:
-                ModePageBuilder(self, self.container, self.state, "Cyclic Synchronous Position Mode")
-            case 5:
-                ModePageBuilder(self, self.container, self.state, "Cyclic Synchronous Position Mode")
-            case 6:
-                ModePageBuilder(self, self.container, self.state, "Cyclic Synchronous Torque Mode")
-            case _:
-                tk.Label(self.container, text="Unknown state").pack()
+        if self.state == 0:
+            HomePage(self, self.container)
+        elif self.state == 1:
+            ModePageBuilder(self, self.container, self.state, "Profile Position Mode")
+        elif self.state == 2:
+            ModePageBuilder(self, self.container, self.state, "Homing Mode")
+        elif self.state == 3:
+            ModePageBuilder(self, self.container, self.state, "Profile Velocity Mode")
+        elif self.state == 4:
+            ModePageBuilder(self, self.container, self.state, "Cyclic Synchronous Position Mode")
+        elif self.state == 5:
+            ModePageBuilder(self, self.container, self.state, "Cyclic Synchronous Position Mode")
+        elif self.state == 6:
+            ModePageBuilder(self, self.container, self.state, "Cyclic Synchronous Torque Mode")
+        else:
+            tk.Label(self.container, text="Unknown state").pack()
 
-
+'''
 if __name__ == "__main__":
     app = App()
     app.mainloop()
+'''
