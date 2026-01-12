@@ -5,9 +5,9 @@ from errors import InitializationError, DriveStateDetError, DriveStatePathError,
 from threading import Thread, Event
 #from main import goto_state
 import time
-import can_functions.cword_read as cword_read
-import can_functions.cword_write as cword_write
-import can_functions.sword as sword
+from can_functions import cword_read
+from can_functions import cword_write
+from can_functions import sword
 
 
 
