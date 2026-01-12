@@ -76,6 +76,12 @@ def rxpdo_mapping_init(node):
     node.sdo[0x1400][0x01].raw = 0x00000200 + node.id  # COB-ID for RXPDO1
     node.sdo[0x1400][0x02].raw = 255 #transmission type for RXPDO1 (255 = asynchronous)
 
+    node.rpdo[1].clear()
+    node.rpdo[1].add_variable(0x6040, 0x00)
+    node.rpdo[1].cob_id = 0x00000200 + node.id
+    node.rpdo[1].trans_type = 255
+    node.rpdo[1].start()
+
     #RXPDO2
     node.sdo[0x1601][0x00].raw = 0 #disable rxpdo2
     node.sdo[0x1601][0x01].raw = 0x607A0020 #target position, 0x607A(index), 0x00(subindex), 0x20(size)
