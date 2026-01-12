@@ -243,7 +243,7 @@ def do_DriveCommand(node, command: int, target: DriveState, timeout: int) -> Tru
 
 
 def shutdown_drive(node):
-    current_state = get_DriveState()
+    current_state = get_DriveState(node)
 
     if current_state == DriveState.OPERATION_ENABLED or current_state == DriveState.QUICK_STOP_ACTIVE:
         do_DriveCommand(DriveCommand.DISABLE_VOLTAGE)
