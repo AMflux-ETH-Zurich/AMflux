@@ -101,7 +101,7 @@ def txpdo_mapping_init(node):
     node.sdo[0x1800][0x02].raw = 255 #transmission type for TXPDO1 (255 = asynchronous)
 
     node.tpdo[1].clear()  # clear any previous mappings
-    node.tpdo[1].add_variable('Status Word', 0x6041, 0x00)
+    node.tpdo[1].add_variable(0x6041, 0x00)
     node.tpdo[1].cob_id = 0x40000180 + node.id
     node.tpdo[1].trans_type = 255
     node.tpdo[1].start(period=1)
@@ -122,8 +122,8 @@ def txpdo_mapping_init(node):
 
 
     node.tpdo[2].clear()
-    node.tpdo[2].add_variable('Position Actual Value', 0x6064, 0x00)
-    node.tpdo[2].add_variable('Velocity Actual Value', 0x606C, 0x00)
+    node.tpdo[2].add_variable(0x6064, 0x00)
+    node.tpdo[2].add_variable(0x606C, 0x00)
     # node.tpdo[2].add_variable('Torque Actual Value', 0x6077, 0x00) # skip if too large
     node.tpdo[2].cob_id = 0xC0000280 + node.id
     node.tpdo[2].trans_type = 255
