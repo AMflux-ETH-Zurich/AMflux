@@ -326,17 +326,17 @@ def goto_state(node, desired_state, timeout):
             do_DriveCommand(node, next_command, next_state, timeout)
         except DriveStateDetError as e:
             # Specific drive-state errors you expect
-            shutdown_drive()
+            shutdown_drive(node)
             print(f"Drive state determination error: {e}")
             raise
         except TimeoutError as e:
             # Timeout errors from nested calls
-            shutdown_drive()
+            shutdown_drive(node)
             print(f"Timeout during state transition: {e}")
             raise
         except Exception as e:
             # Unexpected errors—log and fail fast
-            shutdown_drive()
+            shutdown_drive(node)
             print(f"Unexpected error: {e} current State: {get_DriveState(node)}")
             raise
         finally:
