@@ -1389,7 +1389,7 @@ def main():
     object_dictionary_functions.rxpdo_mapping_init(mc1)
     object_dictionary_functions.txpdo_mapping_init(mc1)
 
-   
+    object_dictionary_functions.axis_configuration_init(mc1)
 
 
 
