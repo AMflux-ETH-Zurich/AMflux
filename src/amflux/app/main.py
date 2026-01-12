@@ -1384,15 +1384,15 @@ def main():
     
     can_functions.sanity_check(network)
 
-    
+
 
     object_dictionary_functions.rxpdo_mapping_init(mc1)
     object_dictionary_functions.txpdo_mapping_init(mc1)
 
-    mc1.rpdo[1].start()
-    mc1.rpdo[2].start()
-    mc1.tpdo[1].start()
-    mc1.tpdo[2].start()
+    mc1.rpdo[1].start(period=None)
+    mc1.rpdo[2].start(period=None)
+    mc1.tpdo[1].start(period=1)
+    mc1.tpdo[2].start(period=1)
 
 
 
