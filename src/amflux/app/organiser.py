@@ -1,23 +1,39 @@
+# ======================================================================
+# Imports
+# ======================================================================
+
 import queue
 import toml
 import object_dictionary_functions
 from errors import InitializationError, DriveStateDetError, DriveStatePathError, DesiredDriveStateError, DriveStateResetError, InitObjDict, DesiredMode, SanityCheck
 from threading import Thread, Event
-from main import goto_state
+from drive import goto_state
 import time
+import numpy as np
+from drive import DriveState, DriveCommand, Drive
+
+
+
+# ======================================================================
+# Object Dictionary
+# ======================================================================
 
 #'/home/amfluxpi/AMflux/src/amflux/app/object_dictionary.toml'
 with open('/Users/wendelinroth/Desktop/Code/GitHub/AMflux/src/amflux/app/object_dictionary.toml', 'r') as data:
     objdict_data = toml.load(data)
 
 
+# ======================================================================
+# Operation
+# ======================================================================
+
 class OperationModes:
-    ProfilePosition             = 0
-    Homing                      = 1
-    ProfileVelocity             = 2
-    CyclicSynchronousPosition   = 3
-    CyclicSynchronousVelocity   = 4
-    CyclicSynchronousTorque     = 5
+    ProfilePosition             = 1
+    Homing                      = 3
+    ProfileVelocity             = 6
+    CyclicSynchronousPosition   = 8
+    CyclicSynchronousVelocity   = 9
+    CyclicSynchronousTorque     = 10
     abreviation = {
         ProfilePosition:            "PPM", 
         Homing:                     "HMM",
@@ -162,19 +178,29 @@ class DriveOrganiser:
         
         # Queue for parameter updates from GUI
         self.param_update_queue = queue.Queue()
+
+        self.recent_telemetry = None
     
     # ============================================
     # LIFECYCLE MANAGEMENT
     # ============================================
     
+    def set_mode(self, desired_mode):
+        self.node.sdo[0x6060] = desired_mode
+        time.sleep(5)
+        if self.node.sdo[0x6061] == desired_mode:
+            return True
+        else:
+            raise Exception #TODO: define new error
+
     def prepare_operation(self) -> bool:
         """
         1. Read params from TOML for this mode
         2. Initialize object dictionary on controller
         3. Verify everything written correctly
         """
-
-        if init_obj_dict(self.node, self.current_mode):
+        
+        if self.set_mode(self, self.current_mode) and init_obj_dict(self.node, self.current_mode):
             mode_code = OperationModes.abreviation[self.current_mode]
             for func_name, instance in objdict_data["mode"][mode_code]["comm"].items():
                 func = globals().get(object_dictionary_functions.func_name)
@@ -194,9 +220,12 @@ class DriveOrganiser:
                     kwargs[variable] = write_val
                 
                 func(self.node, **kwargs)
+        else:
+           pass  #TODO show error message on GUI: Prepare operation failed
                 
 
-    def start_operation(self):
+    
+    def start_operation(self, timeout):
         """
         1. Transition to OPERATION_ENABLED via goto_state()
         2. Start monitor thread
@@ -217,6 +246,8 @@ class DriveOrganiser:
         if not self.is_running:
                 return
         self.is_running = False
+        goto_state(self.node, desired_state=DriveState.READY_TO_SWITCH_ON, timeout=2)
+        self.monitor_thread = Thread(target=goto_state)
         self.monitor_thread.join()
 
     
@@ -264,7 +295,7 @@ class DriveOrganiser:
             param_name, value = self._param_update_queue.get()
             
             
-    def _read_telemetry(self) -> dict:
+    def read_telemetry(self) -> dict:
         """
         Read key values from controller:
         - Position actual (0x6064)
@@ -272,9 +303,23 @@ class DriveOrganiser:
         - Statusword (0x6041)
         - Current mode display (0x6061)
         """
+        #position from SSI encoder
+        position_raw = self.node.sdo[0x3012][0x0D].raw
+        #convert to radians
+        position = (position_raw / 4096) * 2 * np.pi
+        #torque from motor controller
+        torque = self.node.sdo[0x6077].raw
+        #velocity from motor controller
+        velocity = self.node.sdo[0x606C].raw
+        #statusword form motor controller
+        status_word = self.node.sdo[0x6041]
+        #Current mode display
+        current_mode_disp = self.node.sdo[0x6061]
+        
+        self.recent_telemetry = [position, torque, velocity, status_word, current_mode_disp]
         
     def get_status(self) -> dict:
         """
         Return cached telemetry for GUI (non-blocking).
         """
-        return self._latest_telemetry
+        return self.recent_telemetry

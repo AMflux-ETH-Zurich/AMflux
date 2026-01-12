@@ -327,14 +327,7 @@ class MotorGUI:
     def read_motor_data(self):
         """read motor data"""
         """
-        #position from SSI encoder
-        position_raw = node.sdo[0x3012][0x0D].raw
-        #convert to radians
-        position = (position_raw / 4096) * 2 * math.pi
-        #torque from motor controller
-        torque = node.sdo[0x6077].raw
-        #velocity from motor controller
-        velocity = node.sdo[0x606C].raw
+        #TODO DriveOrganiser.read_telemetry
         """
 
         
