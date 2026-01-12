@@ -35,6 +35,7 @@ import toml
 import utils
 import can_functions
 import object_dictionary_functions
+import drive
 
 
 import warnings
@@ -74,7 +75,11 @@ def main():
     object_dictionary_functions.axis_configuration_init(mc1)
 
 
+    print(can_functions.cword_read(mc1))
+    drive.goto_state(mc1, drive.DriveStates.SWITCHED_ON_ENABLED, timeout=5)
+    print(can_functions.cword_read(mc1))
 
+    print(get_DriveState(mc1))
 
 
     ###drive_run(mc1, OperationModes.CyclicSynchronousPosition, timeout=5, operation_time=5)
