@@ -128,13 +128,13 @@ class DriveCommand:
     the CANopen DS402 device profile specification.
     """
     
-    SHUTDOWN            = 0x006 #maybe normal ints
-    SWITCH_ON           = 0x007
-    ENABLE_OPERATION    = 0x00F
-    DISABLE_VOLTAGE     = 0x000
-    QUICK_STOP          = 0x002
-    DISABLE_OPERATION   = 0x007           
-    FAULT_RESET         = 0x100
+    SHUTDOWN            = 0b00000110 #maybe normal ints
+    SWITCH_ON           = 0b00000111
+    ENABLE_OPERATION    = 0b00001111
+    DISABLE_VOLTAGE     = 0b00000000
+    QUICK_STOP          = 0b00000010
+    DISABLE_OPERATION   = 0b00000111           
+    FAULT_RESET         = 0b10000000
 
 
 DriveStateMap = {DriveState.NOT_READY_TO_SWITCH_ON : [(DriveCommand.SWITCH_ON, DriveState.OPERATION_ENABLED)], 
