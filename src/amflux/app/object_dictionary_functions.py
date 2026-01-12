@@ -80,7 +80,7 @@ def rxpdo_mapping_init(node):
     node.rpdo[1].add_variable(0x6040, 0x00)
     node.rpdo[1].cob_id = 0x00000200 + node.id
     node.rpdo[1].trans_type = 255
-    node.rpdo[1].start()
+    node.rpdo[1].start(period=None)
 
     #RXPDO2
     node.sdo[0x1601][0x00].raw = 0 #disable rxpdo2
@@ -96,7 +96,7 @@ def rxpdo_mapping_init(node):
     node.rpdo[2].add_variable(0x60FF, 0x00)
     node.rpdo[2].cob_id = 0x00000300 + node.id
     node.rpdo[2].trans_type = 255
-    node.rpdo[2].start()
+    node.rpdo[2].start(period=None)
 
 
 
