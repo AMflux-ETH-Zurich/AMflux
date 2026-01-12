@@ -66,6 +66,72 @@ Initialization & Configuration Functions
 Touch Probe (6.2.134–6.2.137, 6.2.140–6.2.142) not implemented.
 """
 
+def rxpdo_mapping_init(node):
+
+    #RXPDO1
+    node.sdo[0x1600][0x00].raw = 0 #disable rxpdo1
+    node.sdo[0x1600][0x01].raw = 0x60400010 #control word, 0x6040(index), 0x00(subindex), 0x10(size)
+    node.sdo[0x1600][0x00].raw = 1 #number of mapped objects
+
+    node.sdo[0x1400][0x01].raw = 0x00000200 + node.id  # COB-ID for TXPDO1
+    node.sdo[0x1400][0x02].raw = 255 #transmission type for TXPDO1 (255 = asynchronous)
+
+
+    #RXPDO2
+    node.sdo[0x1601][0x00].raw = 0 #disable rxpdo2
+    node.sdo[0x1601][0x01].raw = 0x607A0020 #target position, 0x607A(index), 0x00(subindex), 0x20(size)
+    node.sdo[0x1601][0x02].raw = 0x60FF0020 #target velocity, 0x60FF(index), 0x00(subindex), 0x20(size)
+    #node.sdo[0x1601][0x03].raw = 0x60710010 #target torque, 0x6071(index), 0x00(subindex), 0x10(size) TOOO LARGE
+    node.sdo[0x1601][0x00].raw = 2 #number of mapped objects
+
+    node.sdo[0x1401][0x01].raw = 0x00000300 + node.id  # COB-ID for TXPDO1
+    node.sdo[0x1401][0x02].raw = 255 #transmission type for TXPDO1 (255 = asynchronous)
+
+
+
+
+def txpdo_mapping_init(node):
+
+    #TXPDO1
+    node.sdo[0x1A00][0x00].raw = 0 #disable txpdo1
+    node.sdo[0x1A00][0x01].raw = 0x60410010 #status word, 0x6041(index), 0x00(subindex), 0x10(size)
+    node.sdo[0x1A00][0x00].raw = 1 #number of mapped objects
+
+    node.sdo[0x1800][0x01].raw = 0x40000180 + node.id  # COB-ID for TXPDO1
+    node.sdo[0x1800][0x02].raw = 255 #transmission type for TXPDO1 (255 = asynchronous)
+
+    node.tpdo[1].clear()  # clear any previous mappings
+    node.tpdo[1].add_variable(0x6041, 0x00)
+    node.tpdo[1].cob_id = 0x40000180 + node.id
+    node.tpdo[1].trans_type = 255
+    node.tpdo[1].start(period=1)
+
+
+
+
+    
+    #TXPDO2
+    node.sdo[0x1A01][0x00].raw = 0 #disable txpdo2
+    node.sdo[0x1A01][0x01].raw = 0x60640020 #position actual value, 0x6064(index), 0x00(subindex), 0x20(size)
+    node.sdo[0x1A01][0x02].raw = 0x606C0020 #velocity actual value, 0x606C(index), 0x00(subindex), 0x20(size)
+    #node.sdo[0x1A01][0x03].raw = 0x60770010 #torque actual value, 0x6077(index), 0x00(subindex), 0x10(size) TOOO LARGE
+    node.sdo[0x1A01][0x00].raw = 2 #number of mapped objects
+
+    node.sdo[0x1801][0x01].raw = 0xC0000280 + node.id  # COB-ID for TXPDO2
+    node.sdo[0x1801][0x02].raw = 255 #transmission type for TXPDO2 (255 = asynchronous)
+
+
+    node.tpdo[2].clear()
+    node.tpdo[2].add_variable(0x6064, 0x00)
+    node.tpdo[2].add_variable(0x606C, 0x00)
+    # node.tpdo[2].add_variable('Torque Actual Value', 0x6077, 0x00) # skip if too large
+    node.tpdo[2].cob_id = 0xC0000280 + node.id
+    node.tpdo[2].trans_type = 255
+    node.tpdo[2].start(period=1)
+
+
+
+
 
 def axis_configuration_init(node, sens_res: int=None, sys_speed: int=None):
     #6.2.52
@@ -77,10 +143,8 @@ def axis_configuration_init(node, sens_res: int=None, sys_speed: int=None):
     node.sdo[0x3000][3].raw = 0x00000020
     #Miscellaneous Axis Configuration
     node.sdo[0x3000][4].raw = 0x00000000
-    """#Main Sensor Resolution (given in [increments/revolution])
-    node.sdo[0x3000][5].raw = sens_res #REFER TO RENISHAW ENCODER SHEET
     #Max System Speed in rpm
-    node.sdo[0x3000][6].raw = sys_speed #REFER TO RENISHAW ENCODER SHEET"""
+    node.sdo[0x3000][6].raw = sys_speed if sys_speed is not None else 100 #REFER TO RENISHAW ENCODER SHEET"""
 
 
 def motor_init(node, motor_type: int=None, nominal_current: int=None, current_lim: int=None, 
