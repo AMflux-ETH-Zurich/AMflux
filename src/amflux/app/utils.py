@@ -79,7 +79,7 @@ def SSI_encoder_output_check(node, interval:float = 0.25, duration: int = 60):
     
     start_time = time.time()
     while (time.time()-start_time) < duration:
-        pos_val = node.tpdo[2][0x6064, 0x00].raw
+        pos_val = node.tpdo[2]['Position Actual Value'].raw
         
         print(f"Current SSI absolute position: {pos_val}")
         time.sleep(interval)
