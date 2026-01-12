@@ -78,7 +78,7 @@ def main():
     print(can_functions.cword_read(mc1))
     drive.goto_state(mc1, drive.DriveState.SWITCH_ON_DISABLED, timeout=5)
     print(can_functions.cword_read(mc1))
-
+    
     print(get_DriveState(mc1))
 
 
