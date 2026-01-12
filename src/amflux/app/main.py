@@ -1384,6 +1384,20 @@ def main():
     
     can_functions.sanity_check(network)
 
+    
+
+    object_dictionary_functions.rxpdo_mapping_init(mc1)
+    object_dictionary_functions.txpdo_mapping_init(mc1)
+
+    mc1.rpdo[1].start()
+    mc1.rpdo[2].start()
+    mc1.tpdo[1].start()
+    mc1.tpdo[2].start()
+
+
+
+
+
     ###drive_run(mc1, OperationModes.CyclicSynchronousPosition, timeout=5, operation_time=5)
 
     ###print("Drive completed run. Network will be shutdown")

@@ -89,6 +89,10 @@ def cword_write(node, value: int):
     :param value: Value of Controlword [binary]
     :type value: int
     """
+
+    #node.rpdo[1][0x6040, 0x00].raw = value
+    #node.rpdo[1].transmit()
+
     node.sdo[0x6040].raw = value
 
 
@@ -100,6 +104,9 @@ def cword_read(node) -> int:
     :return: returns Controlword. [binary]
     :rtype: int
     """
+    #return node.rpdo[1][0x6040, 0x00].raw
+   
+
     return node.sdo[0x6040].raw
 
 
@@ -111,4 +118,6 @@ def sword(node) -> int:
     :return: returns Statusword. [binary]
     :rtype: int
     """
+    #return node.tpdo[1][0x6041, 0x00].raw
+
     return node.sdo[0x6041].raw
