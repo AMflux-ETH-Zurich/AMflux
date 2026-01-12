@@ -313,13 +313,13 @@
         #COMMANDING PARAMETERS
 
             [mode.CSP.comm.target_position]
-            position = 67
+            position = 89
 
             [mode.CSP.comm.position_offset]
-            pos_offset = 67
+            pos_offset = 89
 
             [mode.CSP.comm.torque_offset]
-            tor_offset = 67
+            tor_offset = 89
 
 
 
