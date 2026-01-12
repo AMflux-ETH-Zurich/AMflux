@@ -377,7 +377,7 @@ def mode_of_operation_init(node, op_mode: int):
     check_init(locals())
     #Set mode of operation
     #default: 1 -> Profile position mode
-    node.sdo[0x6060][0x00].raw = op_mode if op_mode is not None else 1 
+    node.sdo[0x6060].raw = op_mode if op_mode is not None else 1 
 
 
 def following_error_window_init(node, following_error_window: int = None):
