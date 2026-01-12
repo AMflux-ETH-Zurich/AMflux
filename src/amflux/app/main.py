@@ -68,7 +68,7 @@ def main():
     
     EPOS4 = organiser.DriveOrganiser(1, network=network)
 
-    app = gui.App(network=network, drive=EPOS4)
+    app = gui.App(drive=EPOS4)
 
     app.mainloop()
     '''
