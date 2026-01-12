@@ -91,6 +91,13 @@ def rxpdo_mapping_init(node):
     node.sdo[0x1401][0x01].raw = 0x00000300 + node.id  # COB-ID for RXPDO1
     node.sdo[0x1401][0x02].raw = 255 #transmission type for RXPDO1 (255 = asynchronous)
 
+    node.rpdo[2].clear()
+    node.rpdo[2].add_variable(0x607A, 0x00)
+    node.rpdo[2].add_variable(0x60FF, 0x00)
+    node.rpdo[2].cob_id = 0x00000300 + node.id
+    node.rpdo[2].trans_type = 255
+    node.rpdo[2].start()
+
 
 
 
