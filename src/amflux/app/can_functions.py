@@ -104,7 +104,7 @@ def cword_read(node) -> int:
     :return: returns Controlword. [binary]
     :rtype: int
     """
-    return node.rpdo[1][0x6040].raw
+    return node.tpdo[1][0x6041].raw
    
 
     #return node.sdo[0x6040].raw
