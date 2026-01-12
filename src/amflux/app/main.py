@@ -1304,6 +1304,19 @@ def init_obj_dict(node, desired_mode):
         return True
 
 
+
+
+    
+
+        
+
+    
+
+
+
+
+
+
 def drive_run(node, desired_op_mode, timeout, operation_time):
     """Checks if OD is initialized for the desired op mode and runs it if so. Otherwise states OD not initialized
     
@@ -1313,7 +1326,7 @@ def drive_run(node, desired_op_mode, timeout, operation_time):
         timeout: Maximum time to wait for state transitions.
         operation_time: Time to maintain the desired operation state.
     """
-    #TODO: power check? arduino ok check? Mode of operation write and display. adjust TOML file for COMM and CONF
+    
 
     if init_obj_dict(node, desired_op_mode):
         mode_code = OperationModes.abreviation[desired_op_mode]
@@ -1337,7 +1350,7 @@ def drive_run(node, desired_op_mode, timeout, operation_time):
             
             func(node, **kwargs)
 
-        goto_state(node, desired_state=4, timeout=timeout)
+        goto_state(node, desired_state=DriveState.OPERATION_ENABLED, timeout=timeout)
         start_time = time.time()
         while (current_time - start_time) < operation_time:
             current_time = time.time()
