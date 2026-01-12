@@ -24,7 +24,8 @@ from organiser import DriveOrganiser
 
 
 #'/home/amfluxpi/AMflux/src/amflux/app/object_dictionary.toml'
-with open('/Users/wendelinroth/Desktop/Code/GitHub/AMflux/src/amflux/app/object_dictionary.toml', 'r') as data:
+#'/Users/wendelinroth/Desktop/Code/GitHub/AMflux/src/amflux/app/object_dictionary.toml'
+with open('/home/amfluxpi/AMflux/src/amflux/app/object_dictionary.toml', 'r') as data:
     objdict_data = toml.load(data)
 
 
