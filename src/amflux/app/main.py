@@ -67,12 +67,10 @@ def main():
     
     can_functions.sanity_check(network)
 
-
+    object_dictionary_functions.mode_of_operation_init(mc1, 1)
 
     object_dictionary_functions.rxpdo_mapping_init(mc1)
     object_dictionary_functions.txpdo_mapping_init(mc1)
-
-    object_dictionary_functions.axis_configuration_init(mc1)
 
 
     print(can_functions.cword_read(mc1))
@@ -87,7 +85,7 @@ def main():
     ###print("Drive completed run. Network will be shutdown")
 
     #OUTPUT CHECK SSI ENCODER
-    utils.SSI_encoder_output_check(mc1, interval = 0.01, duration = 20)
+    #utils.SSI_encoder_output_check(mc1, interval = 0.01, duration = 20)
 
     can_functions.network_shutdown(net)
 
