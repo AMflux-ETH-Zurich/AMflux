@@ -72,3 +72,43 @@ def sanity_check(net):
         else:
             print("no answer received after 3 seconds")
             return False
+        
+
+# ======================================================================
+# ======================================================================
+# Region: DEVICE CONTROL FUNCTIONS
+# ======================================================================
+# ======================================================================
+
+
+def cword_write(node, value: int):
+    """
+    Writes a value to Controlword.
+    
+    :param node: CANopen Network Node with Controlword instance
+    :param value: Value of Controlword [binary]
+    :type value: int
+    """
+    node.sdo[0x6040].raw = value
+
+
+def cword_read(node) -> int:
+    """
+    Reads Controlword.
+    
+    :param node: CANopen Network Node with Controlword instance
+    :return: returns Controlword. [binary]
+    :rtype: int
+    """
+    return node.sdo[0x6040].raw
+
+
+def sword(node) -> int:
+    """
+    Reads Statusword.
+    
+    :param node: CANopen Network Node with Statusword instance
+    :return: returns Statusword. [binary]
+    :rtype: int
+    """
+    return node.sdo[0x6041].raw

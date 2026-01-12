@@ -783,9 +783,10 @@ RATE_LIMIT_MSGS_PER_SEC: int = 750
         node.sdo[0x6402].raw = motor_type if motor_type is not None else 10
     '''
 
+'''
 # ======================================================================
 # ======================================================================
-# Region: DEVICE CONTROL FUNCTIONS
+# Region: DEVICE CONTROL FUNCTIONS [SEPERATE FILE: can_functions.py]
 # ======================================================================
 # ======================================================================
 
@@ -822,9 +823,10 @@ def sword(node) -> int:
     """
     return node.sdo[0x6041].raw
 
-
+'''
+'''
 # ======================================================================
-# Sub-Region: DRIVE STATE FUNCTIONS
+# Sub-Region: DRIVE STATE FUNCTIONS [NEW LOCATION: drive.py]
 # ======================================================================
 
 
@@ -1161,9 +1163,10 @@ def goto_state(node, desired_state, timeout):
     else:
         raise DesiredDriveStateError(f"{desired_state} state could not be reached. Current state: {final_state}")
 
-
+'''
+'''
 # ======================================================================
-# Region: OPERATING MODES
+# Region: OPERATING MODES [NEW LOCATION: organiser.py]
 # ======================================================================
 
 with open('/home/amfluxpi/AMflux/src/amflux/app/object_dictionary.toml', 'r') as data:
@@ -1368,7 +1371,7 @@ def drive_run(node, desired_op_mode, timeout, operation_time):
 
 
 
-
+'''
 
 # ======================================================================
 # Region: Main
