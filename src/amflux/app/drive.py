@@ -5,6 +5,9 @@ from errors import InitializationError, DriveStateDetError, DriveStatePathError,
 from threading import Thread, Event
 
 import time
+from can_functions import cword_read
+from can_functions import cword_write
+from can_functions import sword
 
 
 
@@ -240,7 +243,7 @@ def do_DriveCommand(node, command: int, target: DriveState, timeout: int) -> Tru
 
 
 def shutdown_drive(node):
-    current_state = get_DriveState()
+    current_state = get_DriveState(node)
 
     if current_state == DriveState.OPERATION_ENABLED or current_state == DriveState.QUICK_STOP_ACTIVE:
         do_DriveCommand(DriveCommand.DISABLE_VOLTAGE)
@@ -323,17 +326,17 @@ def goto_state(node, desired_state, timeout):
             do_DriveCommand(node, next_command, next_state, timeout)
         except DriveStateDetError as e:
             # Specific drive-state errors you expect
-            shutdown_drive()
+            shutdown_drive(node)
             print(f"Drive state determination error: {e}")
             raise
         except TimeoutError as e:
             # Timeout errors from nested calls
-            shutdown_drive()
+            shutdown_drive(node)
             print(f"Timeout during state transition: {e}")
             raise
         except Exception as e:
             # Unexpected errors—log and fail fast
-            shutdown_drive()
+            shutdown_drive(node)
             print(f"Unexpected error: {e} current State: {get_DriveState(node)}")
             raise
         finally:

@@ -66,7 +66,7 @@ Initialization & Configuration Functions
 Touch Probe (6.2.134–6.2.137, 6.2.140–6.2.142) not implemented.
 """
 
-def rxpdo_mapping_init(node):
+"""def rxpdo_mapping_init(node):
 
     #RXPDO1
     node.sdo[0x1600][0x00].raw = 0 #disable rxpdo1
@@ -76,7 +76,7 @@ def rxpdo_mapping_init(node):
     node.sdo[0x1400][0x01].raw = 0x00000200 + node.id  # COB-ID for RXPDO1
     node.sdo[0x1400][0x02].raw = 255 #transmission type for RXPDO1 (255 = asynchronous)
 
-    node.rpdo[1].clear()  # clear any previous mappings
+    node.rpdo[1].clear()
     node.rpdo[1].add_variable(0x6040, 0x00)
     node.rpdo[1].cob_id = 0x00000200 + node.id
     node.rpdo[1].trans_type = 255
@@ -95,13 +95,13 @@ def rxpdo_mapping_init(node):
     node.rpdo[2].add_variable(0x607A, 0x00)
     node.rpdo[2].add_variable(0x60FF, 0x00)
     node.rpdo[2].cob_id = 0x00000300 + node.id
-    node.rpdo[2].trans_type = 255
+    node.rpdo[2].trans_type = 255"""
+   
 
 
 
 
 def txpdo_mapping_init(node):
-
     #TXPDO1
     node.sdo[0x1A00][0x00].raw = 0 #disable txpdo1
     node.sdo[0x1A00][0x01].raw = 0x60410010 #status word, 0x6041(index), 0x00(subindex), 0x10(size)
@@ -126,13 +126,28 @@ def txpdo_mapping_init(node):
     node.sdo[0x1801][0x01].raw = 0xC0000280 + node.id  # COB-ID for TXPDO2
     node.sdo[0x1801][0x02].raw = 255 #transmission type for TXPDO2 (255 = asynchronous)
 
-
     node.tpdo[2].clear()
     node.tpdo[2].add_variable(0x6064, 0x00)
     node.tpdo[2].add_variable(0x606C, 0x00)
     node.tpdo[2].cob_id = 0xC0000280 + node.id
     node.tpdo[2].trans_type = 255
     node.tpdo[2].start(period=1)
+
+
+    #TXPDO3
+    node.sdo[0x1A02][0x00].raw = 0 #disable txpdo3
+    node.sdo[0x1A02][0x01].raw = 0x60770010 #torque actual value, 0x6077(index), 0x00(subindex), 0x10(size)
+    node.sdo[0x1A02][0x00].raw = 1 #number of mapped objects
+
+    node.sdo[0x1802][0x01].raw = 0xC0000380 + node.id  # COB-ID for TXPDO3
+    node.sdo[0x1802][0x02].raw = 255 #transmission type for TXPDO3 (255 = asynchronous)
+
+    node.tpdo[3].clear()
+    node.tpdo[3].add_variable(0x6077, 0x00)
+    node.tpdo[3].cob_id = 0xC0000380 + node.id
+    node.tpdo[3].trans_type = 255
+    node.tpdo[3].start(period=1)
+
 
 
 
@@ -377,7 +392,7 @@ def mode_of_operation_init(node, op_mode: int):
     check_init(locals())
     #Set mode of operation
     #default: 1 -> Profile position mode
-    node.sdo[0x6060][0x00].raw = op_mode if op_mode is not None else 1 
+    node.sdo[0x6060].raw = op_mode if op_mode is not None else 1 
 
 
 def following_error_window_init(node, following_error_window: int = None):
