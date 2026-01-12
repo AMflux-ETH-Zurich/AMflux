@@ -143,8 +143,6 @@ def axis_configuration_init(node, sens_res: int=None, sys_speed: int=None):
     node.sdo[0x3000][3].raw = 0x00000020
     #Miscellaneous Axis Configuration
     node.sdo[0x3000][4].raw = 0x00000000
-    #Max System Speed in rpm
-    node.sdo[0x3000][6].raw = sys_speed if sys_speed is not None else 100 #REFER TO RENISHAW ENCODER SHEET"""
 
 
 def motor_init(node, motor_type: int=None, nominal_current: int=None, current_lim: int=None, 
