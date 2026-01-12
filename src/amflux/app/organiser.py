@@ -250,6 +250,8 @@ class DriveOrganiser:
         self.monitor_thread = Thread(target=goto_state)
         self.monitor_thread.join()
 
+
+
     
     # ============================================
     # RUNTIME UPDATES (called by GUI)
@@ -287,12 +289,14 @@ class DriveOrganiser:
             
             time.sleep(0.02)  # 50Hz update rate
     
+
     def _process_param_updates(self):
         """
         Drain queue and write each param to controller OD.
         """
         while not self._param_update_queue.empty():
             param_name, value = self._param_update_queue.get()
+            object_dictionary_functions.param_name = value
             
             
     def read_telemetry(self) -> dict:
