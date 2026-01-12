@@ -2,8 +2,9 @@ import queue
 import toml
 import object_dictionary_functions
 from errors import InitializationError, DriveStateDetError, DriveStatePathError, DesiredDriveStateError, DriveStateResetError, InitObjDict, DesiredMode, SanityCheck
-from threading import Thread
+from threading import Thread, Event
 from main import goto_state
+import time
 
 #'/home/amfluxpi/AMflux/src/amflux/app/object_dictionary.toml'
 with open('/Users/wendelinroth/Desktop/Code/GitHub/AMflux/src/amflux/app/object_dictionary.toml', 'r') as data:
@@ -157,10 +158,10 @@ class DriveOrganiser:
         
         # Single thread for telemetry and parameter updates
         self.monitor_thread = None
-        self.stop_event = None
+        self.stop_event = Event()
         
         # Queue for parameter updates from GUI
-        self._param_update_queue = queue.Queue()
+        self.param_update_queue = queue.Queue()
     
     # ============================================
     # LIFECYCLE MANAGEMENT
@@ -204,7 +205,7 @@ class DriveOrganiser:
         goto_state(self.node, desired_state=DriveState.OPERATION_ENABLED, timeout=timeout)
         self.is_running = True
         self.monitor_thread = Thread(target=goto_state)
-        
+
 
         
     def stop_operation(self):
@@ -213,6 +214,11 @@ class DriveOrganiser:
         2. Shutdown drive via goto_state()
         3. Join thread
         """
+        if not self.is_running:
+                return
+        self.is_running = False
+        self.monitor_thread.join()
+
     
     # ============================================
     # RUNTIME UPDATES (called by GUI)
@@ -223,7 +229,7 @@ class DriveOrganiser:
         Queue a parameter update to be written in monitor thread.
         E.g., update_parameter('target_position', 5000)
         """
-        self._param_update_queue.put((param_name, value))
+        self.param_update_queue.put((param_name, value))
     
     # ============================================
     # MONITORING THREAD
@@ -256,7 +262,7 @@ class DriveOrganiser:
         """
         while not self._param_update_queue.empty():
             param_name, value = self._param_update_queue.get()
-            # Map param_name to OD address and write
+            
             
     def _read_telemetry(self) -> dict:
         """
