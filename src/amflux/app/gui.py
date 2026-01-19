@@ -243,7 +243,7 @@ def ModePageBuilder(app, parent, modeint, modename):
     stop_button = ttk.Button(
         commanding,
         text="STOP",
-        command= 0# das musmer no mache
+        command= lambda: app.drive.stop_operation(timeout=10)
     )
     stop_button.grid(row=2, column=0)
 
