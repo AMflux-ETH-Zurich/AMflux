@@ -75,8 +75,11 @@ def main():
     '''
 
     can_functions.sanity_check(network)
+    var = can_functions.sword(mc1)
+    print(f'var: {var}')
     drive.goto_state(mc1, desired_state=4, timeout=5)
-
+    var2 = can_functions.sword(mc1)
+    print(f'var: {va2r}')
 
     '''
     can_functions.sanity_check(network)
