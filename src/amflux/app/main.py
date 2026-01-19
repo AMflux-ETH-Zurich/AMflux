@@ -67,7 +67,7 @@ def main():
     network, mc1 = can_functions.network_setup(1, '/home/amfluxpi/AMflux/src/amflux/app/Epos4_70_15.eds', 'can0', net)
 
     
-    EPOS4 = organiser.DriveOrganiser(1, network=network)
+    EPOS4 = organiser.DriveOrganiser(mc1, network=network)
 
     app = gui.App(drive=EPOS4)
 
