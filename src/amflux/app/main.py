@@ -80,9 +80,13 @@ def main():
     drive.goto_state(mc1, desired_state=4, timeout=5)
     var2 = can_functions.sword(mc1)
     print(f'var: {var2}')
-    time.sleep(5)
-    var3 = can_functions.sword(mc1)
-    print(f'var: {var3}')
+    start = time.time()
+    while (time.time() - start) < 20:
+        var3 = can_functions.sword(mc1)
+        print(f'var: {var3}')
+        time.sleep(0.2)
+
+    
     '''
     can_functions.sanity_check(network)
 
