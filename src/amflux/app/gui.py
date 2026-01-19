@@ -119,22 +119,22 @@ def HomePage(app, parent):
 
         if selected == "ProfilePosition":
             app.set_state(PageState.ProfilePosition)
-            DriveOrganiser.current_mode = OperationModes.ProfilePosition
+            app.drive.current_mode = OperationModes.ProfilePosition
         elif selected == "Homing":
             app.set_state(PageState.Homing)
-            DriveOrganiser.current_mode = OperationModes.Homing
+            app.drive.current_mode = OperationModes.Homing
         elif selected == "ProfileVelocity":
             app.set_state(PageState.ProfileVelocity)
-            DriveOrganiser.current_mode = OperationModes.ProfileVelocity
+            app.drive.current_mode = OperationModes.ProfileVelocity
         elif selected == "CyclicSynchronousPosition":
             app.set_state(PageState.CyclicSynchronousPosition)
-            DriveOrganiser.current_mode = OperationModes.CyclicSynchronousPosition
+            app.drive.current_mode = OperationModes.CyclicSynchronousPosition
         elif selected == "CyclicSynchronousVelocity":
             app.set_state(PageState.CyclicSynchronousVelocity)
-            DriveOrganiser.current_mode = OperationModes.CyclicSynchronousVelocity
+            app.drive.current_mode = OperationModes.CyclicSynchronousVelocity
         elif selected == "CyclicSynchronousTorque":
             app.set_state(PageState.CyclicSynchronousTorque)
-            DriveOrganiser.current_mode = OperationModes.CyclicSynchronousTorque
+            app.drive.current_mode = OperationModes.CyclicSynchronousTorque
 
     button = ttk.Button(
         parent,
@@ -229,7 +229,7 @@ def ModePageBuilder(app, parent, modeint, modename):
     run_button = ttk.Button(
         commanding,
         text="RUN",
-        command= lambda: DriveOrganiser.start_operation(timeout=10)
+        command= lambda: app.drive.start_operation(timeout=10)
     )
     run_button.grid(row=0, column=0)
 
