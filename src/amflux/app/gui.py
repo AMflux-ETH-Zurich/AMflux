@@ -229,7 +229,7 @@ def ModePageBuilder(app, parent, modeint, modename):
     run_button = ttk.Button(
         commanding,
         text="RUN",
-        command= lambda: app.drive.start_operation(timeout=10)
+        command= lambda: app.drive.start_operation(10)
     )
     run_button.grid(row=0, column=0)
 
@@ -243,7 +243,7 @@ def ModePageBuilder(app, parent, modeint, modename):
     stop_button = ttk.Button(
         commanding,
         text="STOP",
-        command= lambda: app.drive.stop_operation(timeout=10)
+        command= lambda: app.drive.stop_operation(10)
     )
     stop_button.grid(row=2, column=0)
 
