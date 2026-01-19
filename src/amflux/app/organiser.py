@@ -11,6 +11,7 @@ from drive import goto_state
 import time
 import numpy as np
 from drive import DriveState, DriveCommand
+from can_functions import sword
 
 
 
@@ -233,6 +234,8 @@ class DriveOrganiser:
         3. Set is_running flag
         """
         goto_state(self.node, desired_state=DriveState.OPERATION_ENABLED, timeout=timeout)
+        var = sword(self.node)
+        print(f'var: {var}')
         self.is_running = True
         self.monitor_thread = Thread(target=goto_state)
 
