@@ -75,7 +75,7 @@ def main():
     '''
 
     can_functions.sanity_check(network)
-    drive.goto_state(mc1, desired_state=DriveState.OPERATION_ENABLED, timeout=5)
+    drive.goto_state(mc1, desired_state=4, timeout=5)
 
 
     '''
