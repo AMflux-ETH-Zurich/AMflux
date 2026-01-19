@@ -167,10 +167,10 @@ class DriveOrganiser:
     No control loop needed - firmware handles that.
     """
     
-    def __init__(self, node, network):
+    def __init__(self, node, network, start_mode):
         self.node = node
         self.network = network
-        self.current_mode = None
+        self.current_mode = start_mode
         self.is_running = False
         
         # Single thread for telemetry and parameter updates

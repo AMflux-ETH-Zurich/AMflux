@@ -18,7 +18,7 @@ from matplotlib.figure import Figure
 
 import random
 
-from organiser import DriveOrganiser
+from organiser import DriveOrganiser, OperationModes
 
 
 
@@ -119,16 +119,22 @@ def HomePage(app, parent):
 
         if selected == "ProfilePosition":
             app.set_state(PageState.ProfilePosition)
+            DriveOrganiser.current_mode = OperationModes.ProfilePosition
         elif selected == "Homing":
             app.set_state(PageState.Homing)
+            DriveOrganiser.current_mode = OperationModes.Homing
         elif selected == "ProfileVelocity":
             app.set_state(PageState.ProfileVelocity)
+            DriveOrganiser.current_mode = OperationModes.ProfileVelocity
         elif selected == "CyclicSynchronousPosition":
             app.set_state(PageState.CyclicSynchronousPosition)
+            DriveOrganiser.current_mode = OperationModes.CyclicSynchronousPosition
         elif selected == "CyclicSynchronousVelocity":
             app.set_state(PageState.CyclicSynchronousVelocity)
+            DriveOrganiser.current_mode = OperationModes.CyclicSynchronousVelocity
         elif selected == "CyclicSynchronousTorque":
             app.set_state(PageState.CyclicSynchronousTorque)
+            DriveOrganiser.current_mode = OperationModes.CyclicSynchronousTorque
 
     button = ttk.Button(
         parent,
