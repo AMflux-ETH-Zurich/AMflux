@@ -113,7 +113,7 @@ def get_DriveState(node) -> DriveState:
         return DriveState.FAULT_REACTION_ACTIVE
 
     # Fault
-    if (b6 == 0 and b5 == 1 and b3 == 1 and b2 == 0 and b1 == 0 and b0 == 0):
+    if (b6 == 0 and b5 == 0 and b3 == 1 and b2 == 0 and b1 == 0 and b0 == 0):
         return DriveState.FAULT
     
     raise DriveStateDetError(f"Unknown drive state with statusword: {statusword:#04x}")
