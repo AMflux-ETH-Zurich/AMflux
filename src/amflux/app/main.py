@@ -65,7 +65,7 @@ def main():
     global net
     # Setup our CANopen network
     network, mc1 = can_functions.network_setup(1, '/home/amfluxpi/AMflux/src/amflux/app/Epos4_70_15.eds', 'can0', net)
-    '''
+
     
     EPOS4 = organiser.DriveOrganiser(mc1, network=network)
 
@@ -75,25 +75,11 @@ def main():
     
     '''
     can_functions.sanity_check(network)
-    var = can_functions.sword(mc1)
-    print(f'var: {var}')
+    s
     drive.goto_state(mc1, desired_state=4, timeout=5)
     var2 = can_functions.sword(mc1)
     print(f'var: {var2}')
-    start = time.time()
-    while (time.time() - start) < 20:
-        var3 = can_functions.sword(mc1)
-        print(f'var: {var3}')
-        time.sleep(0.2)
-    drive.goto_state(mc1, desired_state=4, timeout=5)
-    var5 = can_functions.sword(mc1)
-    print(f'var: {var5}')
-    start1 = time.time()
-    while (time.time() - start1) < 20:
-        var4 = can_functions.sword(mc1)
-        print(f'var: {var4}')
-        time.sleep(0.2)
-    
+    '''
     '''
     can_functions.sanity_check(network)
 
