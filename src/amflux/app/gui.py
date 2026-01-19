@@ -229,7 +229,7 @@ def ModePageBuilder(app, parent, modeint, modename):
     run_button = ttk.Button(
         commanding,
         text="RUN",
-        command= lambda: DriveOrganiser.start_operation(10)
+        command= lambda: DriveOrganiser.start_operation(timeout=10)
     )
     run_button.grid(row=0, column=0)
 
