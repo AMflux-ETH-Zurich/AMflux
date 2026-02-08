@@ -132,7 +132,7 @@ class DriveCommand:
     the CANopen DS402 device profile specification.
     """
     
-    SHUTDOWN            = 0b00000110 #maybe normal ints
+    SHUTDOWN            = 0b00000110 
     SWITCH_ON           = 0b00000111
     ENABLE_OPERATION    = 0b00001111
     DISABLE_VOLTAGE     = 0b00000000
@@ -252,7 +252,7 @@ def shutdown_drive(node):
         do_DriveCommand(DriveCommand.SHUTDOWN)
     
 
-def Drive_State_BFS(start_state, target_state, Drive_State_map):
+def DriveState_BFS(start_state, target_state, Drive_State_map):
     """Naive breadth-firs-search algorithm to traverse DriveState map.  
        ATTENTION: THIS FUNCTION IS 100% WRITTEN BY AI
 
@@ -315,7 +315,7 @@ def goto_state(node, desired_state, timeout):
     """   
     current_state = get_DriveState(node)
     
-    route = Drive_State_BFS(current_state, desired_state, DriveStateMap)
+    route = DriveState_BFS(current_state, desired_state, DriveStateMap)
 
     if route is None:
         raise DriveStatePathError(f"No valid path to {desired_state} was found")
@@ -351,3 +351,6 @@ def goto_state(node, desired_state, timeout):
         return
     else:
         raise DesiredDriveStateError(f"{desired_state} state could not be reached. Current state: {final_state}")
+
+
+

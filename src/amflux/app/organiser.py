@@ -272,7 +272,7 @@ class DriveOrganiser:
     # MONITORING THREAD
     # ============================================
     
-    def _monitor_loop(self):
+    def monitor_loop(self):
         """
         Runs continuously while is_running:
         
