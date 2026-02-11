@@ -10,7 +10,7 @@ from threading import Thread, Event
 from drive import goto_state
 import time
 import numpy as np
-from drive import DriveState, DriveCommand
+from drive import DriveState, DriveCommand, get_DriveState
 from can_functions import sword
 
 
@@ -24,10 +24,6 @@ from can_functions import sword
 with open('/home/amfluxpi/AMflux/src/amflux/app/object_dictionary.toml', 'r') as data:
     objdict_data = toml.load(data)
 
-
-# ======================================================================
-# Operation
-# ======================================================================
 
 class OperationModes:
     ProfilePosition             = 1
@@ -162,6 +158,24 @@ def init_obj_dict(node, desired_mode):
     else:
         return True
 
+# ======================================================================
+# Drive Organiser
+# ======================================================================
+
+class CmdType(Enum):
+    ENABLE_OPERATION = auto()
+    QUICK_STOP = auto()
+    DISABLE_VOLTAGE = auto()
+    UPDATE_PARAM = auto()
+
+
+@dataclass
+class Command:
+    type: CmdType
+    data: tuple | None = None
+    timeout: float | None = None
+
+
 class DriveOrganiser:
     """
     Manages drive operation lifecycle and telemetry monitoring.
@@ -169,24 +183,102 @@ class DriveOrganiser:
     """
     
     def __init__(self, node, network):
+        # Network and Node
         self.node = node
         self.network = network
-        self.current_mode = None
-        self.is_running = False
         
-        # Single thread for telemetry and parameter updates
-        self.monitor_thread = None
-        self.stop_event = Event()
+        # Organiser thread control
+        self.thread = None
+        self.shutdown = Event()
+
+        # Command handling
+        self.cmd_q = queue.Queue()
+        self.stop_volt_requested = Event()
+        self.cancel_transition = Event()
         
+        # Power State
+        self.power_enabled = False
+        self.torque_enabled = False
+        
+        """
         # Queue for parameter updates from GUI
         self.param_update_queue = queue.Queue()
 
         self.recent_telemetry = None
-    
+        """
+
+    def request_start(self, timeout=5.0):
+        self.cmd_q.put(Command(CmdType.ENABLE_OPERATION, timeout=timeout))
+
+    def request_disable_voltage(self):
+        self.stop_volt_requestet.set()
+        self.cancel_transition.set()
+        self.cmd_q.put(Command(CmdType.DISABLE_VOLTAGE))
+
+    def request_quick_stop(self):
+        if(get_DriveState(self.node) != DriveState.OPERATION_ENABLED):
+            #TODO: print something or raise error?
+            return
+        
+        #self.stop_volt_requested.set()
+        self.cmd_q.put(Command(CmdType.QUICK_STOP))
+
+    def request_update_param(self, name, value, timeout=5.0):
+        self.cmd_q.put(Command(CmdType.UPDATE_PARAM, data=(name, value)))
+
     # ============================================
     # LIFECYCLE MANAGEMENT
     # ============================================
     
+    def start_organiser(self):
+        if self.thread and self.thread.is_alive():
+            return
+        self.shutdown.clear()
+        #self.cmd_q.clear()
+        self.thread = Thread(target=self.organiser_loop, daemon=True)
+        self.thread.start()
+
+    def stop_organiser(self):
+        self.shutdown.set()
+        if self.thread:
+            self.thread.join(timeout=2.0)
+
+    def organiser_loop(self):
+        # HIGH PRIORITY: handle request stop
+        if self.stop_volt_requested.is_set():
+            self.stop_volt()
+
+            self.stop_volt_requested.clear()
+
+            self.clear_non_stop_commands()  
+        # get command
+        try:
+            cmd = self.cmd_q.get()
+        except queue.Empty:
+            cmd = None
+
+        if cmd is not None:
+            if cmd.type == QUICK_STOP:
+                self.quick_stop()
+            elif cmd.type == ENABLE_OPERATION:
+                self.enable_operation()
+            elif cmd.type == UPDATE_PARAM:
+                name, value = cmd.data
+                self.update_parameter(name, value)
+            elif cmd.type == DISABLE_VOLTAGE:
+                self.stop_volt()
+        # execute command depending on type
+
+        #if torque enabled get telemtry
+
+
+
+
+
+
+
+
+
     def set_mode(self, desired_mode):
         self.node.sdo[0x6060] = desired_mode
         time.sleep(5)
@@ -204,29 +296,15 @@ class DriveOrganiser:
         
         if self.set_mode(self, self.current_mode) and init_obj_dict(self.node, self.current_mode):
             mode_code = OperationModes.abreviation[self.current_mode]
+
             for func_name, instance in objdict_data["mode"][mode_code]["comm"].items():
                 func = getattr(object_dictionary_functions, func_name)
-                kwargs = {}
-                for variable, default_val in instance.items(): 
-                    user_val = None #TODO take value from GUI
-                    if user_val == "":
-                        write_val = default_val
-                    try:
-                        write_val = int(user_val)
-                    except Warning:
-                        try:
-                            write_val = None #TODO : message on GUI: f"please enter a valid INT64 value for {variable}"
-                        except Exception:
-                            pass#TODO: message on GUI: f"invalid value for {variable}, using default value: {default_val}")
-                    
-                    kwargs[variable] = write_val
-                
+                kwargs = {var_name: int(val) for var_name, val in instance.items()}
                 func(self.node, **kwargs)
+            return True
         else:
-           pass  #TODO show error message on GUI: Prepare operation failed
+            return False   #TODO show error message on GUI: Prepare operation failed
                 
-
-    
     def start_operation(self, timeout):
         """
         1. Transition to OPERATION_ENABLED via goto_state()

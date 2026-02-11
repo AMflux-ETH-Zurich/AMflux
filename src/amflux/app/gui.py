@@ -208,13 +208,51 @@ def ModePageBuilder(app, parent, modeint, modename):
         for param_name, tk_var in vars.items():
             value = tk_var.get()  
             app.drive.update_parameter(param_name, value)
-            
-    update_button = ttk.Button(
+    
+    def set_params(flag):
+        if app.drive is None:
+            print("Warning: Network not initialized, cannot update parameters")
+            return
+        mode_code = PageState.abreviation[modeint]
+        
+        for section_name, section_dict in objdict_data["mode"][mode_code]["comm"].items():
+            for var_name in section_dict.keys():
+                if var_name in vars:
+                    value = vars[var_name].get()
+                    section_dict[var_name] = value
+        
+        #TODO vlaue checking
+        """user_val = None #TODO take value from GUI
+                    if user_val == "":
+                        write_val = default_val
+                    try:
+                        write_val = int(user_val)
+                    except Warning:
+                        try:
+                            write_val = None #TODO : message on GUI: f"please enter a valid INT64 value for {variable}"
+                        except Exception:
+                            pass#TODO: message on GUI: f"invalid value for {variable}, using default value: {default_val}")
+        """
+        
+        flag[0] = 1
+        
+        
+    init_flag = [0]
+
+    if init_flag[0] == 0:
+        set_button = ttk.Button(
+        editing, 
+        text = "SET",
+        command = set_params
+        )
+        update_button.grid(column=1)
+    else:
+        update_button = ttk.Button(
         editing, 
         text = "UPDATE",
         command = update_params
-    )
-    update_button.grid(column=1)
+        )
+        update_button.grid(column=1)
 
     #Command Buttons
     commanding = tk.Frame(parent)
