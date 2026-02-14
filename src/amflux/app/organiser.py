@@ -244,40 +244,35 @@ class DriveOrganiser:
             self.thread.join(timeout=2.0)
 
     def organiser_loop(self):
-        # HIGH PRIORITY: handle request stop
-        if self.stop_volt_requested.is_set():
-            self.stop_volt()
-
-            self.stop_volt_requested.clear()
-
-            self.clear_non_stop_commands()  
-        # get command
-        try:
-            cmd = self.cmd_q.get()
-        except queue.Empty:
-            cmd = None
-
-        if cmd is not None:
-            if cmd.type == QUICK_STOP:
-                self.quick_stop()
-            elif cmd.type == ENABLE_OPERATION:
-                self.enable_operation()
-            elif cmd.type == UPDATE_PARAM:
-                name, value = cmd.data
-                self.update_parameter(name, value)
-            elif cmd.type == DISABLE_VOLTAGE:
+        while not self.shutdown.is_set()
+            # HIGH PRIORITY: handle request stop
+            if self.stop_volt_requested.is_set():
                 self.stop_volt()
-        # execute command depending on type
 
-        #if torque enabled get telemtry
+                self.stop_volt_requested.clear()
 
+                self.clear_non_stop_commands()  
+            # get command
+            try:
+                cmd = self.cmd_q.get()
+            except queue.Empty:
+                cmd = None
+            # execute command depending on type
+            if cmd is not None:
+                if cmd.type == QUICK_STOP:
+                    self.quick_stop()
+                elif cmd.type == ENABLE_OPERATION:
+                    self.enable_operation()
+                elif cmd.type == UPDATE_PARAM:
+                    name, value = cmd.data
+                    self.update_parameter(name, value)
+                elif cmd.type == DISABLE_VOLTAGE:
+                    self.stop_volt()
+                continue
+            #if torque enabled get telemtry
+            self.read_telemetry()
 
-
-
-
-
-
-
+            time.sleep(0.01)
 
     def set_mode(self, desired_mode):
         self.node.sdo[0x6060] = desired_mode
@@ -305,36 +300,39 @@ class DriveOrganiser:
         else:
             return False   #TODO show error message on GUI: Prepare operation failed
                 
-    def start_operation(self, timeout):
+    def enable_operation(self, timeout):
         """
-        1. Transition to OPERATION_ENABLED via goto_state()
-        2. Start monitor thread
-        3. Set is_running flag
+        1. Transition to POWER_ENABLED and OPERATION_ENABLED via goto_state()
+        2. Set power_enabled = True
+        3. Set torque_enabled = True
         """
+        if self.cancel_transition.is_set():
+            return
+        goto_state(self.node, desired_state=DriveState.POWER_ENABLED, timeout=timeout)
+        self.power_enabled = True
+
+        if self.cancel_transition.is_set():
+            return
         goto_state(self.node, desired_state=DriveState.OPERATION_ENABLED, timeout=timeout)
         var = sword(self.node)
-        print(f'var: {var}')
-        self.is_running = True
-        self.monitor_thread = Thread(target=goto_state)
 
-
-        
-    def stop_operation(self):
+        print(f'var: {var}')s
+        self.torque_enabled = True
+       
+    def stop_volt(self):
         """
-        1. Signal monitor thread to stop
-        2. Shutdown drive via goto_state()
-        3. Join thread
+        1. Shutdown drive via goto_state()
+        2. 
+        3. 
         """
-        if not self.is_running:
+        if not self.power_enabled:
                 return
-        self.is_running = False
+        
+        goto_state(self.node, desired_state=DriveState.SWITCHED_ON, timeout=2)
+        self.torque_enabled = False
         goto_state(self.node, desired_state=DriveState.READY_TO_SWITCH_ON, timeout=2)
-        self.monitor_thread = Thread(target=goto_state)
-        self.monitor_thread.join()
+        self.power_enabled = False
 
-
-
-    
     # ============================================
     # RUNTIME UPDATES (called by GUI)
     # ============================================
