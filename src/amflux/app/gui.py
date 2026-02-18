@@ -223,8 +223,11 @@ def ModePageBuilder(app, parent, modeint, modename):
             except ValueError:
                 objdict_data["mode"][mode_code]["comm"][name] = tk_var.get()
         print("finished setting")
-        
-        set_button.config(text="UPDATE", command=lambda: update_params())
+        if app.drive.prepare_operation():
+            print("ready to enable operation.")
+            set_button.config(text="UPDATE", command=lambda: update_params())
+        else:
+            print("enabling operation failed")
 
         
     set_button = ttk.Button(editing, text="SET", command=lambda: set_params())
