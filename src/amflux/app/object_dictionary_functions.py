@@ -98,7 +98,7 @@ Touch Probe (6.2.134–6.2.137, 6.2.140–6.2.142) not implemented.
     node.rpdo[2].trans_type = 255"""
    
 
-def pdo_mapping_init(node):
+def pdo_mapping_init(node, network):
     
     # Reset network
     node.nmt.state = 'RESET COMMUNICATION'
@@ -128,13 +128,13 @@ def pdo_mapping_init(node):
     node.tpdo[4].enabled = True
 
     # RxPDO4 (0x501): event-driven, contains controlword, modes of operation and target velocity
-    node.rpdo[4].add_variable(0x6040, 0x00)  # Controlword
-    node.rpdo[4].add_variable(0x6060, 0x00)  # Modes of operation
-    node.rpdo[4].add_variable(0x60FF, 0x00)  # Target velocity
-    node.rpdo[4].add_variable(0x607A, 0x00)  # Target position
-    node.rpdo[4].trans_type = 255 #   1=SYNC; 255=asynchronous
+    node.rpdo[5].add_variable(0x6040, 0x00)  # Controlword
+    node.rpdo[5].add_variable(0x6060, 0x00)  # Modes of operation
+    node.rpdo[5].add_variable(0x60FF, 0x00)  # Target velocity
+    node.rpdo[5].add_variable(0x607A, 0x00)  # Target position
+    node.rpdo[5].trans_type = 255 #   1=SYNC; 255=asynchronous
     #node.rpdo[4].start(0.010)
-    node.rpdo[4].enabled = True
+    node.rpdo[5].enabled = True
     
     node.nmt.state = 'PRE-OPERATIONAL'
     node.tpdo.save()
