@@ -380,7 +380,7 @@ class DriveOrganiser:
         start = time.time()
         #TODO: handle high priority comm params via PDO
         while not self.param_update_queue.empty():
-            if time.time() - start_time > timeout:
+            if time.time() - start > timeout:
                 print(f"Timeout exceeded in process_param_updates")
                 break
             param_name, value = self.param_update_queue.get()
