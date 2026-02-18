@@ -116,7 +116,7 @@ def pdo_mapping_init(node, network):
 
     # TxPDO3: asynchronous/event-driven, contains statusword (is sent if something changes in the 402 state machine)
     node.tpdo[1].add_variable(0x6041, 0x00) # Statusword
-    node.tpdo[1]["0x6041.0x00"].write(0x60410010, fmt='raw')
+    node.tpdo[1]["Statusword"].write(0x60410010, fmt='raw')
     node.tpdo[1].trans_type = 255 #   1=SYNC; 255=asynchronous --> with every change of the 402 state machine (in 0x2400.04, bit mask 0x00000002 must be set (which is the default))
     node.tpdo[1].enabled = True
 

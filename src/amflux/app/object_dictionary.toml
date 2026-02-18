@@ -7,12 +7,12 @@
     sys_speed = 67
 
     [motor.motor_init]
-    motor_type      = 67
-    nominal_current = 67
-    current_lim     = 67
-    pole_pairs      = 67
-    therm_const     = 67
-    tor_const       = 67
+    motor_type      = 10
+    nominal_current = 5000
+    current_lim     = 10000
+    pole_pairs      = 10
+    therm_const     = haixao
+    tor_const       = haixao
 
     [motor.electrical_system_init]
     electrical_resistance = 67
