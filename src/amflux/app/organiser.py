@@ -2,6 +2,8 @@
 # Imports
 # ======================================================================
 
+from dataclasses import dataclass
+from enum import auto
 import queue
 import toml
 import object_dictionary_functions
@@ -244,7 +246,7 @@ class DriveOrganiser:
             self.thread.join(timeout=2.0)
 
     def organiser_loop(self):
-        while not self.shutdown.is_set()
+        while not self.shutdown.is_set():
             # HIGH PRIORITY: handle request stop
             if self.stop_volt_requested.is_set():
                 self.stop_volt()
@@ -259,14 +261,14 @@ class DriveOrganiser:
                 cmd = None
             # execute command depending on type
             if cmd is not None:
-                if cmd.type == QUICK_STOP:
+                if cmd.type == DriveCommand.QUICK_STOP:
                     self.quick_stop()
-                elif cmd.type == ENABLE_OPERATION:
+                elif cmd.type == DriveCommand.ENABLE_OPERATION:
                     self.enable_operation()
-                elif cmd.type == UPDATE_PARAM:
+                elif cmd.type == DriveCommand.UPDATE_PARAM:
                     name, value = cmd.data
                     self.update_parameter(name, value)
-                elif cmd.type == DISABLE_VOLTAGE:
+                elif cmd.type == DriveCommand.DISABLE_VOLTAGE:
                     self.stop_volt()
                 continue
 
