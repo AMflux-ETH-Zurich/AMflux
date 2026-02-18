@@ -423,7 +423,7 @@ class DriveOrganiser:
                 current_mode_disp = None
         
         self.recent_telemetry = [torque, velocity, position, status_word, current_mode_disp]
-        return self.recent_telemetry
+        return [torque, velocity, position, status_word, current_mode_disp]#self.recent_telemetry
         
     def get_status(self) -> dict:
         """
