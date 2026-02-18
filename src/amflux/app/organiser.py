@@ -378,6 +378,7 @@ class DriveOrganiser:
         #TODO: handle high priority comm params via PDO
         while not self.param_update_queue.empty():
             param_name, value = self.param_update_queue.get()
+            print(f"updating {param_name, value}")
             getattr(object_dictionary_functions, param_name)(self.node, value)
             
             
