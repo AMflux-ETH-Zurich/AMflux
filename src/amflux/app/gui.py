@@ -268,7 +268,7 @@ def ModePageBuilder(app, parent, modeint, modename):
     pause_button = ttk.Button(
         commanding,
         text="PAUSE",
-        command= lambda: app.drive.quick_stop(10)
+        command= lambda: app.drive.quick_stop()
     )
     pause_button.grid(row=1, column=0)
 

@@ -344,12 +344,13 @@ class DriveOrganiser:
         goto_state(self.node, desired_state=DriveState.READY_TO_SWITCH_ON, timeout=2)
         self.power_enabled = False
 
-    def quick_stop(self, enable):
+    def quick_stop(self):
         """
         """
+        print("test a")
         if not self.torque_enabled:
             return
-        
+        print("test b")
         goto_state(self.node, desired_state=DriveState.QUICK_STOP_ACTIVE, timeout=2)
         self.torque_enabled = False
 
