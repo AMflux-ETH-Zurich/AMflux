@@ -214,14 +214,15 @@ def ModePageBuilder(app, parent, modeint, modename):
         if app.drive is None:
             print("Warning: Network not initialized, cannot update parameters")
             return
-        
+        print("set1")
         mode_code = PageState.abreviation[modeint]
         for name, tk_var in variables.items():
             try:
                 objdict_data["mode"][mode_code]["comm"][name] = int(tk_var.get())
+                print(f'{name}')
             except ValueError:
                 objdict_data["mode"][mode_code]["comm"][name] = tk_var.get()
-        
+        print("finished setting")
         flag.set()
         
         
