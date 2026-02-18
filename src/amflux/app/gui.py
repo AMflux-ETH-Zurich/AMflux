@@ -233,14 +233,14 @@ def ModePageBuilder(app, parent, modeint, modename):
         set_button = ttk.Button(
         editing, 
         text = "SET",
-        command = set_params(init_flag)
+        command = lambda: set_params(init_flag)
         )
         set_button.grid(column=1)
     else:
         update_button = ttk.Button(
         editing, 
         text = "UPDATE",
-        command = update_params
+        command = lambda: update_params
         )
         update_button.grid(column=1)
 
