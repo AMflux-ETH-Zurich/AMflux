@@ -98,59 +98,50 @@ Touch Probe (6.2.134–6.2.137, 6.2.140–6.2.142) not implemented.
     node.rpdo[2].trans_type = 255"""
    
 
-
-
-
-def txpdo_mapping_init(node):
-    #TXPDO1
-    node.sdo[0x1A00][0x00].raw = 0 #disable txpdo1
-    node.sdo[0x1A00][0x01].raw = 0x60410010 #status word, 0x6041(index), 0x00(subindex), 0x10(size)
-    node.sdo[0x1A00][0x00].raw = 1 #number of mapped objects
-
-    node.sdo[0x1800][0x01].raw = 0x40000180 + node.id  # COB-ID for TXPDO1
-    node.sdo[0x1800][0x02].raw = 255 #transmission type for TXPDO1 (255 = asynchronous)
-
-    node.tpdo[1].clear()  # clear any previous mappings
-    node.tpdo[1].add_variable(0x6041, 0x00)
-    node.tpdo[1].cob_id = 0x40000180 + node.id
-    node.tpdo[1].trans_type = 255
-    node.tpdo[1].start(period=1)
-
+def pdo_mapping_init(node):
     
-    #TXPDO2
-    node.sdo[0x1A01][0x00].raw = 0 #disable txpdo2
-    node.sdo[0x1A01][0x01].raw = 0x60640020 #position actual value, 0x6064(index), 0x00(subindex), 0x20(size)
-    node.sdo[0x1A01][0x02].raw = 0x606C0020 #velocity actual value, 0x606C(index), 0x00(subindex), 0x20(size)
-    node.sdo[0x1A01][0x00].raw = 2 #number of mapped objects
+    # Reset network
+    node.nmt.state = 'RESET COMMUNICATION'
+    node.nmt.wait_for_bootup(2)
+    print(f'node NMT state: {node.nmt.state}')
 
-    node.sdo[0x1801][0x01].raw = 0xC0000280 + node.id  # COB-ID for TXPDO2
-    node.sdo[0x1801][0x02].raw = 255 #transmission type for TXPDO2 (255 = asynchronous)
+    # Read current PDO configuration (must be done, otherwise library only has standard mapping, despite setting new mapping and saved it...?)
+    node.tpdo.read(from_od = True)    # Read PDOs from the online object dictionary
+    node.rpdo.read(from_od = True)
 
-    node.tpdo[2].clear()
-    node.tpdo[2].add_variable(0x6064, 0x00)
-    node.tpdo[2].add_variable(0x606C, 0x00)
-    node.tpdo[2].cob_id = 0xC0000280 + node.id
-    node.tpdo[2].trans_type = 255
-    node.tpdo[2].start(period=1)
+    # clear all PDOs, we will configure them from scratch:
+    for no in range(1, 5):
+        node.tpdo[no].clear()
+        node.rpdo[no].clear()
 
+    # TxPDO3: asynchronous/event-driven, contains statusword (is sent if something changes in the 402 state machine)
+    node.tpdo[3].add_variable(0x6041, 0x00) # Statusword
+    node.tpdo[3].trans_type = 255 #   1=SYNC; 255=asynchronous --> with every change of the 402 state machine (in 0x2400.04, bit mask 0x00000002 must be set (which is the default))
+    node.tpdo[3].enabled = True
 
-    #TXPDO3
-    node.sdo[0x1A02][0x00].raw = 0 #disable txpdo3
-    node.sdo[0x1A02][0x01].raw = 0x60770010 #torque actual value, 0x6077(index), 0x00(subindex), 0x10(size)
-    node.sdo[0x1A02][0x00].raw = 1 #number of mapped objects
+    # TxPDO4: synchronous, contains velocity actual value and modes of operation display
+    node.tpdo[4].add_variable(0x606C, 0x00) # Velocity actual value
+    node.tpdo[4].add_variable(0x6064, 0x00) # Position actual value
+    node.tpdo[4].add_variable(0x6077, 0x00) # Torque actual value
+    node.tpdo[4].add_variable(0x6061, 0x00) # Modes of operation display
+    node.tpdo[4].trans_type = 1 #   1=SYNC; 255=asynchronous
+    node.tpdo[4].enabled = True
 
-    node.sdo[0x1802][0x01].raw = 0xC0000380 + node.id  # COB-ID for TXPDO3
-    node.sdo[0x1802][0x02].raw = 255 #transmission type for TXPDO3 (255 = asynchronous)
+    # RxPDO4 (0x501): event-driven, contains controlword, modes of operation and target velocity
+    node.rpdo[4].add_variable(0x6040, 0x00)  # Controlword
+    node.rpdo[4].add_variable(0x6060, 0x00)  # Modes of operation
+    node.rpdo[4].add_variable(0x60FF, 0x00)  # Target velocity
+    node.rpdo[4].add_variable(0x607A, 0x00)  # Target position
+    node.rpdo[4].trans_type = 255 #   1=SYNC; 255=asynchronous
+    #node.rpdo[4].start(0.010)
+    node.rpdo[4].enabled = True
+    
+    node.nmt.state = 'PRE-OPERATIONAL'
+    node.tpdo.save()
+    node.rpdo.save()  
 
-    node.tpdo[3].clear()
-    node.tpdo[3].add_variable(0x6077, 0x00)
-    node.tpdo[3].cob_id = 0xC0000380 + node.id
-    node.tpdo[3].trans_type = 255
-    node.tpdo[3].start(period=1)
-
-
-
-
+    #node.rpdo[4]['0x606C.0x00'].phys = 1000
+    network.nmt.state = 'OPERATIONAL'      
 
 
 def axis_configuration_init(node, sens_res: int=None, sys_speed: int=None):
