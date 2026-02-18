@@ -199,22 +199,48 @@ def ModePageBuilder(app, parent, modeint, modename):
 
     mode_code = PageState.abreviation[modeint]
 
-    vars = build_param_editor(editing, objdict_data["mode"][mode_code]["comm"])
+    variables = build_param_editor(editing, objdict_data["mode"][mode_code]["comm"])
 
     def update_params():
         if app.drive is None:
             print("Warning: Network not initialized, cannot update parameters")
             return
-        for param_name, tk_var in vars.items():
+        for param_name, tk_var in variables.items():
             value = tk_var.get()  
             app.drive.update_parameter(param_name, value)
-            
-    update_button = ttk.Button(
+    
+    def set_params(flag):
+        if app.drive is None:
+            print("Warning: Network not initialized, cannot update parameters")
+            return
+        
+        mode_code = PageState.abreviation[modeint]
+        for name, tk_var in variables.items():
+            try:
+                objdict_data["mode"][mode_code]["comm"][name] = int(tk_var.get())
+            except ValueError:
+                objdict_data["mode"][mode_code]["comm"][name] = tk_var.get()
+        
+        flag[0] = 1
+        
+        
+        
+    init_flag = [0]
+
+    if init_flag[0] == 0:
+        set_button = ttk.Button(
+        editing, 
+        text = "SET",
+        command = set_params
+        )
+        update_button.grid(column=1)
+    else:
+        update_button = ttk.Button(
         editing, 
         text = "UPDATE",
         command = update_params
-    )
-    update_button.grid(column=1)
+        )
+        update_button.grid(column=1)
 
     #Command Buttons
     commanding = tk.Frame(parent)
@@ -229,21 +255,21 @@ def ModePageBuilder(app, parent, modeint, modename):
     run_button = ttk.Button(
         commanding,
         text="RUN",
-        command= lambda: app.drive.start_operation(10)
+        command= lambda: app.drive.enable_operation(10)
     )
     run_button.grid(row=0, column=0)
 
     pause_button = ttk.Button(
         commanding,
         text="PAUSE",
-        command= 0# das musmer no mache
+        command= lambda: app.drive.quick_stop(10)
     )
     pause_button.grid(row=1, column=0)
 
     stop_button = ttk.Button(
         commanding,
         text="STOP",
-        command= lambda: app.drive.stop_operation()
+        command= lambda: app.drive.stop_volt()
     )
     stop_button.grid(row=2, column=0)
 
@@ -258,9 +284,7 @@ def ModePageBuilder(app, parent, modeint, modename):
     motor_gui = MotorTelemetry(parent, app.drive)
     
 
-
 class MotorTelemetry:
-    #runs when an instance of MotorTelemetry is created
     def __init__(self, parent, drive):
         """initialize the MotorTelemetry class"""
 
