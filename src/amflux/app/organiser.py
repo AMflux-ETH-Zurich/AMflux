@@ -348,7 +348,7 @@ class DriveOrganiser:
         if not self.torque_enabled:
             return
         
-        goto_state(self.node, desired_state=DriveState.QUICK_STOP, timeout=2)
+        goto_state(self.node, desired_state=DriveState.QUICK_STOP_ACTIVE, timeout=2)
         self.torque_enabled = False
 
 
