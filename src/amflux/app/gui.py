@@ -210,7 +210,7 @@ def ModePageBuilder(app, parent, modeint, modename):
             value = tk_var.get()  
             app.drive.update_parameter(param_name, value)
     
-    def set_params(flag):
+    def set_params():
         if app.drive is None:
             print("Warning: Network not initialized, cannot update parameters")
             return
