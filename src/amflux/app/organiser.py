@@ -247,6 +247,12 @@ class DriveOrganiser:
 
     def organiser_loop(self):
         while not self.shutdown.is_set():
+            if get_DriveState(self.node) == DriveState.FAULT_REACTION_ACITVE:
+                var = sword(self.node)
+                print("Error occured. Drive will be resetet to SWITCH ON DISABLED")
+                print(f'statursword: {var}')
+                goto_state(self.node, desired_state = DriveState.SWITCH_ON_DISABLED)
+
             # HIGH PRIORITY: handle request stop
             if self.stop_volt_requested.is_set():
                 self.stop_volt()
@@ -261,22 +267,18 @@ class DriveOrganiser:
                 cmd = None
             # execute command depending on type
             if cmd is not None:
-                if cmd.type == DriveCommand.QUICK_STOP:
+                if cmd.type == CmdType.QUICK_STOP:
                     self.quick_stop()
-                elif cmd.type == DriveCommand.ENABLE_OPERATION:
+                elif cmd.type == CmdType.ENABLE_OPERATION:
                     self.enable_operation()
-                elif cmd.type == DriveCommand.UPDATE_PARAM:
+                elif cmd.type == CmdType.UPDATE_PARAM:
                     name, value = cmd.data
                     self.update_parameter(name, value)
-                elif cmd.type == DriveCommand.DISABLE_VOLTAGE:
+                elif cmd.type == CmdType.DISABLE_VOLTAGE:
                     self.stop_volt()
                 continue
 
-            if get_DriveState(self.node) == DriveState.FAULT_REACTION_ACITVE:
-                var = sword(self.node)
-                print("Error occured. Drive will be resetet to SWITCH ON DISABLED")
-                print(f'statursword: {var}')
-                goto_state(self.node, desired_state = DriveState.SWITCH_ON_DISABLED)
+            self.process_param_updates(0.05)
 
             #if torque enabled get telemtry
             self.read_telemetry()
@@ -371,15 +373,22 @@ class DriveOrganiser:
     # MONITORING THREAD
     # ============================================
     
-    def process_param_updates(self):
+    def process_param_updates(self, timeout):
         """
         Drain queue and write each param to controller OD.
         """
+        start = time.time()
         #TODO: handle high priority comm params via PDO
         while not self.param_update_queue.empty():
+            if time.time() - start_time > timeout:
+                print(f"Timeout exceeded in process_param_updates")
+                break
             param_name, value = self.param_update_queue.get()
             print(f"updating {param_name, value}")
-            getattr(object_dictionary_functions, param_name)(self.node, value)
+            try:
+                getattr(object_dictionary_functions, param_name)(self.node, value)
+            except Exception as e:
+                print(f"Error updating {param_name}: {e}")
             
             
     def read_telemetry(self) -> list:
