@@ -384,9 +384,9 @@ class MotorTelemetry:
         #ATTENTION ATTENTION ATTENTION ATTENTION ATTENTION ATTENTION ATTENTION
         #simulate motor data for testing purposes
         
-        torque = random.uniform(0, 20)
-        velocity = random.uniform(0, 100)
-        position = random.uniform(0, 2 * math.pi)
+        torque = telemetry[0]
+        velocity = telemetry[1]
+        position = telemetry[2]
         
 
 
