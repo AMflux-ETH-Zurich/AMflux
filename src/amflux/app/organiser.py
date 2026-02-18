@@ -429,4 +429,4 @@ class DriveOrganiser:
         """
         Return cached telemetry for GUI (non-blocking).
         """
-        return self.recent_telemetry
+        return self.read_telemetry
