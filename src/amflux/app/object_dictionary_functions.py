@@ -114,34 +114,35 @@ def pdo_mapping_init(node, network):
         node.tpdo[no].clear()
         node.rpdo[no].clear()
 
-    # TxPDO3: asynchronous/event-driven, contains statusword (is sent if something changes in the 402 state machine)
+    # TxPDO1: asynchronous/event-driven, contains statusword (is sent if something changes in the 402 state machine)
     node.tpdo[1].add_variable(0x6041, 0x00) # Statusword
-    node.tpdo[1]["Statusword"].write(0x60410010, fmt='raw')
+    node.sdo[0x1A00][1].raw = 0x60410010  # PDO1 mapping: Statusword
     node.tpdo[1].trans_type = 255 #   1=SYNC; 255=asynchronous --> with every change of the 402 state machine (in 0x2400.04, bit mask 0x00000002 must be set (which is the default))
     node.tpdo[1].enabled = True
 
-    # TxPDO4: synchronous, contains velocity actual value and modes of operation display
+    # TxPDO2: synchronous, contains velocity actual value and position actual value
     node.tpdo[2].add_variable(0x606C, 0x00) # Velocity actual value
-    node.tpdo[2]["0x606C.0x00"].write(0x606C0010, fmt="raw")
+    node.sdo[0x1A01][1].raw = 0x606C0010  # PDO2 mapping: Velocity actual value
     node.tpdo[2].add_variable(0x6064, 0x00) # Position actual value
-    node.tpdo[2]["0x6064.0x00"].write(0x60640020, fmt="raw")
-    #node.tpdo[4].add_variable(0x6077, 0x00) # Torque actual value
-    #node.tpdo[4].add_variable(0x6061, 0x00) # Modes of operation display
+    node.sdo[0x1A01][2].raw = 0x60640020  # PDO2 mapping: Position actual value
+    #node.tpdo[2].add_variable(0x6077, 0x00) # Torque actual value
+    #node.tpdo[2].add_variable(0x6061, 0x00) # Modes of operation display
     node.tpdo[2].trans_type = 1 #   1=SYNC; 255=asynchronous
     node.tpdo[2].enabled = True
 
-    # RxPDO4 (0x501): event-driven, contains controlword, modes of operation and target velocity
+    # RxPDO1: event-driven, contains controlword
     node.rpdo[1].add_variable(0x6040, 0x00)  # Controlword
-    node.rpdo[1]["0x0604.0x00"].write(0x60400010, fmt="raw")
+    node.sdo[0x1600][1].raw = 0x60400010  # RxPDO1 mapping: Controlword
+    node.rpdo[1].trans_type = 255 #   1=SYNC; 255=asynchronous
+    node.rpdo[1].enabled = True
+    
+    # RxPDO2: event-driven, contains target velocity and target position
     #node.rpdo[2].add_variable(0x6060, 0x00)  # Modes of operation
     node.rpdo[2].add_variable(0x60FF, 0x00)  # Target velocity
-    node.rpdo[2]["0x06FF.0x00"].write(0x60FF0010, fmt="raw")
+    node.sdo[0x1601][1].raw = 0x60FF0010  # RxPDO2 mapping: Target velocity
     node.rpdo[2].add_variable(0x607A, 0x00)  # Target position
-    node.rpdo[2]["0x067A.0x00"].write(0x607A0020, fmt="raw")
-    node.rpdo[1].trans_type = 1 #   1=SYNC; 255=asynchronous
-    node.rpdo[2].trans_type = 1 
-    #node.rpdo[4].start(0.010)
-    node.rpdo[1].enabled = True
+    node.sdo[0x1601][2].raw = 0x607A0020  # RxPDO2 mapping: Target position
+    node.rpdo[2].trans_type = 255 #   1=SYNC; 255=asynchronous
     node.rpdo[2].enabled = True
     
     node.nmt.state = 'PRE-OPERATIONAL'
