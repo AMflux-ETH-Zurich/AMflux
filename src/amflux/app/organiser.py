@@ -253,7 +253,7 @@ class DriveOrganiser:
         goto_state(self.node, desired_state=DriveState.READY_TO_SWITCH_ON, timeout=2)
         self.monitor_thread = Thread(target=goto_state)
         self.monitor_thread.join()
-
+        
 
 
     
