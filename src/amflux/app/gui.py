@@ -72,7 +72,7 @@ def build_param_editor(parent, param_dict):
                 row=row, column=0, padx=5, pady=2
             )
 
-            var = tk.IntVar(value=value)
+            var = tk.IntVar(value=value.value()[0])
             entry = ttk.Entry(parent, textvariable=var)
             entry.grid(row=row, column=1, padx=5, pady=2)
 
