@@ -326,6 +326,7 @@ class DriveOrganiser:
         var = sword(self.node)
 
         print(f'var: {var}')
+        self.power_enabled = True
         self.torque_enabled = True
        
     def stop_volt(self):
