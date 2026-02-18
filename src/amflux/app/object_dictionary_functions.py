@@ -115,26 +115,34 @@ def pdo_mapping_init(node, network):
         node.rpdo[no].clear()
 
     # TxPDO3: asynchronous/event-driven, contains statusword (is sent if something changes in the 402 state machine)
-    node.tpdo[3].add_variable(0x6041, 0x00) # Statusword
-    node.tpdo[3].trans_type = 255 #   1=SYNC; 255=asynchronous --> with every change of the 402 state machine (in 0x2400.04, bit mask 0x00000002 must be set (which is the default))
-    node.tpdo[3].enabled = True
+    node.tpdo[1].add_variable(0x6041, 0x00) # Statusword
+    node.tpdo[1]["0x6041.0x00"].write(0x60410010, fmt='raw')
+    node.tpdo[1].trans_type = 255 #   1=SYNC; 255=asynchronous --> with every change of the 402 state machine (in 0x2400.04, bit mask 0x00000002 must be set (which is the default))
+    node.tpdo[1].enabled = True
 
     # TxPDO4: synchronous, contains velocity actual value and modes of operation display
-    #node.tpdo[4].add_variable(0x606C, 0x00) # Velocity actual value
-    #node.tpdo[4].add_variable(0x6064, 0x00) # Position actual value
+    node.tpdo[2].add_variable(0x606C, 0x00) # Velocity actual value
+    node.tpdo[2]["0x606C.0x00"].write(0x606C0010, fmt="raw")
+    node.tpdo[2].add_variable(0x6064, 0x00) # Position actual value
+    node.tpdo[2]["0x6064.0x00"].write(0x60640020, fmt="raw")
     #node.tpdo[4].add_variable(0x6077, 0x00) # Torque actual value
     #node.tpdo[4].add_variable(0x6061, 0x00) # Modes of operation display
-    node.tpdo[4].trans_type = 1 #   1=SYNC; 255=asynchronous
-    node.tpdo[4].enabled = True
+    node.tpdo[2].trans_type = 1 #   1=SYNC; 255=asynchronous
+    node.tpdo[2].enabled = True
 
     # RxPDO4 (0x501): event-driven, contains controlword, modes of operation and target velocity
-    node.rpdo[3].add_variable(0x6040, 0x00)  # Controlword
-    #node.rpdo[3].add_variable(0x6060, 0x00)  # Modes of operation
-    #node.rpdo[3].add_variable(0x60FF, 0x00)  # Target velocity
-    #node.rpdo[3].add_variable(0x607A, 0x00)  # Target position
-    node.rpdo[3].trans_type = 255 #   1=SYNC; 255=asynchronous
+    node.rpdo[1].add_variable(0x6040, 0x00)  # Controlword
+    node.rpdo[1]["0x0604.0x00"].write(0x60400010, fmt="raw")
+    #node.rpdo[2].add_variable(0x6060, 0x00)  # Modes of operation
+    node.rpdo[2].add_variable(0x60FF, 0x00)  # Target velocity
+    node.rpdo[2]["0x06FF.0x00"].write(0x60FF0010, fmt="raw")
+    node.rpdo[2].add_variable(0x607A, 0x00)  # Target position
+    node.rpdo[2]["0x067A.0x00"].write(0x607A0020, fmt="raw")
+    node.rpdo[1].trans_type = 1 #   1=SYNC; 255=asynchronous
+    node.rpdo[2].trans_type = 1 
     #node.rpdo[4].start(0.010)
-    node.rpdo[3].enabled = True
+    node.rpdo[1].enabled = True
+    node.rpdo[2].enabled = True
     
     node.nmt.state = 'PRE-OPERATIONAL'
     node.tpdo.save()
