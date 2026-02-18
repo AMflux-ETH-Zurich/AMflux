@@ -223,10 +223,13 @@ def ModePageBuilder(app, parent, modeint, modename):
             except ValueError:
                 objdict_data["mode"][mode_code]["comm"][name] = tk_var.get()
         print("finished setting")
-        flag.set()
         
+        set_button.config(text="UPDATE", command=update_params)
+
         
-        
+    set_button = ttk.Button(editing, text="SET", command=set_params)
+    set_button.grid(column=1)
+    """   
     init_flag = Event()
 
     if not init_flag.is_set():
@@ -243,6 +246,7 @@ def ModePageBuilder(app, parent, modeint, modename):
         command = lambda: update_params
         )
         update_button.grid(column=1)
+    """ 
 
     #Command Buttons
     commanding = tk.Frame(parent)
