@@ -10,7 +10,7 @@ from threading import Thread, Event
 from drive import goto_state
 import time
 import numpy as np
-from drive import DriveState, DriveCommand
+from drive import DriveState, DriveCommand, get_DriveState
 from can_functions import sword
 
 
@@ -24,10 +24,6 @@ from can_functions import sword
 with open('/home/amfluxpi/AMflux/src/amflux/app/object_dictionary.toml', 'r') as data:
     objdict_data = toml.load(data)
 
-
-# ======================================================================
-# Operation
-# ======================================================================
 
 class OperationModes:
     ProfilePosition             = 1
@@ -162,6 +158,24 @@ def init_obj_dict(node, desired_mode):
     else:
         return True
 
+# ======================================================================
+# Drive Organiser
+# ======================================================================
+
+class CmdType(Enum):
+    ENABLE_OPERATION = auto()
+    QUICK_STOP = auto()
+    DISABLE_VOLTAGE = auto()
+    UPDATE_PARAM = auto()
+
+
+@dataclass
+class Command:
+    type: CmdType
+    data: tuple | None = None
+    timeout: float | None = None
+
+
 class DriveOrganiser:
     """
     Manages drive operation lifecycle and telemetry monitoring.
@@ -169,24 +183,104 @@ class DriveOrganiser:
     """
     
     def __init__(self, node, network):
+        # Network and Node
         self.node = node
         self.network = network
-        self.current_mode = None
-        self.is_running = False
         
-        # Single thread for telemetry and parameter updates
-        self.monitor_thread = None
-        self.stop_event = Event()
+        # Organiser thread control
+        self.thread = None
+        self.shutdown = Event()
+
+        # Command handling
+        self.cmd_q = queue.Queue()
+        self.stop_volt_requested = Event()
+        self.cancel_transition = Event()
         
+        # Power State
+        self.power_enabled = False
+        self.torque_enabled = False
+        
+        """
         # Queue for parameter updates from GUI
         self.param_update_queue = queue.Queue()
 
         self.recent_telemetry = None
-    
+        """
+
+    def request_start(self, timeout=5.0):
+        self.cmd_q.put(Command(CmdType.ENABLE_OPERATION, timeout=timeout))
+
+    def request_disable_voltage(self):
+        self.stop_volt_requested.set()
+        self.cancel_transition.set()
+        self.cmd_q.put(Command(CmdType.DISABLE_VOLTAGE))
+
+    def request_quick_stop(self):
+        if(get_DriveState(self.node) != DriveState.OPERATION_ENABLED):
+            #TODO: print something or raise error?
+            return
+        
+        #self.stop_volt_requested.set()
+        self.cmd_q.put(Command(CmdType.QUICK_STOP))
+
+    def request_update_param(self, name, value, timeout=5.0):
+        self.cmd_q.put(Command(CmdType.UPDATE_PARAM, data=(name, value)))
+
     # ============================================
     # LIFECYCLE MANAGEMENT
     # ============================================
     
+    def start_organiser(self):
+        if self.thread and self.thread.is_alive():
+            return
+        self.shutdown.clear()
+        #self.cmd_q.clear()
+        self.thread = Thread(target=self.organiser_loop, daemon=True)
+        self.thread.start()
+
+    def stop_organiser(self):
+        self.shutdown.set()
+        if self.thread:
+            self.thread.join(timeout=2.0)
+
+    def organiser_loop(self):
+        while not self.shutdown.is_set()
+            # HIGH PRIORITY: handle request stop
+            if self.stop_volt_requested.is_set():
+                self.stop_volt()
+
+                self.stop_volt_requested.clear()
+
+                self.clear_non_stop_commands()  
+            # get command
+            try:
+                cmd = self.cmd_q.get()
+            except queue.Empty:
+                cmd = None
+            # execute command depending on type
+            if cmd is not None:
+                if cmd.type == QUICK_STOP:
+                    self.quick_stop()
+                elif cmd.type == ENABLE_OPERATION:
+                    self.enable_operation()
+                elif cmd.type == UPDATE_PARAM:
+                    name, value = cmd.data
+                    self.update_parameter(name, value)
+                elif cmd.type == DISABLE_VOLTAGE:
+                    self.stop_volt()
+                continue
+
+            if get_DriveState(self.node) == DriveState.FAULT_REACTION_ACITVE:
+                var = sword(self.node)
+                print("Error occured. Drive will be resetet to SWITCH ON DISABLED")
+                print(f'statursword: {var}')
+                goto_state(self.node, desired_state = DriveState.SWITCH_ON_DISABLED)
+
+            #if torque enabled get telemtry
+            self.read_telemetry()
+
+            time.sleep(0.01)
+
     def set_mode(self, desired_mode):
         self.node.sdo[0x6060] = desired_mode
         time.sleep(5)
@@ -202,61 +296,60 @@ class DriveOrganiser:
         3. Verify everything written correctly
         """
         
-        if self.set_mode(self, self.current_mode) and init_obj_dict(self.node, self.current_mode):
+        if self.set_mode(self.current_mode) and init_obj_dict(self.node, self.current_mode):
             mode_code = OperationModes.abreviation[self.current_mode]
+
             for func_name, instance in objdict_data["mode"][mode_code]["comm"].items():
                 func = getattr(object_dictionary_functions, func_name)
-                kwargs = {}
-                for variable, default_val in instance.items(): 
-                    user_val = None #TODO take value from GUI
-                    if user_val == "":
-                        write_val = default_val
-                    try:
-                        write_val = int(user_val)
-                    except Warning:
-                        try:
-                            write_val = None #TODO : message on GUI: f"please enter a valid INT64 value for {variable}"
-                        except Exception:
-                            pass#TODO: message on GUI: f"invalid value for {variable}, using default value: {default_val}")
-                    
-                    kwargs[variable] = write_val
-                
+                kwargs = {var_name: int(val) for var_name, val in instance.items()}
                 func(self.node, **kwargs)
+            return True
         else:
-           pass  #TODO show error message on GUI: Prepare operation failed
+            return False   #TODO show error message on GUI: Prepare operation failed
                 
+    def enable_operation(self, timeout):
+        """
+        1. Transition to POWER_ENABLED and OPERATION_ENABLED via goto_state()
+        2. Set power_enabled = True
+        3. Set torque_enabled = True
+        """
+        #if self.cancel_transition.is_set():
+        #    return
+        #goto_state(self.node, desired_state=DriveState.POWER_ENABLED, timeout=timeout)
+        #self.power_enabled = True
 
-    
-    def start_operation(self, timeout):
-        """
-        1. Transition to OPERATION_ENABLED via goto_state()
-        2. Start monitor thread
-        3. Set is_running flag
-        """
+        if self.cancel_transition.is_set():
+            return
         goto_state(self.node, desired_state=DriveState.OPERATION_ENABLED, timeout=timeout)
         var = sword(self.node)
+
         print(f'var: {var}')
-        self.is_running = True
-        self.monitor_thread = Thread(target=goto_state)
-
-
+        self.torque_enabled = True
+       
+    def stop_volt(self):
+        """
+        1. Shutdown drive via goto_state()
+        2. 
+        3. 
+        """
+        if not self.power_enabled:
+            return
         
-    def stop_operation(self):
-        """
-        1. Signal monitor thread to stop
-        2. Shutdown drive via goto_state()
-        3. Join thread
-        """
-        if not self.is_running:
-                return
-        self.is_running = False
+        goto_state(self.node, desired_state=DriveState.SWITCHED_ON, timeout=2)
+        self.torque_enabled = False
         goto_state(self.node, desired_state=DriveState.READY_TO_SWITCH_ON, timeout=2)
-        self.monitor_thread = Thread(target=goto_state)
-        self.monitor_thread.join()
+        self.power_enabled = False
+
+    def quick_stop(self, enable):
+        """
+        """
+        if not self.torque_enabled:
+            return
         
+        goto_state(self.node, desired_state=DriveState.QUICK_STOP, timeout=2)
+        self.torque_enabled = False
 
 
-    
     # ============================================
     # RUNTIME UPDATES (called by GUI)
     # ============================================
@@ -272,59 +365,63 @@ class DriveOrganiser:
     # MONITORING THREAD
     # ============================================
     
-    def monitor_loop(self):
-        """
-        Runs continuously while is_running:
-        
-        1. Check for queued parameter updates -> write to OD
-        2. Read telemetry (position, velocity, statusword)
-        3. Check for faults
-        4. Small sleep (e.g., 10-50ms cycle time)
-        """
-        while not self._stop_event.is_set():
-            # Process any queued parameter updates
-            self.process_param_updates()
-            
-            # Read telemetry
-            telemetry = self.read_telemetry()
-            
-            # Store for get_status()
-            self._latest_telemetry = telemetry
-            
-            time.sleep(0.02)  # 50Hz update rate
-    
-
     def process_param_updates(self):
         """
         Drain queue and write each param to controller OD.
         """
+        #TODO: handle high priority comm params via PDO
         while not self.param_update_queue.empty():
             param_name, value = self.param_update_queue.get()
             getattr(object_dictionary_functions, param_name)(self.node, value)
             
             
-    def read_telemetry(self) -> dict:
+    def read_telemetry(self) -> list:
         """
-        Read key values from controller:
-        - Position actual (0x6064)
-        - Velocity actual (0x606C)
-        - Statusword (0x6041)
-        - Current mode display (0x6061)
+        Read key values from controller TPDOs (non-blocking, cached).
+        Falls back to SDO if TPDO access fails.
         """
-        #position from SSI encoder
-        position_raw = self.node.sdo[0x3012][0x0D].raw
-        #convert to radians
-        position = (position_raw / 4096) * 2 * np.pi
-        #torque from motor controller
-        torque = self.node.sdo[0x6077].raw
-        #velocity from motor controller
-        velocity = self.node.sdo[0x606C].raw
-        #statusword form motor controller
-        status_word = self.node.sdo[0x6041]
-        #Current mode display
-        current_mode_disp = self.node.sdo[0x6061]
+        try:
+            # TPDO4: Position (0x6064), Velocity (0x606C), Torque (0x6077), Mode (0x6061)
+            # TPDO3: Statusword (0x6041)
+            # Non-blocking: read cached TPDO values (assume they've arrived during operation)
+            
+            position_raw = self.node.tpdo[4][0x6064].raw
+            position = (position_raw / 4096) * 2 * np.pi
+            
+            velocity = self.node.tpdo[4][0x606C].raw
+            torque = self.node.tpdo[4][0x6077].raw
+            current_mode_disp = self.node.tpdo[4][0x6061].raw
+            
+            # Statusword from TPDO3 (not TPDO4)
+            status_word = self.node.tpdo[3][0x6041].raw
+            
+        except Exception as e:
+            # Fallback to SDO reads (slower but safe)
+            print(f"TPDO read failed: {e}. Falling back to SDO.")
+            try:
+                position_raw = self.node.sdo[0x3012][0x0D].raw
+                position = (position_raw / 4096) * 2 * np.pi
+            except Exception:
+                position = None
+            try:
+                velocity = self.node.sdo[0x606C].raw
+            except Exception:
+                velocity = None
+            try:
+                torque = self.node.sdo[0x6077].raw
+            except Exception:
+                torque = None
+            try:
+                status_word = self.node.sdo[0x6041].raw
+            except Exception:
+                status_word = None
+            try:
+                current_mode_disp = self.node.sdo[0x6061].raw
+            except Exception:
+                current_mode_disp = None
         
         self.recent_telemetry = [torque, velocity, position, status_word, current_mode_disp]
+        return self.recent_telemetry
         
     def get_status(self) -> dict:
         """
