@@ -19,6 +19,7 @@ from matplotlib.figure import Figure
 import random
 
 from organiser import DriveOrganiser, OperationModes
+from threading import Thread, Event
 
 
 
@@ -221,19 +222,19 @@ def ModePageBuilder(app, parent, modeint, modename):
             except ValueError:
                 objdict_data["mode"][mode_code]["comm"][name] = tk_var.get()
         
-        flag[0] = 1
+        flag.set()
         
         
         
-    init_flag = [0]
+    init_flag = Event()
 
-    if init_flag[0] == 0:
+    if not init_flag.is_set():
         set_button = ttk.Button(
         editing, 
         text = "SET",
-        command = set_params
+        command = set_params(init_flag)
         )
-        update_button.grid(column=1)
+        set_button.grid(column=1)
     else:
         update_button = ttk.Button(
         editing, 
