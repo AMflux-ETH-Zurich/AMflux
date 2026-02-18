@@ -120,10 +120,10 @@ def pdo_mapping_init(node, network):
     node.tpdo[3].enabled = True
 
     # TxPDO4: synchronous, contains velocity actual value and modes of operation display
-    node.tpdo[4].add_variable(0x606C, 0x00) # Velocity actual value
-    node.tpdo[4].add_variable(0x6064, 0x00) # Position actual value
-    node.tpdo[4].add_variable(0x6077, 0x00) # Torque actual value
-    node.tpdo[4].add_variable(0x6061, 0x00) # Modes of operation display
+    #node.tpdo[4].add_variable(0x606C, 0x00) # Velocity actual value
+    #node.tpdo[4].add_variable(0x6064, 0x00) # Position actual value
+    #node.tpdo[4].add_variable(0x6077, 0x00) # Torque actual value
+    #node.tpdo[4].add_variable(0x6061, 0x00) # Modes of operation display
     node.tpdo[4].trans_type = 1 #   1=SYNC; 255=asynchronous
     node.tpdo[4].enabled = True
 
