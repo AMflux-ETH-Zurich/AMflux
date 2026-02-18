@@ -364,7 +364,8 @@ class DriveOrganiser:
         Queue a parameter update to be written in monitor thread.
         E.g., update_parameter('target_position', 5000)
         """
-        self.param_update_queue.put((param_name, value))
+        update_command = Command(CmdType.UPDATE_PARAM, (param_name, value))
+        self.cmd_q.put(update_command)
     
     # ============================================
     # MONITORING THREAD
