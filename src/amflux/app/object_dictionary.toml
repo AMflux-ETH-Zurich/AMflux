@@ -11,8 +11,8 @@
     nominal_current = 5000
     current_lim     = 10000
     pole_pairs      = 10
-    therm_const     = haixao
-    tor_const       = haixao
+    therm_const     = "haixao"
+    tor_const       = "haixao"
 
     [motor.electrical_system_init]
     electrical_resistance = 67
