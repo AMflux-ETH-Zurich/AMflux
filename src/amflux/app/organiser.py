@@ -3,7 +3,7 @@
 # ======================================================================
 
 from dataclasses import dataclass
-from enum import auto
+from enum import Enum, auto
 import queue
 import toml
 import object_dictionary_functions
