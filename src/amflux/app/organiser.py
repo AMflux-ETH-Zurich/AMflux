@@ -286,9 +286,9 @@ class DriveOrganiser:
             time.sleep(0.01)
 
     def set_mode(self, desired_mode):
-        self.node.sdo[0x6060] = desired_mode
+        self.node.sdo[0x6060].raw = desired_mode
         time.sleep(5)
-        if self.node.sdo[0x6061] == desired_mode:
+        if self.node.sdo[0x6061].raw == desired_mode:
             return True
         else:
             raise Exception #TODO: define new error
