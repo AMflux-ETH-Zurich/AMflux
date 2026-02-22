@@ -14,6 +14,7 @@ import time
 import numpy as np
 from drive import DriveState, DriveCommand, get_DriveState
 from can_functions import sword
+from pathlib import Path
 
 
 
@@ -21,9 +22,9 @@ from can_functions import sword
 # Object Dictionary
 # ======================================================================
 
-#'/home/amfluxpi/AMflux/src/amflux/app/object_dictionary.toml'
-#'/Users/wendelinroth/Desktop/Code/GitHub/AMflux/src/amflux/app/object_dictionary.toml'
-with open('/home/amfluxpi/AMflux/src/amflux/app/object_dictionary.toml', 'r') as data:
+# OLD: '/home/amfluxpi/AMflux/src/amflux/app/object_dictionary.toml'
+# OLD: '/Users/wendelinroth/Desktop/Code/GitHub/AMflux/src/amflux/app/object_dictionary.toml'
+with open(Path(__file__).parent / 'object_dictionary.toml', 'r') as data:
     objdict_data = toml.load(data)
 
 

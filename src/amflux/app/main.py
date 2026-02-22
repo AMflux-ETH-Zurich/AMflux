@@ -42,6 +42,7 @@ import warnings
 from typing import Mapping, Hashable, Dict, Any
 from errors import InitializationError, DriveStateDetError, DriveStatePathError, DesiredDriveStateError, DriveStateResetError, InitObjDict, DesiredMode, SanityCheck
 import gui
+from pathlib import Path
 
 # ======================================================================
 # Constants
@@ -64,7 +65,13 @@ RATE_LIMIT_MSGS_PER_SEC: int = 750
 def main():
     global net
     # Setup our CANopen network
-    network, mc1 = can_functions.network_setup(1, '/home/amfluxpi/AMflux/src/amflux/app/Epos4_70_15.eds', 'can0', net)
+    # Then update the network_setup call:
+    network, mc1 = can_functions.network_setup(
+        1, 
+        str(Path(__file__).parent / 'Epos4_70_15.eds'),  # OLD: '/home/amfluxpi/AMflux/src/amflux/app/Epos4_70_15.eds'
+        'can0', 
+        net
+    )
 
     can_functions.sanity_check(network)
 
