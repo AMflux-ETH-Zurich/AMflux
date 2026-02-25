@@ -75,7 +75,7 @@ def main():
 
     can_functions.sanity_check(network)
 
-    object_dictionary_functions.pdo_mapping_init(mc1, network)
+    #object_dictionary_functions.pdo_mapping_init(mc1, network)
     EPOS4 = organiser.DriveOrganiser(mc1, network=network)
 
     app = gui.App(drive=EPOS4)
