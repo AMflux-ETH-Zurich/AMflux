@@ -340,42 +340,42 @@ def home_position_init(node, homeposition: int = None):
     #6.2.66
     check_init(locals())
     #defines the position that will be set as zero position of the absolute position counter.
-    node.sdo[0x30B0][0x00].raw = homeposition if homeposition is not None else 0
+    node.sdo[0x30B0][0].raw = homeposition if homeposition is not None else 0
 
 
 def home_offset_distance_init(node, home_offset_distance: int = None):
     #6.2.67
     check_init(locals())
     #Represents a moving distance in a homing procedure.
-    node.sdo[0x30B1][0x00].raw = home_offset_distance if home_offset_distance is not None else 0
+    node.sdo[0x30B1][0].raw = home_offset_distance if home_offset_distance is not None else 0
 
 
 def current_threshold_homing_init(node, current_threshold_homing: int = None):
     #6.2.68
     check_init(locals())
     #Used for homing methods «−1», «−2», «−3», and «−4».
-    node.sdo[0x30B2][0x00].raw = current_threshold_homing if current_threshold_homing is not None else 1000
+    node.sdo[0x30B2][0].raw = current_threshold_homing if current_threshold_homing is not None else 1000
 
 
 def standstill_window_init(node, standstill_window: int = None):
     #6.2.73.1
     check_init(locals())
     #Defines a symmetric range of accepted velocity values relatively to zero.
-    node.sdo[0x30E0][0x01].raw = standstill_window if standstill_window is not None else 30
+    node.sdo[0x30E0][1].raw = standstill_window if standstill_window is not None else 30
 
 
 def standstill_window_time_init(node, standstill_window_time: int = None):
     #6.2.73.2
     check_init(locals())
     #Defines the time duration for which the velocity must remain within the standstill window for Standstill to be reached. [ms]
-    node.sdo[0x30E0][0x02].raw = standstill_window_time if standstill_window_time is not None else 2
+    node.sdo[0x30E0][2].raw = standstill_window_time if standstill_window_time is not None else 2
 
 
 def standstill_window_timeout_init(node, standstill_window_timeout: int = None):
     #6.2.73.3
     check_init(locals())
     #Defines the point of time standstill is supposed to be reached, even if the standstill conditions are not yet fulfilled.
-    node.sdo[0x30E0][0x03].raw = standstill_window_timeout if standstill_window_timeout is not None else 1000
+    node.sdo[0x30E0][3].raw = standstill_window_timeout if standstill_window_timeout is not None else 1000
 
 
 def abort_connection_option_init(node, abort_option: int = None):
@@ -384,7 +384,7 @@ def abort_connection_option_init(node, abort_option: int = None):
     #Specifies the action that will be performed when one of the errors labeled “a” is detected
     # 2 -> «Disable voltage» command
     # 3 -> Decelerate with quick stop ramp; disabling of the drive function
-    node.sdo[0x605B][0x00].raw = abort_option if abort_option is not None else 3
+    node.sdo[0x605B][0].raw = abort_option if abort_option is not None else 3
 
 
 def mode_of_operation_init(node, op_mode: int):
@@ -400,7 +400,7 @@ def following_error_window_init(node, following_error_window: int = None):
     check_init(locals())
     #Defines the maximum allowed deviation between target and actual position.
     #min=0, max=2.147.483.647
-    node.sdo[0x6065][0x00].raw = following_error_window if following_error_window is not None else 2000
+    node.sdo[0x6065][0].raw = following_error_window if following_error_window is not None else 2000
 
 
 def following_error_timeout_init(node, following_error_timeout: int = None):
@@ -408,7 +408,7 @@ def following_error_timeout_init(node, following_error_timeout: int = None):
     check_init(locals())
     # Indicates the configured time for a following error condition. If exceeded, a following error will occur.
     # The value is given in milliseconds [ms].
-    node.sdo[0x6066][0x00].raw = following_error_timeout if following_error_timeout is not None else 0
+    node.sdo[0x6066][0].raw = following_error_timeout if following_error_timeout is not None else 0
 
 
 def position_window_init(node, position_window: int = None):
@@ -416,7 +416,7 @@ def position_window_init(node, position_window: int = None):
     check_init(locals())
     #Defines a symmetric range of accepted position values relatively to target position.
     #min=0, max=2147483647, disable=4294967295
-    node.sdo[0x6067][0x00].raw = position_window if position_window is not None else 4294967295
+    node.sdo[0x6067][0].raw = position_window if position_window is not None else 4294967295
 
 
 def position_window_time_init(node, position_window_time: int = None):
@@ -425,7 +425,7 @@ def position_window_time_init(node, position_window_time: int = None):
     # Indicates the configured position window time for the target reached condition. If the actual position is within the Position
     # window during the set time, the corresponding bit 10 (target reached) in the Statusword will be set to “1”.
     # The value is given in milliseconds [ms].
-    node.sdo[0x6068][0x00].raw = position_window_time if position_window_time is not None else 0
+    node.sdo[0x6068][0].raw = position_window_time if position_window_time is not None else 0
 
 
 def shutdown_option_code(node, option_code: int = None):
