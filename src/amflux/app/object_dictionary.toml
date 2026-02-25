@@ -11,66 +11,66 @@
     nominal_current = 5000
     current_lim     = 10000
     pole_pairs      = 10
-    therm_const     = "haixao"
-    tor_const       = "haixao"
+    therm_const     = 300
+    tor_const       = 2000000
 
     [motor.electrical_system_init]
-    electrical_resistance = 67
-    electrical_inductance = 67
+    electrical_resistance = 983.3333333
+    electrical_inductance = 4000
 
     [motor.velocity_observer_parameter_init]
-    pos_corr_gain  = 67
-    vel_corr_gain  = 67
-    load_corr_gain = 67
-    friction       = 67
-    inertia        = 67
+    pos_corr_gain  = 400
+    vel_corr_gain  = 100000
+    load_corr_gain = 33
+    friction       = 10
+    inertia        = 1000
 
     [motor.dual_loop_position_control_parameter_init]
-    main_loop_p_gain_low              = 67
-    main_loop_p_gain_high             = 67
-    main_loop_gain_scheduler          = 67
-    main_loop_filter_coeff_a          = 67
-    main_loop_filter_coeff_b          = 67
-    main_loop_filter_coeff_c          = 67
-    main_loop_filter_coeff_d          = 67
-    main_loop_filter_coeff_e          = 67
-    auxiliary_loop_p_gain             = 67
-    auxiliary_loop_i_gain             = 67
-    auxiliary_loop_ff_velocity_gain   = 67
-    auxiliary_loop_ff_acceleration_gain = 67
-    auxiliary_loop_observer_pos_corr_gain = 67
-    auxiliary_loop_observer_vel_corr_gain = 67
-    auxiliary_loop_observer_load_corr_gain = 67
-    auxiliary_loop_observer_friction  = 67
-    auxiliary_loop_observer_inertia   = 67
-    dual_loop_miscellaneous           = 67
+    main_loop_p_gain_low              = None
+    main_loop_p_gain_high             = None
+    main_loop_gain_scheduler          = None
+    main_loop_filter_coeff_a          = None
+    main_loop_filter_coeff_b          = None
+    main_loop_filter_coeff_c          = None
+    main_loop_filter_coeff_d          = None
+    main_loop_filter_coeff_e          = None
+    auxiliary_loop_p_gain             = None
+    auxiliary_loop_i_gain             = None
+    auxiliary_loop_ff_velocity_gain   = None
+    auxiliary_loop_ff_acceleration_gain = None
+    auxiliary_loop_observer_pos_corr_gain = None
+    auxiliary_loop_observer_vel_corr_gain = None
+    auxiliary_loop_observer_load_corr_gain = None
+    auxiliary_loop_observer_friction  = None
+    auxiliary_loop_observer_inertia   = None
+    dual_loop_miscellaneous           = None
 
     [motor.si_unit_position]
-    si_unit_pos = 67
+    si_unit_pos = None
 
     [motor.si_unit_velocity]
-    si_unit_vel = 67
+    si_unit_vel = None
 
     [motor.si_unit_acceleration]
-    si_unit_acc = 67
+    si_unit_acc = None
 
     [motor.position_offset]
-    pos_offset = 67
+    pos_offset = None
 
     [motor.velocity_offset]
-    vel_offset = 67
+    vel_offset = None
 
     [motor.torque_offset]
-    tor_offset = 67
+    tor_offset = None
 
     [motor.digital_outputs]
-    phys_outputs = 67
+    phys_outputs = None
 
-    [motor.motor_rated_torque]
-    rated_torque = 67
+    #[motor.motor_rated_torque]
+    #rated_torque = None
 
     [motor.motor_type]
-    motor_type = 67
+    motor_type = None
 
 
 # =========================================================
@@ -93,47 +93,47 @@
 # =========================================================
 
     [safety.abort_connection_option_init]
-    abort_option = 67
+    abort_option = 2
 
-    [safety.mode_of_operation_init]
-    op_mode = 67
+    #[safety.mode_of_operation_init]
+    #op_mode = 67
 
     [safety.following_error_window_init]
-    following_error_window = 67
+    following_error_window = None
 
     [safety.following_error_timeout_init]
-    following_error_timeout = 67
+    following_error_timeout = None
 
     [safety.position_window_init]
-    position_window = 67
+    position_window = None
 
     [safety.position_window_time_init]
-    position_window_time = 67
+    position_window_time = None
 
     [safety.shutdown_option_code]
-    option_code = 67
+    option_code = 0
 
     [safety.disable_operation_option_code]
-    option_code = 67
+    option_code = 0
 
     [safety.halt_option_code]
-    option_code = 67
+    option_code = 2
 
     [safety.fault_reaction_option_code]
-    option_code = 67
+    option_code = 2
 
     [safety.software_position_limit]
-    min_pos_limit = 67
-    max_pos_limit = 67
+    min_pos_limit = None
+    max_pos_limit = None
 
     [safety.max_profile_velocity]
-    max_velocity = 67
+    max_velocity = 300
 
     [safety.max_motor_speed]
-    max_velocity = 67
+    max_velocity = 300
 
     [safety.max_acceleration]
-    max_acc = 67
+    max_acc = 10
 
 
 # =========================================================
@@ -331,41 +331,41 @@
         #CONFIGURATION PARAMETERS
 
             [mode.CSV.conf.motor_init]
-            nominal_current = 67
-            tor_const = 67
+            nominal_current = 5000
+            tor_const = 2000000
 
             [mode.CSV.conf.current_control_parameter_init]
-            p_gain = 67
-            i_gain = 67
+            p_gain = None
+            i_gain = None
 
             [mode.CSV.conf.velocity_control_parameter_init]
-            p_gain = 67
-            i_gain = 67
-            ffv_gain = 67
-            ffa_gain = 67
-            f_cutoff = 67
+            p_gain = None
+            i_gain = None
+            ffv_gain = None
+            ffa_gain = None
+            f_cutoff = None
 
             [mode.CSV.conf.quick_stop_deceleration]
-            prof_dec = 67
+            prof_dec = None
 
             [mode.CSV.conf.profile_deceleration]
-            prof_dec = 67
+            prof_dec = None
             
             [mode.CSV.conf.software_position_limit]
-            min_pos_limit = 67
-            max_pos_limit = 67
+            min_pos_limit = None
+            max_pos_limit = None
 
             [mode.CSV.conf.motor_rated_torque]
-            rated_torque = 67
+            rated_torque = None
 
             [mode.CSV.conf.max_motor_speed]
-            max_velocity = 67
+            max_velocity = 300
 
             #Left out max gear speed
 
             [mode.CSV.conf.interpolation_time_period]
-            time_period_val = 67
-            time_index = 67
+            time_period_val = 0
+            time_index = None
 
 
         #COMMANDING PARAMETERS
