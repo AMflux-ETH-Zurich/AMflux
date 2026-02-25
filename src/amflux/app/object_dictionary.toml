@@ -26,51 +26,51 @@
     inertia        = 1000
 
     [motor.dual_loop_position_control_parameter_init]
-    main_loop_p_gain_low              = None
-    main_loop_p_gain_high             = None
-    main_loop_gain_scheduler          = None
-    main_loop_filter_coeff_a          = None
-    main_loop_filter_coeff_b          = None
-    main_loop_filter_coeff_c          = None
-    main_loop_filter_coeff_d          = None
-    main_loop_filter_coeff_e          = None
-    auxiliary_loop_p_gain             = None
-    auxiliary_loop_i_gain             = None
-    auxiliary_loop_ff_velocity_gain   = None
-    auxiliary_loop_ff_acceleration_gain = None
-    auxiliary_loop_observer_pos_corr_gain = None
-    auxiliary_loop_observer_vel_corr_gain = None
-    auxiliary_loop_observer_load_corr_gain = None
-    auxiliary_loop_observer_friction  = None
-    auxiliary_loop_observer_inertia   = None
-    dual_loop_miscellaneous           = None
+    main_loop_p_gain_low              = "None"
+    main_loop_p_gain_high             = "None"
+    main_loop_gain_scheduler          = "None"
+    main_loop_filter_coeff_a          = "None"
+    main_loop_filter_coeff_b          = "None"
+    main_loop_filter_coeff_c          = "None"
+    main_loop_filter_coeff_d          = "None"
+    main_loop_filter_coeff_e          = "None"
+    auxiliary_loop_p_gain             = "None"
+    auxiliary_loop_i_gain             = "None"
+    auxiliary_loop_ff_velocity_gain   = "None"
+    auxiliary_loop_ff_acceleration_gain = "None"
+    auxiliary_loop_observer_pos_corr_gain = "None"
+    auxiliary_loop_observer_vel_corr_gain = "None"
+    auxiliary_loop_observer_load_corr_gain = "None"
+    auxiliary_loop_observer_friction  = "None"
+    auxiliary_loop_observer_inertia   = "None"
+    dual_loop_miscellaneous           = "None"
 
     [motor.si_unit_position]
-    si_unit_pos = None
+    si_unit_pos = "None"
 
     [motor.si_unit_velocity]
-    si_unit_vel = None
+    si_unit_vel = "None"
 
     [motor.si_unit_acceleration]
-    si_unit_acc = None
+    si_unit_acc = "None"
 
     [motor.position_offset]
-    pos_offset = None
+    pos_offset = "None"
 
     [motor.velocity_offset]
-    vel_offset = None
+    vel_offset = "None"
 
     [motor.torque_offset]
-    tor_offset = None
+    tor_offset = "None"
 
     [motor.digital_outputs]
-    phys_outputs = None
+    phys_outputs = "None"
 
     #[motor.motor_rated_torque]
-    #rated_torque = None
+    #rated_torque = "None"
 
     [motor.motor_type]
-    motor_type = None
+    motor_type = "None"
 
 
 # =========================================================
@@ -99,16 +99,16 @@
     #op_mode = 67
 
     [safety.following_error_window_init]
-    following_error_window = None
+    following_error_window = "None"
 
     [safety.following_error_timeout_init]
-    following_error_timeout = None
+    following_error_timeout = "None"
 
     [safety.position_window_init]
-    position_window = None
+    position_window = "None"
 
     [safety.position_window_time_init]
-    position_window_time = None
+    position_window_time = "None"
 
     [safety.shutdown_option_code]
     option_code = 0
@@ -123,8 +123,8 @@
     option_code = 2
 
     [safety.software_position_limit]
-    min_pos_limit = None
-    max_pos_limit = None
+    min_pos_limit = "None"
+    max_pos_limit = "None"
 
     [safety.max_profile_velocity]
     max_velocity = 300
@@ -335,28 +335,28 @@
             tor_const = 2000000
 
             [mode.CSV.conf.current_control_parameter_init]
-            p_gain = None
-            i_gain = None
+            p_gain = "None"
+            i_gain = "None"
 
             [mode.CSV.conf.velocity_control_parameter_init]
-            p_gain = None
-            i_gain = None
-            ffv_gain = None
-            ffa_gain = None
-            f_cutoff = None
+            p_gain = "None"
+            i_gain = "None"
+            ffv_gain = "None"
+            ffa_gain = "None"
+            f_cutoff = "None"
 
             [mode.CSV.conf.quick_stop_deceleration]
-            prof_dec = None
+            prof_dec = "None"
 
             [mode.CSV.conf.profile_deceleration]
-            prof_dec = None
+            prof_dec = "None"
             
             [mode.CSV.conf.software_position_limit]
-            min_pos_limit = None
-            max_pos_limit = None
+            min_pos_limit = "None"
+            max_pos_limit = "None"
 
             [mode.CSV.conf.motor_rated_torque]
-            rated_torque = None
+            rated_torque = "None"
 
             [mode.CSV.conf.max_motor_speed]
             max_velocity = 300
@@ -365,7 +365,7 @@
 
             [mode.CSV.conf.interpolation_time_period]
             time_period_val = 0
-            time_index = None
+            time_index = "None"
 
 
         #COMMANDING PARAMETERS
