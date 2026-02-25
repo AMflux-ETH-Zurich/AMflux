@@ -172,17 +172,17 @@ def motor_init(node, motor_type: int=None, nominal_current: int=None, current_li
     check_init(locals())
     #6.2.53
     #motor type (Sinusoidal PM BL motor = 10 or in hex 0x0A)
-    node.sdo[0x6402][0x0].raw = motor_type if motor_type is not None else 0x000A
+    node.sdo[0x6402][0].raw = motor_type if motor_type is not None else 0x000A
     #nominal current flowing through motor windings in mA
-    node.sdo[0x3001][0x1].raw = nominal_current if nominal_current is not None else 15000
+    node.sdo[0x3001][1].raw = nominal_current if nominal_current is not None else 15000
     #output current limit in mA
-    node.sdo[0x3001][0x2].raw = current_lim if current_lim is not None else 30000
+    node.sdo[0x3001][2].raw = current_lim if current_lim is not None else 30000
     #number of pole pairs
-    node.sdo[0x3001][0x3].raw = pole_pairs if pole_pairs is not None else 1
+    node.sdo[0x3001][3].raw = pole_pairs if pole_pairs is not None else 1
     #thermal time constant of windings
-    node.sdo[0x3001][0x4].raw = therm_const if therm_const is not None else 40
+    node.sdo[0x3001][4].raw = therm_const if therm_const is not None else 40
     #torque constant of motor
-    node.sdo[0x3001][0x5].raw = tor_const if tor_const is not None else 0
+    node.sdo[0x3001][5].raw = tor_const if tor_const is not None else 0
 
 
 def ssi_abs_encoder_init(node, data_rate: int=None, data_bits: int=None, encoding_type: int=None,
@@ -191,40 +191,40 @@ def ssi_abs_encoder_init(node, data_rate: int=None, data_bits: int=None, encodin
     #6.2.58
     check_init(locals())
     #SSI data rate
-    node.sdo[0x3012][0x1].raw = data_rate if data_rate is not None else 2000 #REFER TO RENISHAW ENCODER SHEET
+    node.sdo[0x3012][1].raw = data_rate if data_rate is not None else 2000 #REFER TO RENISHAW ENCODER SHEET
     #SSI number of data bits
-    node.sdo[0x3012][0x2].raw = data_bits if data_bits is not None else 0x00000C00 #REFER TO RENISHAW ENCODER SHEET
+    node.sdo[0x3012][2].raw = data_bits if data_bits is not None else 0x00000C00 #REFER TO RENISHAW ENCODER SHEET
     #SSI encoding type
-    node.sdo[0x3012][0x3].raw = encoding_type if encoding_type is not None else 0x001 #REFER TO RENISHAW ENCODER SHEET
+    node.sdo[0x3012][3].raw = encoding_type if encoding_type is not None else 0x001 #REFER TO RENISHAW ENCODER SHEET
     #SSI timeout time
-    node.sdo[0x3012][0x5].raw = timeout_time if timeout_time is not None else 30 #REFER TO RENISHAW ENCODER SHEET
+    node.sdo[0x3012][5].raw = timeout_time if timeout_time is not None else 30 #REFER TO RENISHAW ENCODER SHEET
     #Special bits trailing data
     #READ ONLY node.sdo[0x3012][0x6].raw = sbits_trailing_data if sbits_trailing_data is not None else 0 #REFER TO RENISHAW ENCODER SHEET
     #SSI refresh frequency
     #READ ONLY node.sdo[0x3012][0x7].raw = refresh_frequency #REFER TO RENISHAW ENCODER SHEET
     #SSI Power up time
-    node.sdo[0x3012][0x8].raw = power_up_time if power_up_time is not None else 200 #REFER TO RENISHAW ENCODER SHEET
+    node.sdo[0x3012][8].raw = power_up_time if power_up_time is not None else 200 #REFER TO RENISHAW ENCODER SHEET
     #SSI postition raw value, lower 32 bits
     #READ ONLY node.sdo[0x3012][0x9].raw = position_raw_value
     #SSI commutaiton offset value
-    node.sdo[0x3012][0xA].raw = commutation_offset_value if commutation_offset_value is not None else 0
+    node.sdo[0x3012][10].raw = commutation_offset_value if commutation_offset_value is not None else 0
     #SSI position bits
-    node.sdo[0x3012][0xB].raw = position_bits if position_bits is not None else  0x0000000C #REFER TO RENISHAW ENCODER SHEET, MUST BE REDUCED IF >32
+    node.sdo[0x3012][11].raw = position_bits if position_bits is not None else  0x0000000C #REFER TO RENISHAW ENCODER SHEET, MUST BE REDUCED IF >32
     #SSI special bits leading data
     #READ ONLY node.sdo[0x3012][0xC].raw = sbits_leading_data if sbits_leading_data is not None else 0 #REFER TO RENISHAW ENCODER SHEET
     #SSI position raw value complemete
     #READ ONLY node.sdo[0x3012][0xD].raw = position_raw_value_complete
     #SSI communication additional delay
-    node.sdo[0x3012][0xE].raw = communication_additional_delay if communication_additional_delay is not None else -1 #REFER TO RENISHAW EN
+    node.sdo[0x3012][12].raw = communication_additional_delay if communication_additional_delay is not None else -1 #REFER TO RENISHAW EN
 
 
 def electrical_system_init(node, electrical_resistance: int=None, electrical_inductance: int=None):
     #6.2.54
     check_init(locals())
     #electrical resistance of motor windings in mOhm
-    node.sdo[0x3002][0x1].raw = electrical_resistance if electrical_resistance is not None else 0
+    node.sdo[0x3002][1].raw = electrical_resistance if electrical_resistance is not None else 0
     #electrical inductance of motor windings in uH
-    node.sdo[0x3002][0x2].raw = electrical_inductance if electrical_inductance is not None else 0
+    node.sdo[0x3002][2].raw = electrical_inductance if electrical_inductance is not None else 0
 
 
 def current_control_parameter_init(node, p_gain: int = None, i_gain: int = None):
@@ -305,35 +305,35 @@ def dual_loop_position_control_parameter_init(node, main_loop_p_gain_low:int = N
     #Represents the main loop gain scheduler
     node.sdo[0x30AE][3].raw = main_loop_gain_scheduler if main_loop_gain_scheduler is not None else 12500
     #Main loop filter coefficient a
-    node.sdo[0x30AE][0x10].raw = main_loop_filter_coeff_a if main_loop_filter_coeff_a is not None else 1000
+    node.sdo[0x30AE][16].raw = main_loop_filter_coeff_a if main_loop_filter_coeff_a is not None else 1000
     #Main loop filter coefficient b
-    node.sdo[0x30AE][0x11].raw = main_loop_filter_coeff_b if main_loop_filter_coeff_b is not None else 1000
+    node.sdo[0x30AE][17].raw = main_loop_filter_coeff_b if main_loop_filter_coeff_b is not None else 1000
     #Main loop filter coefficient c
-    node.sdo[0x30AE][0x12].raw = main_loop_filter_coeff_c if main_loop_filter_coeff_c is not None else 1000
+    node.sdo[0x30AE][18].raw = main_loop_filter_coeff_c if main_loop_filter_coeff_c is not None else 1000
     #Main loop filter coefficient d
-    node.sdo[0x30AE][0x13].raw = main_loop_filter_coeff_d if main_loop_filter_coeff_d is not None else 1000
+    node.sdo[0x30AE][19].raw = main_loop_filter_coeff_d if main_loop_filter_coeff_d is not None else 1000
     #Main loop filter coefficient e
-    node.sdo[0x30AE][0x14].raw = main_loop_filter_coeff_e if main_loop_filter_coeff_e is not None else 1000
+    node.sdo[0x30AE][20].raw = main_loop_filter_coeff_e if main_loop_filter_coeff_e is not None else 1000
     #Auxiliary loop P-gain
-    node.sdo[0x30AE][0x20].raw = auxiliary_loop_p_gain if auxiliary_loop_p_gain is not None else 20000
+    node.sdo[0x30AE][32].raw = auxiliary_loop_p_gain if auxiliary_loop_p_gain is not None else 20000
     #Auxiliary loop I-gain
-    node.sdo[0x30AE][0x21].raw = auxiliary_loop_i_gain if auxiliary_loop_i_gain is not None else 500000
+    node.sdo[0x30AE][33].raw = auxiliary_loop_i_gain if auxiliary_loop_i_gain is not None else 500000
     #Auxiliary loop FF velocity gain
-    node.sdo[0x30AE][0x22].raw = auxiliary_loop_ff_velocity_gain if auxiliary_loop_ff_velocity_gain is not None else 0
+    node.sdo[0x30AE][34].raw = auxiliary_loop_ff_velocity_gain if auxiliary_loop_ff_velocity_gain is not None else 0
     #Auxiliary loop FF acceleration gain
-    node.sdo[0x30AE][0x23].raw = auxiliary_loop_ff_acceleration_gain if auxiliary_loop_ff_acceleration_gain is not None else 0
+    node.sdo[0x30AE][35].raw = auxiliary_loop_ff_acceleration_gain if auxiliary_loop_ff_acceleration_gain is not None else 0
     #Auxiliay loop observer position correction gain
-    node.sdo[0x30AE][0x30].raw = auxiliary_loop_observer_pos_corr_gain if auxiliary_loop_observer_pos_corr_gain is not None else 400
+    node.sdo[0x30AE][48].raw = auxiliary_loop_observer_pos_corr_gain if auxiliary_loop_observer_pos_corr_gain is not None else 400
     #Auxiliay loop observer velocity correction gain
-    node.sdo[0x30AE][0x31].raw = auxiliary_loop_observer_vel_corr_gain if auxiliary_loop_observer_vel_corr_gain is not None else 100000
+    node.sdo[0x30AE][49].raw = auxiliary_loop_observer_vel_corr_gain if auxiliary_loop_observer_vel_corr_gain is not None else 100000
     #Auxiliay loop observer load correction gain
-    node.sdo[0x30AE][0x32].raw = auxiliary_loop_observer_load_corr_gain if auxiliary_loop_observer_load_corr_gain is not None else 33
+    node.sdo[0x30AE][50].raw = auxiliary_loop_observer_load_corr_gain if auxiliary_loop_observer_load_corr_gain is not None else 33
     #Auxiliay loop observer friction
-    node.sdo[0x30AE][0x33].raw = auxiliary_loop_observer_friction if auxiliary_loop_observer_friction is not None else 10
+    node.sdo[0x30AE][51].raw = auxiliary_loop_observer_friction if auxiliary_loop_observer_friction is not None else 10
     #Auxiliay loop observer inertia
-    node.sdo[0x30AE][0x34].raw = auxiliary_loop_observer_inertia if auxiliary_loop_observer_inertia is not None else 1000
+    node.sdo[0x30AE][52].raw = auxiliary_loop_observer_inertia if auxiliary_loop_observer_inertia is not None else 1000
     #Dual loop control miscellaneous configuration
-    node.sdo[0x30AE][0x40].raw = dual_loop_miscellaneous if dual_loop_miscellaneous is not None else 0x0000
+    node.sdo[0x30AE][64].raw = dual_loop_miscellaneous if dual_loop_miscellaneous is not None else 0x0000
 
 
 def home_position_init(node, homeposition: int = None):
