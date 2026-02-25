@@ -68,7 +68,7 @@ def main():
     # Then update the network_setup call:
     network, mc1 = can_functions.network_setup(
         1, 
-        '/home/amfluxpi/AMflux/src/amflux/app/Epos4_70_15.eds' #str(Path(__file__).parent / 'Epos4_70_15.eds'),  # OLD: 
+        '/home/amfluxpi/AMflux/src/amflux/app/Epos4_70_15.eds', #str(Path(__file__).parent / 'Epos4_70_15.eds'),  # OLD: 
         'can0', 
         net
     )
