@@ -156,7 +156,7 @@ def pdo_mapping_init(node, network):
 def axis_configuration_init(node, sens_res: int=None, sys_speed: int=None):
     #6.2.52
     #Axis configuration for absolute SSI encoder
-    node.sdo["0x3000.1"].raw = 0x00000300
+    node.sdo["Axis configuration.Sensors configuration"].raw = 0x00000300
     #Axis control structure
     node.sdo[(0x3000, 0x02)].raw = 0b00000000000000100000000100100001
     #Commutaton Sensors
