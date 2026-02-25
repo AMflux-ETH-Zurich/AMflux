@@ -28,7 +28,7 @@ from pathlib import Path
 
 # OLD: '/home/amfluxpi/AMflux/src/amflux/app/object_dictionary.toml'
 # OLD: '/Users/wendelinroth/Desktop/Code/GitHub/AMflux/src/amflux/app/object_dictionary.toml'
-with open(Path(__file__).parent / 'object_dictionary.toml', 'r') as data:
+with open("/home/amfluxpi/AMflux/src/amflux/app/object_dictionary.toml") as data:
     objdict_data = toml.load(data)
 
 
