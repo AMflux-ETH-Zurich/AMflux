@@ -116,15 +116,15 @@ def pdo_mapping_init(node, network):
 
     # TxPDO1: asynchronous/event-driven, contains statusword (is sent if something changes in the 402 state machine)
     node.tpdo[1].add_variable(0x6041, 0x00) # Statusword
-    node.sdo[0x1A00:1].raw = 0x60410010  # PDO1 mapping: Statusword
+    node.sdo[(0x1A00, 1)].raw = 0x60410010  # PDO1 mapping: Statusword
     node.tpdo[1].trans_type = 255 #   1=SYNC; 255=asynchronous --> with every change of the 402 state machine (in 0x2400.04, bit mask 0x00000002 must be set (which is the default))
     node.tpdo[1].enabled = True
 
     # TxPDO2: synchronous, contains velocity actual value and position actual value
     node.tpdo[2].add_variable(0x606C, 0x00) # Velocity actual value
-    node.sdo[0x1A01:1].raw = 0x606C0010  # PDO2 mapping: Velocity actual value
+    node.sdo[(0x1A01, 1)].raw = 0x606C0010  # PDO2 mapping: Velocity actual value
     node.tpdo[2].add_variable(0x6064, 0x00) # Position actual value
-    node.sdo[0x1A01:2].raw = 0x60640020  # PDO2 mapping: Position actual value
+    node.sdo[(0x1A01, 2)].raw = 0x60640020  # PDO2 mapping: Position actual value
     #node.tpdo[2].add_variable(0x6077, 0x00) # Torque actual value
     #node.tpdo[2].add_variable(0x6061, 0x00) # Modes of operation display
     node.tpdo[2].trans_type = 1 #   1=SYNC; 255=asynchronous
@@ -132,16 +132,16 @@ def pdo_mapping_init(node, network):
 
     # RxPDO1: event-driven, contains controlword
     node.rpdo[1].add_variable(0x6040, 0x00)  # Controlword
-    node.sdo[0x1600:1].raw = 0x60400010  # RxPDO1 mapping: Controlword
+    node.sdo[(0x1600, 1)].raw = 0x60400010  # RxPDO1 mapping: Controlword
     node.rpdo[1].trans_type = 255 #   1=SYNC; 255=asynchronous
     node.rpdo[1].enabled = True
     
     # RxPDO2: event-driven, contains target velocity and target position
     #node.rpdo[2].add_variable(0x6060, 0x00)  # Modes of operation
     node.rpdo[2].add_variable(0x60FF, 0x00)  # Target velocity
-    node.sdo[0x1601:1].raw = 0x60FF0010  # RxPDO2 mapping: Target velocity
+    node.sdo[(0x1601, 1)].raw = 0x60FF0010  # RxPDO2 mapping: Target velocity
     node.rpdo[2].add_variable(0x607A, 0x00)  # Target position
-    node.sdo[0x1601:2].raw = 0x607A0020  # RxPDO2 mapping: Target position
+    node.sdo[(0x1601, 2)].raw = 0x607A0020  # RxPDO2 mapping: Target position
     node.rpdo[2].trans_type = 255 #   1=SYNC; 255=asynchronous
     node.rpdo[2].enabled = True
     
@@ -156,13 +156,13 @@ def pdo_mapping_init(node, network):
 def axis_configuration_init(node, sens_res: int=None, sys_speed: int=None):
     #6.2.52
     #Axis configuration for absolute SSI encoder
-    node.sdo[0x3000:1].raw = 0x00000300
+    node.sdo[(0x3000, 1)].raw = 0x00000300
     #Axis control structure
-    node.sdo[0x3000:2].raw = 0b00000000000000100000000100100001
+    node.sdo[(0x3000, 2)].raw = 0b00000000000000100000000100100001
     #Commutaton Sensors
-    node.sdo[0x3000:3].raw = 0x00000020
+    node.sdo[(0x3000, 3)].raw = 0x00000020
     #Miscellaneous Axis Configuration
-    node.sdo[0x3000:4].raw = 0x00000000
+    node.sdo[(0x3000, 4)].raw = 0x00000000
 
 
 def motor_init(node, motor_type: int=None, nominal_current: int=None, current_lim: int=None, 
@@ -172,17 +172,17 @@ def motor_init(node, motor_type: int=None, nominal_current: int=None, current_li
     check_init(locals())
     #6.2.53
     #motor type (Sinusoidal PM BL motor = 10 or in hex 0x0A)
-    node.sdo[0x6402:0].raw = motor_type if motor_type is not None else 0x000A
+    node.sdo[(0x6402, 0)].raw = motor_type if motor_type is not None else 0x000A
     #nominal current flowing through motor windings in mA
-    node.sdo[0x3001:1].raw = nominal_current if nominal_current is not None else 15000
+    node.sdo[(0x3001, 1)].raw = nominal_current if nominal_current is not None else 15000
     #output current limit in mA
-    node.sdo[0x3001:2].raw = current_lim if current_lim is not None else 30000
+    node.sdo[(0x3001, 2)].raw = current_lim if current_lim is not None else 30000
     #number of pole pairs
-    node.sdo[0x3001:3].raw = pole_pairs if pole_pairs is not None else 1
+    node.sdo[(0x3001, 3)].raw = pole_pairs if pole_pairs is not None else 1
     #thermal time constant of windings
-    node.sdo[0x3001:4].raw = therm_const if therm_const is not None else 40
+    node.sdo[(0x3001, 4)].raw = therm_const if therm_const is not None else 40
     #torque constant of motor
-    node.sdo[0x3001:5].raw = tor_const if tor_const is not None else 0
+    node.sdo[(0x3001, 5)].raw = tor_const if tor_const is not None else 0
 
 
 def ssi_abs_encoder_init(node, data_rate: int=None, data_bits: int=None, encoding_type: int=None,
@@ -191,49 +191,49 @@ def ssi_abs_encoder_init(node, data_rate: int=None, data_bits: int=None, encodin
     #6.2.58
     check_init(locals())
     #SSI data rate
-    node.sdo[0x3012:1].raw = data_rate if data_rate is not None else 2000 #REFER TO RENISHAW ENCODER SHEET
+    node.sdo[(0x3012, 1)].raw = data_rate if data_rate is not None else 2000 #REFER TO RENISHAW ENCODER SHEET
     #SSI number of data bits
-    node.sdo[0x3012:2].raw = data_bits if data_bits is not None else 0x00000C00 #REFER TO RENISHAW ENCODER SHEET
+    node.sdo[(0x3012, 2)].raw = data_bits if data_bits is not None else 0x00000C00 #REFER TO RENISHAW ENCODER SHEET
     #SSI encoding type
-    node.sdo[0x3012:3].raw = encoding_type if encoding_type is not None else 0x001 #REFER TO RENISHAW ENCODER SHEET
+    node.sdo[(0x3012, 3)].raw = encoding_type if encoding_type is not None else 0x001 #REFER TO RENISHAW ENCODER SHEET
     #SSI timeout time
-    node.sdo[0x3012:5].raw = timeout_time if timeout_time is not None else 30 #REFER TO RENISHAW ENCODER SHEET
+    node.sdo[(0x3012, 5)].raw = timeout_time if timeout_time is not None else 30 #REFER TO RENISHAW ENCODER SHEET
     #Special bits trailing data
     #READ ONLY node.sdo[0x3012][0x6].raw = sbits_trailing_data if sbits_trailing_data is not None else 0 #REFER TO RENISHAW ENCODER SHEET
     #SSI refresh frequency
     #READ ONLY node.sdo[0x3012][0x7].raw = refresh_frequency #REFER TO RENISHAW ENCODER SHEET
     #SSI Power up time
-    node.sdo[0x3012:8].raw = power_up_time if power_up_time is not None else 200 #REFER TO RENISHAW ENCODER SHEET
+    node.sdo[(0x3012, 8)].raw = power_up_time if power_up_time is not None else 200 #REFER TO RENISHAW ENCODER SHEET
     #SSI postition raw value, lower 32 bits
     #READ ONLY node.sdo[0x3012][0x9].raw = position_raw_value
     #SSI commutaiton offset value
-    node.sdo[0x3012:10].raw = commutation_offset_value if commutation_offset_value is not None else 0
+    node.sdo[(0x3012, 10)].raw = commutation_offset_value if commutation_offset_value is not None else 0
     #SSI position bits
-    node.sdo[0x3012:11].raw = position_bits if position_bits is not None else  0x0000000C #REFER TO RENISHAW ENCODER SHEET, MUST BE REDUCED IF >32
+    node.sdo[(0x3012, 11)].raw = position_bits if position_bits is not None else  0x0000000C #REFER TO RENISHAW ENCODER SHEET, MUST BE REDUCED IF >32
     #SSI special bits leading data
     #READ ONLY node.sdo[0x3012][0xC].raw = sbits_leading_data if sbits_leading_data is not None else 0 #REFER TO RENISHAW ENCODER SHEET
     #SSI position raw value complemete
     #READ ONLY node.sdo[0x3012][0xD].raw = position_raw_value_complete
     #SSI communication additional delay
-    node.sdo[0x3012:12].raw = communication_additional_delay if communication_additional_delay is not None else -1 #REFER TO RENISHAW EN
+    node.sdo[(0x3012, 12)].raw = communication_additional_delay if communication_additional_delay is not None else -1 #REFER TO RENISHAW EN
 
 
 def electrical_system_init(node, electrical_resistance: int=None, electrical_inductance: int=None):
     #6.2.54
     check_init(locals())
     #electrical resistance of motor windings in mOhm
-    node.sdo[0x3002:1].raw = electrical_resistance if electrical_resistance is not None else 0
+    node.sdo[(0x3002, 1)].raw = electrical_resistance if electrical_resistance is not None else 0
     #electrical inductance of motor windings in uH
-    node.sdo[0x3002:2].raw = electrical_inductance if electrical_inductance is not None else 0
+    node.sdo[(0x3002, 2)].raw = electrical_inductance if electrical_inductance is not None else 0
 
 
 def current_control_parameter_init(node, p_gain: int = None, i_gain: int = None):
     #6.2.61
     check_init(locals())
     #Current controller P-gain
-    node.sdo[0x30A0:1].raw = p_gain if p_gain is not None else 1171880
+    node.sdo[(0x30A0, 1)].raw = p_gain if p_gain is not None else 1171880
     #Current controller I-gain
-    node.sdo[0x30A0:2].raw = i_gain if i_gain is not None else 3906250
+    node.sdo[(0x30A0, 2)].raw = i_gain if i_gain is not None else 3906250
 
 
 def position_control_parameter_init(node, p_gain:int = None, i_gain: int = None, d_gain:int = None,
@@ -241,17 +241,17 @@ def position_control_parameter_init(node, p_gain:int = None, i_gain: int = None,
     #6.2.62
     check_init(locals())
     #Position controller P-gain
-    node.sdo[0x30A1:1].raw = p_gain if p_gain is not None else 1500000
+    node.sdo[(0x30A1, 1)].raw = p_gain if p_gain is not None else 1500000
     #Position controller I-gain
-    node.sdo[0x30A1:2].raw = i_gain if i_gain is not None else 780000
+    node.sdo[(0x30A1, 2)].raw = i_gain if i_gain is not None else 780000
     #Position controller D-gain
-    node.sdo[0x30A1:3].raw = d_gain if d_gain is not None else 16000
+    node.sdo[(0x30A1, 3)].raw = d_gain if d_gain is not None else 16000
     #Position controller Feed Forward velocity gain
-    node.sdo[0x30A1:4].raw = ffv_gain if ffv_gain is not None else 0
+    node.sdo[(0x30A1, 4)].raw = ffv_gain if ffv_gain is not None else 0
     #Position controller Feed Forward acceleration gain
-    node.sdo[0x30A1:5].raw = ffa_gain if ffa_gain is not None else 0
+    node.sdo[(0x30A1, 5)].raw = ffa_gain if ffa_gain is not None else 0
     #Position controller I-gain SI units
-    node.sdo[0x30A1:9].raw = i_gain_si_unit if i_gain_si_unit is not None else 0xFA040300
+    node.sdo[(0x30A1, 9)].raw = i_gain_si_unit if i_gain_si_unit is not None else 0xFA040300
 
 
 def velocity_control_parameter_init(node, p_gain:int = None, i_gain: int = None, 
@@ -259,15 +259,15 @@ def velocity_control_parameter_init(node, p_gain:int = None, i_gain: int = None,
     #6.2.63
     check_init(locals())
     #Velocity controller P-gain
-    node.sdo[0x30A2:1].raw = p_gain if p_gain is not None else 20000
+    node.sdo[(0x30A2, 1)].raw = p_gain if p_gain is not None else 20000
     #Velocity controller I-gain
-    node.sdo[0x30A2:2].raw = i_gain if i_gain is not None else 500000
+    node.sdo[(0x30A2, 2)].raw = i_gain if i_gain is not None else 500000
     #Velocity controller Feed Forward velocity gain
-    node.sdo[0x30A2:3].raw = ffv_gain if ffv_gain is not None else 0
+    node.sdo[(0x30A2, 3)].raw = ffv_gain if ffv_gain is not None else 0
     #Velocity controller Feed Forward acceleration gain
-    node.sdo[0x30A2:4].raw = ffa_gain if ffa_gain is not None else 0
+    node.sdo[(0x30A2, 4)].raw = ffa_gain if ffa_gain is not None else 0
     #Velocity controller filter cut-off frequency in HZ
-    node.sdo[0x30A2:5].raw = f_cutoff if f_cutoff is not None else 600
+    node.sdo[(0x30A2, 5)].raw = f_cutoff if f_cutoff is not None else 600
     
 
 def velocity_observer_parameter_init(node, pos_corr_gain: int = None, vel_corr_gain: int = None,
@@ -276,15 +276,15 @@ def velocity_observer_parameter_init(node, pos_corr_gain: int = None, vel_corr_g
     #6.2.64
     check_init(locals())
     #Velocity observer position correction gain given in promille
-    node.sdo[0x30A3:1].raw = pos_corr_gain if pos_corr_gain is not None else 400
+    node.sdo[(0x30A3, 1)].raw = pos_corr_gain if pos_corr_gain is not None else 400
     #Velocity observer velocity correction gain given in mHz
-    node.sdo[0x30A3:2].raw = vel_corr_gain if vel_corr_gain is not None else 100000
+    node.sdo[(0x30A3, 2)].raw = vel_corr_gain if vel_corr_gain is not None else 100000
     #Velocity observer load correction gain
-    node.sdo[0x30A3:3].raw = load_corr_gain if load_corr_gain is not None else 33
+    node.sdo[(0x30A3, 3)].raw = load_corr_gain if load_corr_gain is not None else 33
     #Velocity observer friction
-    node.sdo[0x30A3:4].raw = friction if friction is not None else 10
+    node.sdo[(0x30A3, 4)].raw = friction if friction is not None else 10
     #Velocity observer inertia
-    node.sdo[0x30A3:5].raw = inertia if inertia is not None else 1000
+    node.sdo[(0x30A3, 5)].raw = inertia if inertia is not None else 1000
 
 
 def dual_loop_position_control_parameter_init(node, main_loop_p_gain_low:int = None, main_loop_p_gain_high:int = None, 
@@ -299,83 +299,83 @@ def dual_loop_position_control_parameter_init(node, main_loop_p_gain_low:int = N
     #6.2.65
     check_init(locals())
     #Represents the main loop low bandwidth proportional factor
-    node.sdo[0x30AE:1].raw = main_loop_p_gain_low if main_loop_p_gain_low is not None else 10000
+    node.sdo[(0x30AE, 1)].raw = main_loop_p_gain_low if main_loop_p_gain_low is not None else 10000
     #Represents the main loop high bandwidth proportional factor
-    node.sdo[0x30AE:2].raw = main_loop_p_gain_high if main_loop_p_gain_high is not None else 100000
+    node.sdo[(0x30AE, 2)].raw = main_loop_p_gain_high if main_loop_p_gain_high is not None else 100000
     #Represents the main loop gain scheduler
-    node.sdo[0x30AE:3].raw = main_loop_gain_scheduler if main_loop_gain_scheduler is not None else 12500
+    node.sdo[(0x30AE, 3)].raw = main_loop_gain_scheduler if main_loop_gain_scheduler is not None else 12500
     #Main loop filter coefficient a
-    node.sdo[0x30AE:16].raw = main_loop_filter_coeff_a if main_loop_filter_coeff_a is not None else 1000
+    node.sdo[(0x30AE, 16)].raw = main_loop_filter_coeff_a if main_loop_filter_coeff_a is not None else 1000
     #Main loop filter coefficient b
-    node.sdo[0x30AE:17].raw = main_loop_filter_coeff_b if main_loop_filter_coeff_b is not None else 1000
+    node.sdo[(0x30AE, 17)].raw = main_loop_filter_coeff_b if main_loop_filter_coeff_b is not None else 1000
     #Main loop filter coefficient c
-    node.sdo[0x30AE:18].raw = main_loop_filter_coeff_c if main_loop_filter_coeff_c is not None else 1000
+    node.sdo[(0x30AE, 18)].raw = main_loop_filter_coeff_c if main_loop_filter_coeff_c is not None else 1000
     #Main loop filter coefficient d
-    node.sdo[0x30AE:19].raw = main_loop_filter_coeff_d if main_loop_filter_coeff_d is not None else 1000
+    node.sdo[(0x30AE, 19)].raw = main_loop_filter_coeff_d if main_loop_filter_coeff_d is not None else 1000
     #Main loop filter coefficient e
-    node.sdo[0x30AE:20].raw = main_loop_filter_coeff_e if main_loop_filter_coeff_e is not None else 1000
+    node.sdo[(0x30AE, 20)].raw = main_loop_filter_coeff_e if main_loop_filter_coeff_e is not None else 1000
     #Auxiliary loop P-gain
-    node.sdo[0x30AE:32].raw = auxiliary_loop_p_gain if auxiliary_loop_p_gain is not None else 20000
+    node.sdo[(0x30AE, 32)].raw = auxiliary_loop_p_gain if auxiliary_loop_p_gain is not None else 20000
     #Auxiliary loop I-gain
-    node.sdo[0x30AE:33].raw = auxiliary_loop_i_gain if auxiliary_loop_i_gain is not None else 500000
+    node.sdo[(0x30AE, 33)].raw = auxiliary_loop_i_gain if auxiliary_loop_i_gain is not None else 500000
     #Auxiliary loop FF velocity gain
-    node.sdo[0x30AE:34].raw = auxiliary_loop_ff_velocity_gain if auxiliary_loop_ff_velocity_gain is not None else 0
+    node.sdo[(0x30AE, 34)].raw = auxiliary_loop_ff_velocity_gain if auxiliary_loop_ff_velocity_gain is not None else 0
     #Auxiliary loop FF acceleration gain
-    node.sdo[0x30AE:35].raw = auxiliary_loop_ff_acceleration_gain if auxiliary_loop_ff_acceleration_gain is not None else 0
+    node.sdo[(0x30AE, 35)].raw = auxiliary_loop_ff_acceleration_gain if auxiliary_loop_ff_acceleration_gain is not None else 0
     #Auxiliay loop observer position correction gain
-    node.sdo[0x30AE:48].raw = auxiliary_loop_observer_pos_corr_gain if auxiliary_loop_observer_pos_corr_gain is not None else 400
+    node.sdo[(0x30AE, 48)].raw = auxiliary_loop_observer_pos_corr_gain if auxiliary_loop_observer_pos_corr_gain is not None else 400
     #Auxiliay loop observer velocity correction gain
-    node.sdo[0x30AE:49].raw = auxiliary_loop_observer_vel_corr_gain if auxiliary_loop_observer_vel_corr_gain is not None else 100000
+    node.sdo[(0x30AE, 49)].raw = auxiliary_loop_observer_vel_corr_gain if auxiliary_loop_observer_vel_corr_gain is not None else 100000
     #Auxiliay loop observer load correction gain
-    node.sdo[0x30AE:50].raw = auxiliary_loop_observer_load_corr_gain if auxiliary_loop_observer_load_corr_gain is not None else 33
+    node.sdo[(0x30AE, 50)].raw = auxiliary_loop_observer_load_corr_gain if auxiliary_loop_observer_load_corr_gain is not None else 33
     #Auxiliay loop observer friction
-    node.sdo[0x30AE:51].raw = auxiliary_loop_observer_friction if auxiliary_loop_observer_friction is not None else 10
+    node.sdo[(0x30AE, 51)].raw = auxiliary_loop_observer_friction if auxiliary_loop_observer_friction is not None else 10
     #Auxiliay loop observer inertia
-    node.sdo[0x30AE:52].raw = auxiliary_loop_observer_inertia if auxiliary_loop_observer_inertia is not None else 1000
+    node.sdo[(0x30AE, 52)].raw = auxiliary_loop_observer_inertia if auxiliary_loop_observer_inertia is not None else 1000
     #Dual loop control miscellaneous configuration
-    node.sdo[0x30AE:64].raw = dual_loop_miscellaneous if dual_loop_miscellaneous is not None else 0x0000
+    node.sdo[(0x30AE, 64)].raw = dual_loop_miscellaneous if dual_loop_miscellaneous is not None else 0x0000
 
 
 def home_position_init(node, homeposition: int = None):
     #6.2.66
     check_init(locals())
     #defines the position that will be set as zero position of the absolute position counter.
-    node.sdo[0x30B0:0].raw = homeposition if homeposition is not None else 0
+    node.sdo[(0x30B0, 0)].raw = homeposition if homeposition is not None else 0
 
 
 def home_offset_distance_init(node, home_offset_distance: int = None):
     #6.2.67
     check_init(locals())
     #Represents a moving distance in a homing procedure.
-    node.sdo[0x30B1:0].raw = home_offset_distance if home_offset_distance is not None else 0
+    node.sdo[(0x30B1, 0)].raw = home_offset_distance if home_offset_distance is not None else 0
 
 
 def current_threshold_homing_init(node, current_threshold_homing: int = None):
     #6.2.68
     check_init(locals())
     #Used for homing methods «−1», «−2», «−3», and «−4».
-    node.sdo[0x30B2:0].raw = current_threshold_homing if current_threshold_homing is not None else 1000
+    node.sdo[(0x30B2, 0)].raw = current_threshold_homing if current_threshold_homing is not None else 1000
 
 
 def standstill_window_init(node, standstill_window: int = None):
     #6.2.73.1
     check_init(locals())
     #Defines a symmetric range of accepted velocity values relatively to zero.
-    node.sdo[0x30E0:1].raw = standstill_window if standstill_window is not None else 30
+    node.sdo[(0x30E0, 1)].raw = standstill_window if standstill_window is not None else 30
 
 
 def standstill_window_time_init(node, standstill_window_time: int = None):
     #6.2.73.2
     check_init(locals())
     #Defines the time duration for which the velocity must remain within the standstill window for Standstill to be reached. [ms]
-    node.sdo[0x30E0:2].raw = standstill_window_time if standstill_window_time is not None else 2
+    node.sdo[(0x30E0, 2)].raw = standstill_window_time if standstill_window_time is not None else 2
 
 
 def standstill_window_timeout_init(node, standstill_window_timeout: int = None):
     #6.2.73.3
     check_init(locals())
     #Defines the point of time standstill is supposed to be reached, even if the standstill conditions are not yet fulfilled.
-    node.sdo[0x30E0:3].raw = standstill_window_timeout if standstill_window_timeout is not None else 1000
+    node.sdo[(0x30E0, 3)].raw = standstill_window_timeout if standstill_window_timeout is not None else 1000
 
 
 def abort_connection_option_init(node, abort_option: int = None):
@@ -384,7 +384,7 @@ def abort_connection_option_init(node, abort_option: int = None):
     #Specifies the action that will be performed when one of the errors labeled “a” is detected
     # 2 -> «Disable voltage» command
     # 3 -> Decelerate with quick stop ramp; disabling of the drive function
-    node.sdo[0x605B:0].raw = abort_option if abort_option is not None else 3
+    node.sdo[(0x605B, 0)].raw = abort_option if abort_option is not None else 3
 
 
 def mode_of_operation_init(node, op_mode: int):
@@ -400,7 +400,7 @@ def following_error_window_init(node, following_error_window: int = None):
     check_init(locals())
     #Defines the maximum allowed deviation between target and actual position.
     #min=0, max=2.147.483.647
-    node.sdo[0x6065:0].raw = following_error_window if following_error_window is not None else 2000
+    node.sdo[(0x6065, 0)].raw = following_error_window if following_error_window is not None else 2000
 
 
 def following_error_timeout_init(node, following_error_timeout: int = None):
@@ -408,7 +408,7 @@ def following_error_timeout_init(node, following_error_timeout: int = None):
     check_init(locals())
     # Indicates the configured time for a following error condition. If exceeded, a following error will occur.
     # The value is given in milliseconds [ms].
-    node.sdo[0x6066:0].raw = following_error_timeout if following_error_timeout is not None else 0
+    node.sdo[(0x6066, 0)].raw = following_error_timeout if following_error_timeout is not None else 0
 
 
 def position_window_init(node, position_window: int = None):
@@ -416,7 +416,7 @@ def position_window_init(node, position_window: int = None):
     check_init(locals())
     #Defines a symmetric range of accepted position values relatively to target position.
     #min=0, max=2147483647, disable=4294967295
-    node.sdo[0x6067:0].raw = position_window if position_window is not None else 4294967295
+    node.sdo[(0x6067, 0)].raw = position_window if position_window is not None else 4294967295
 
 
 def position_window_time_init(node, position_window_time: int = None):
@@ -425,7 +425,7 @@ def position_window_time_init(node, position_window_time: int = None):
     # Indicates the configured position window time for the target reached condition. If the actual position is within the Position
     # window during the set time, the corresponding bit 10 (target reached) in the Statusword will be set to “1”.
     # The value is given in milliseconds [ms].
-    node.sdo[0x6068:0].raw = position_window_time if position_window_time is not None else 0
+    node.sdo[(0x6068, 0)].raw = position_window_time if position_window_time is not None else 0
 
 
 def shutdown_option_code(node, option_code: int = None):
@@ -486,9 +486,9 @@ def software_position_limit(node, min_pos_limit: int = None, max_pos_limit: int 
     check_init(locals())
     #defines the min and max allowed position values for the position controller, if exceeded a position error is generated
     #min position limit
-    node.sdo[0x607D:1].raw = min_pos_limit if min_pos_limit is not None else 0
+    node.sdo[(0x607D, 1)].raw = min_pos_limit if min_pos_limit is not None else 0
     #max position limit
-    node.sdo[0x607D:2].raw = max_pos_limit if max_pos_limit is not None else 0
+    node.sdo[(0x607D, 2)].raw = max_pos_limit if max_pos_limit is not None else 0
 
 
 def max_profile_velocity(node, max_velocity: int = None):
@@ -550,9 +550,9 @@ def homing_speeds(node, speed_sw_srch: int = None, speed_zero_srch: int = None):
     #6.2.126
     check_init(locals())
     #Speed for switch search given in rpm
-    node.sdo[0x6099:1].raw = speed_sw_srch if speed_sw_srch is not None else 100
+    node.sdo[(0x6099, 1)].raw = speed_sw_srch if speed_sw_srch is not None else 100
     #Speed for zero search given in rpm, used to search the index in a homing sequence
-    node.sdo[0x6099:2].raw = speed_zero_srch if speed_zero_srch is not None else 10
+    node.sdo[(0x6099, 2)].raw = speed_zero_srch if speed_zero_srch is not None else 10
 
 
 def homing_acceleration(node, homing_acc: int = None):
@@ -613,9 +613,9 @@ def interpolation_time_period(node, time_period_val: int = None, time_index: int
     #interpolation time period value indicates the time between two PDOs, values > 0 enable the demand value interpolation in CSP and CSV
     #is is of importance that the setpoint is written cyclically with the inerpolation time period.
     #the value is given in s*10^time_index, value of 0 disables the demand value interpolation
-    node.sdo[0x60C2:1].raw = time_period_val if time_period_val is not None else 0
+    node.sdo[(0x60C2, 1)].raw = time_period_val if time_period_val is not None else 0
     #time_index
-    node.sdo[0x60C2:2].raw = time_index if time_index is not None else -3
+    node.sdo[(0x60C2, 2)].raw = time_index if time_index is not None else -3
 
 
 def max_acceleration(node, max_acc: int = None):
@@ -630,7 +630,7 @@ def digital_outputs(node, phys_outputs: int = None):
     #6.2.148
     check_init(locals())
     #configures the state of the digital output functionalities, if a bit is set to “1“ and the polarity is set to “0“, the signal at the corresponding pin is high
-    node.sdo[0x60FE:1].raw = phys_outputs if phys_outputs is not None else 0
+    node.sdo[(0x60FE, 1)].raw = phys_outputs if phys_outputs is not None else 0
 
 
 def target_velocity(node, vel: int = None):
@@ -653,7 +653,7 @@ def digital_input_properties_init(node, polarity: int = None):
     check_init(locals())
     #index 1 is RO
     #if a bit is set to "1" the corresponding digital input is active high
-    node.sdo[0x3141:2].raw = polarity if polarity is not None else 0x0000
+    node.sdo[(0x3141, 2)].raw = polarity if polarity is not None else 0x0000
 
 
 def config_digital_inputs_init(node, input_1_config: int = None, input_2_config: int = None,
@@ -665,20 +665,20 @@ def config_digital_inputs_init(node, input_1_config: int = None, input_2_config:
     #maps functions to digital inputs, each function can only be assigned once, if sensor 2 is configured then digital inputs from 1 to 4 will bes disabled
     #index corresponds to relevant digital input
     #input 1 (DgIn1)
-    node.sdo[0x3142:1].raw = input_1_config if input_1_config is not None else 0
+    node.sdo[(0x3142, 1)].raw = input_1_config if input_1_config is not None else 0
     #input 2 (DgIn2)
-    node.sdo[0x3142:2].raw = input_2_config if input_2_config is not None else 1
+    node.sdo[(0x3142, 2)].raw = input_2_config if input_2_config is not None else 1
     #input 3 (DgIn3)
-    node.sdo[0x3142:3].raw = input_3_config if input_3_config is not None else 2
+    node.sdo[(0x3142, 3)].raw = input_3_config if input_3_config is not None else 2
     #input 4 (DgIn4)
-    node.sdo[0x3142:4].raw = input_4_config if input_4_config is not None else 19
+    node.sdo[(0x3142, 4)].raw = input_4_config if input_4_config is not None else 19
     #input 5 (HsDgIn1)
-    node.sdo[0x3142:5].raw = input_5_config if input_5_config is not None else 255
+    node.sdo[(0x3142, 5)].raw = input_5_config if input_5_config is not None else 255
     #input 6 (HsDgIn2)
-    node.sdo[0x3142:5].raw = input_6_config if input_6_config is not None else 255
+    node.sdo[(0x3142, 5)].raw = input_6_config if input_6_config is not None else 255
     #input 7 (HsDgIn3)
-    node.sdo[0x3142:5].raw = input_7_config if input_7_config is not None else 255
+    node.sdo[(0x3142, 5)].raw = input_7_config if input_7_config is not None else 255
     #input 8 (HsDgIn4)
-    node.sdo[0x3142:5].raw = input_8_config if input_8_config is not None else 255
+    node.sdo[(0x3142, 5)].raw = input_8_config if input_8_config is not None else 255
 
 
