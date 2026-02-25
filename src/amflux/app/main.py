@@ -75,7 +75,7 @@ def main():
 
     can_functions.sanity_check(network)
 
-    print(mc1.object_dictionary.names)
+    print(mc1.object_dictionary.names["0x3000"])
 
     #object_dictionary_functions.pdo_mapping_init(mc1, network)
     EPOS4 = organiser.DriveOrganiser(mc1, network=network)
