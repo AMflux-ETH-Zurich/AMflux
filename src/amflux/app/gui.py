@@ -379,7 +379,7 @@ class MotorTelemetry:
         #self.canvas_widget.pack(side="left")
         self.canvas_widget.grid(row=0, column=1)
         # center of the canvas
-        self.center = (100, 100)
+        self.center = (125, 125)
         # radius for the motor position circle
         self.radius = 75
         #draw the motor circle on the canvas
