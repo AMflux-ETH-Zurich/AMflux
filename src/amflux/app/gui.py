@@ -383,7 +383,7 @@ class MotorTelemetry:
         # radius for the motor position circle
         self.radius = 75
         #draw the motor circle on the canvas
-        self.canvas_widget.create_oval(20 , 20, 180, 180, outline="black", width=2)
+        self.canvas_widget.create_oval(45 , 45, 205, 205, outline="black", width=2)
         #draw the position dot
         #args (x1, y1, x2, y2, fill): (x1,y1) top-left, (x2,y2) bottom-right of bounding box, fill=color
         self.dot = self.canvas_widget.create_oval(85, 25, 105, 35, fill="black")
