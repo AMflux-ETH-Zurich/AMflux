@@ -374,7 +374,7 @@ class MotorTelemetry:
 
         #create custom canvas to visualize motor position
         #creates the canvas widget with specified width, height, and background color
-        self.canvas_widget = tk.Canvas(self.root_window, width=200, height=200, bg="white")
+        self.canvas_widget = tk.Canvas(self.root_window, width=250, height=250, bg="white")
         #pady adds vertical padding around the canvas
         #self.canvas_widget.pack(side="left")
         self.canvas_widget.grid(row=0, column=1)
@@ -389,7 +389,7 @@ class MotorTelemetry:
         self.dot = self.canvas_widget.create_oval(85, 25, 105, 35, fill="black")
         
         # Create text label for position value on canvas
-        self.position_text = self.canvas_widget.create_text(100, 170, text="Position: 0.00 rad",
+        self.position_text = self.canvas_widget.create_text(100, 100, text="Position: 0.00 rad",
                                                                  font=("Arial", 10), fill="black")
 
         #==========================================================
