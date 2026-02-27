@@ -265,21 +265,21 @@ def ModePageBuilder(app, parent, modeint, modename):
 
     run_button = ttk.Button(
         commanding,
-        text="RUN",
+        text="ENABLE",
         command= lambda: app.drive.enable_operation(10)
     )
     run_button.grid(row=0, column=0)
 
     pause_button = ttk.Button(
         commanding,
-        text="PAUSE",
+        text="QUICK-STOP",
         command= lambda: app.drive.quick_stop()
     )
     pause_button.grid(row=1, column=0)
 
     stop_button = ttk.Button(
         commanding,
-        text="STOP",
+        text="DISABLE",
         command= lambda: app.drive.stop_volt()
     )
     stop_button.grid(row=2, column=0)
@@ -352,6 +352,14 @@ class MotorTelemetry:
         self.ax_torque.set_xlabel("Time (s)")
         self.ax_velocity.set_xlabel("Time (s)")
 
+        # Create text annotations for displaying current values
+        self.torque_text = self.ax_torque.text(0.05, 0.95, "", transform=self.ax_torque.transAxes,
+                                                fontsize=10, verticalalignment='top',
+                                                bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
+        self.velocity_text = self.ax_velocity.text(0.05, 0.95, "", transform=self.ax_velocity.transAxes,
+                                                    fontsize=10, verticalalignment='top',
+                                                    bbox=dict(boxstyle='round', facecolor='lightblue', alpha=0.5))
+
         #==========================================================
 
         #embed the matplotlib figure into the Tkinter window
@@ -379,6 +387,10 @@ class MotorTelemetry:
         #draw the position dot
         #args (x1, y1, x2, y2, fill): (x1,y1) top-left, (x2,y2) bottom-right of bounding box, fill=color
         self.dot = self.canvas_widget.create_oval(85, 25, 105, 35, fill="black")
+        
+        # Create text label for position value on canvas
+        self.position_text = self.canvas_widget.create_text(100, 170, text="Position: 0.00 rad",
+                                                                 font=("Arial", 10), fill="black")
 
         #==========================================================
 
@@ -417,6 +429,10 @@ class MotorTelemetry:
         self.torque_line.set_data(self.time_data, self.torque_data)
         self.velocity_line.set_data(self.time_data, self.velocity_data)
 
+        # Update text values on plots
+        self.torque_text.set_text(f"Torque:\n{torque:.2f} Nm")
+        self.velocity_text.set_text(f"Velocity:\n{velocity:.2f} RPM")
+
         #set x-axis to show moving window
         if t < self.display_window:
             self.ax_torque.set_xlim(0, self.display_window)
@@ -429,7 +445,7 @@ class MotorTelemetry:
         self.ax_torque.set_ylim(0, 20)
         self.ax_velocity.set_ylim(0, 100)
 
-        #tells the program the figure needs to be redrawn, but do it when the GUI is idle, so it doesn’t block the event loop
+        #tells the program the figure needs to be redrawn, but do it when the GUI is idle, so it doesn't block the event loop
         self.canvas_plot.draw_idle()
 
 
@@ -439,6 +455,10 @@ class MotorTelemetry:
 
         #update the position of the motor dot
         self.canvas_widget.coords(self.dot, x - 5, y - 5, x + 5, y + 5)
+        
+        # Update position text on canvas
+        self.canvas_widget.itemconfig(self.position_text, text=f"Position:\n{position:.2f} rad")
+        
         # Continue updating if not on home page
         self.root_window.after(200, self.update)
         
