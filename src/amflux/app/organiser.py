@@ -43,6 +43,9 @@ class OperationModes:
         CyclicSynchronousVelocity:  "CVP", 
         CyclicSynchronousTorque:    "CTP"}
     
+def convert_toml_params(params: dict) -> dict:
+    """Convert TOML parameters, converting "None" strings to Python None"""
+    return {k: (None if v == "None" else v) for k, v in params.items()}
 
 def init_obj_dict(node, desired_mode):
     """Initializes all the object dictionary instances with helper functions. Values are read from object_dictionary.toml file.
@@ -58,7 +61,7 @@ def init_obj_dict(node, desired_mode):
     for func_name, params in motor_data.items():
         func = getattr(object_dictionary_functions, func_name)
         try:
-            func(node, **params)
+            func(node, **convert_toml_params(params))
         except InitObjDict as e:
             print(f"There was a problem Initialiting {func}, check dictionary values.")
             raise
@@ -68,7 +71,7 @@ def init_obj_dict(node, desired_mode):
     for func_name, params in encoder_data.items():
         func = getattr(object_dictionary_functions, func_name)
         try:
-            func(node, **params)
+            func(node, **convert_toml_params(params))
         except InitObjDict as e:
             print(f"There was a problem Initialiting {func}, check dictionary values.")
             raise
@@ -78,7 +81,7 @@ def init_obj_dict(node, desired_mode):
     for func_name, params in safety_data.items():
         func = getattr(object_dictionary_functions, func_name)
         try:
-            func(node, **params)
+            func(node, **convert_toml_params(params))
         except InitObjDict as e:
             print(f"There was a problem Initialiting {func}, check dictionary values.")
             raise
@@ -90,7 +93,7 @@ def init_obj_dict(node, desired_mode):
         for func_name, params in PPM_data.items():
             func = getattr(object_dictionary_functions, func_name)
             try:
-                func(node, **params)
+                func(node, **convert_toml_params(params))
             except InitObjDict as e:
                 print(f"There was a problem Initialiting {func}, check dictionary values.")
                 raise
@@ -102,7 +105,7 @@ def init_obj_dict(node, desired_mode):
         for func_name, params in HMM_data.items():
             func = getattr(object_dictionary_functions, func_name)
             try:
-                func(node, **params)
+                func(node, **convert_toml_params(params))
             except InitObjDict as e:
                 print(f"There was a problem Initialiting {func}, check dictionary values.")
                 raise
@@ -114,7 +117,7 @@ def init_obj_dict(node, desired_mode):
         for func_name, params in PVM_data.items():
             func = getattr(object_dictionary_functions, func_name)
             try:
-                func(node, **params)
+                func(node, **convert_toml_params(params))
             except InitObjDict as e:
                 print(f"There was a problem Initialiting {func}, check dictionary values.")
                 raise
@@ -126,7 +129,7 @@ def init_obj_dict(node, desired_mode):
         for func_name, params in CSP_data.items():
             func = getattr(object_dictionary_functions, func_name)
             try:
-                func(node, **params)
+                func(node, **convert_toml_params(params))
             except InitObjDict as e:
                 print(f"There was a problem Initialiting {func}, check dictionary values.")
                 raise
@@ -138,7 +141,7 @@ def init_obj_dict(node, desired_mode):
         for func_name, params in CSV_data.items():
             func = getattr(object_dictionary_functions, func_name)
             try:
-                func(node, **params)
+                func(node, **convert_toml_params(params))
             except InitObjDict as e:
                 print(f"There was a problem Initialiting {func}, check dictionary values.")
                 raise
@@ -150,7 +153,7 @@ def init_obj_dict(node, desired_mode):
         for func_name, params in CST_data.items():
             func = getattr(object_dictionary_functions, func_name)
             try:
-                func(node, **params)
+                func(node, **convert_toml_params(params))
             except InitObjDict as e:
                 print(f"There was a problem Initialiting {func}, check dictionary values.")
                 raise

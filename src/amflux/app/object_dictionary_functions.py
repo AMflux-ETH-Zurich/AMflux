@@ -96,7 +96,7 @@ Touch Probe (6.2.134-6.2.137, 6.2.140-6.2.142) not implemented.
     node.rpdo[2].add_variable(0x60FF, 0x00)
     node.rpdo[2].cob_id = 0x00000300 + node.id
     node.rpdo[2].trans_type = 255"""
-   
+
 
 def pdo_mapping_init(node, network):
     
