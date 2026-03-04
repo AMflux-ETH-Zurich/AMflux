@@ -197,7 +197,7 @@ def ssi_abs_encoder_init(node, data_rate: int=None, data_bits: int=None, encodin
     #6.2.58
     check_init(locals())
     #SSI data rate
-    node.sdo["SSI absolute encoder.SSI data rate"].raw = data_rate if data_rate is not None else 2000 #REFER TO RENISHAW ENCODER SHEET
+    node.sdo["SSI absolute encoder.SSI data rate"].raw = data_rate if data_rate is not None else 1000 #REFER TO RENISHAW ENCODER SHEET
     #SSI number of data bits
     node.sdo["SSI absolute encoder.SSI number of data bits"].raw = data_bits if data_bits is not None else 0x00000C00 #REFER TO RENISHAW ENCODER SHEET
     #SSI encoding type
