@@ -159,7 +159,7 @@ def pdo_mapping_init(node, network):
     print(f'node NMT state: {node.nmt.state}')     
 
 
-def axis_configuration_init(node): #sens_res: int=None , sys_speed: int=None
+def axis_configuration_init(node, sens_res: int=None , sys_speed: int=None): 
     #6.2.52
     #Axis configuration for absolute SSI encoder
     node.sdo["Axis configuration.Sensors configuration"].raw = 0x00000300
