@@ -437,7 +437,7 @@ class DriveOrganiser:
             except Exception:
                 current_mode_disp = None
         
-        self.recent_telemetry = [torque, velocity, position, status_word, current_mode_disp]
+        self.recent_telemetry = [torque, velocity, position, status_word]
         return self.recent_telemetry
         
     def get_status(self) -> dict:
