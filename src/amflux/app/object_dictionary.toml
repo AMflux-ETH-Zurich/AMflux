@@ -78,7 +78,7 @@
 # =========================================================
 
     [encoder.ssi_abs_encoder_init]
-    data_rate                   = 100
+    data_rate                   = 1000
     data_bits                   = 0x00000C00
     encoding_type               = 0
     timeout_time                = 200
