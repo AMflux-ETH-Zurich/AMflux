@@ -306,7 +306,7 @@ class DriveOrganiser:
 
             for func_name, instance in objdict_data["mode"][mode_code]["comm"].items():
                 func = getattr(object_dictionary_functions, func_name)
-                kwargs = {var_name: int(val) for var_name, val in instance.items()}
+                kwargs = {var_name: (None if val == "None" else int(val)) for var_name, val in instance.items()}
                 func(self.node, **kwargs)
             return True
         else:
