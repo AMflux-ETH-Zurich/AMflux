@@ -164,11 +164,11 @@ def axis_configuration_init(node, sens_res: int=None , sys_speed: int=None):
     #Axis configuration for absolute SSI encoder
     node.sdo["Axis configuration.Sensors configuration"].raw = 0x00000300
     #Axis control structure
-    node.sdo[("Axis configuration.Control structure", 0x02)].raw = 0b00000000000000100000000100100001
+    node.sdo["Axis configuration.Control structure"].raw = 0b00000000000000100000000100100001
     #Commutaton Sensors
-    node.sdo[("Axis configuration.Commutaion Sensors")].raw = 0x00000020
+    node.sdo["Axis configuration.Commutaion Sensors"].raw = 0x00000020
     #Miscellaneous Axis Configuration
-    node.sdo[("Axis configuration.Axis configuration miscellaneous")].raw = 0x00000000
+    node.sdo["Axis configuration.Axis configuration miscellaneous"].raw = 0x00000000
 
 
 def motor_init(node, motor_type: int=None, nominal_current: int=None, current_lim: int=None, 
