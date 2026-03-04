@@ -234,24 +234,7 @@ def ModePageBuilder(app, parent, modeint, modename):
         
     set_button = ttk.Button(editing, text="SET", command=lambda: set_params())
     set_button.grid(column=1)
-    """   
-    init_flag = Event()
-
-    if not init_flag.is_set():
-        set_button = ttk.Button(
-        editing, 
-        text = "SET",
-        command = lambda: set_params(init_flag)
-        )
-        set_button.grid(column=1)
-    else:
-        update_button = ttk.Button(
-        editing, 
-        text = "UPDATE",
-        command = lambda: update_params
-        )
-        update_button.grid(column=1)
-    """ 
+    
 
     #Command Buttons
     commanding = tk.Frame(parent)
@@ -290,6 +273,22 @@ def ModePageBuilder(app, parent, modeint, modename):
         command = lambda: app.set_state(PageState.Home)
     )
     back_button.grid(row=0, column=1, padx=50)
+
+    
+    def stop_record_data():
+        set_button.config(text="RECORD", background = "white", command=lambda: record_data())
+        app.drive.stop_recording()
+
+    def record_data():
+        set_button.config(text="RECORDING", background = "red", command=lambda: stop_record_data())
+        app.drive.start_recording()
+
+    record_button = ttk.Button(
+        commanding, 
+        text = "Record",
+        command = lambda: record_data()
+    )
+    record_button.grid(row=4, column=0)
 
     #Motor Status
     motor_gui = MotorTelemetry(parent, app.drive)

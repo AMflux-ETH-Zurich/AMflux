@@ -202,9 +202,13 @@ class DriveOrganiser:
         self.stop_volt_requested = Event()
         self.cancel_transition = Event()
         
-        # Power State
+        # Power state
         self.power_enabled = False
         self.torque_enabled = False
+
+        # Recording
+        self.recording = Event()
+        self.data = np.array()
         
         """
         # Queue for parameter updates from GUI
@@ -232,135 +236,23 @@ class DriveOrganiser:
     def request_update_param(self, name, value, timeout=5.0):
         self.cmd_q.put(Command(CmdType.UPDATE_PARAM, data=(name, value)))
 
-    # ============================================
-    # LIFECYCLE MANAGEMENT
-    # ============================================
-    
-    def start_organiser(self):
-        if self.thread and self.thread.is_alive():
-            return
-        self.shutdown.clear()
-        #self.cmd_q.clear()
-        self.thread = Thread(target=self.organiser_loop, daemon=True)
-        self.thread.start()
-
-    def stop_organiser(self):
-        self.shutdown.set()
-        if self.thread:
-            self.thread.join(timeout=2.0)
-
-    def organiser_loop(self):
-        while not self.shutdown.is_set():
-            if get_DriveState(self.node) == DriveState.FAULT_REACTION_ACITVE:
-                var = sword(self.node)
-                print("Error occured. Drive will be resetet to SWITCH ON DISABLED")
-                print(f'statursword: {var}')
-                goto_state(self.node, desired_state = DriveState.SWITCH_ON_DISABLED)
-
-            # HIGH PRIORITY: handle request stop
-            if self.stop_volt_requested.is_set():
-                self.stop_volt()
-
-                self.stop_volt_requested.clear()
-
-                self.clear_non_stop_commands()  
-            # get command
-            try:
-                cmd = self.cmd_q.get()
-            except queue.Empty:
-                cmd = None
-            # execute command depending on type
-            if cmd is not None:
-                if cmd.type == CmdType.QUICK_STOP:
-                    self.quick_stop()
-                elif cmd.type == CmdType.ENABLE_OPERATION:
-                    self.enable_operation()
-                elif cmd.type == CmdType.UPDATE_PARAM:
-                    name, value = cmd.data
-                    self.update_parameter(name, value)
-                elif cmd.type == CmdType.DISABLE_VOLTAGE:
-                    self.stop_volt()
-                continue
-
-            self.process_param_updates(0.05)
-
-            #if torque enabled get telemtry
-            self.read_telemetry()
-
-            time.sleep(0.01)
-
-    def set_mode(self, desired_mode):
-        self.node.sdo[0x6060].raw = desired_mode
-        time.sleep(5)
-        if self.node.sdo[0x6061].raw == desired_mode:
-            return True
+    def start_recording(self):
+        if self.recording.is_set():
+            print("already recording")
         else:
-            raise Exception #TODO: define new error
+            self.data_log.delete()
+            self.recording.set()
 
-    def prepare_operation(self) -> bool:
-        """
-        1. Read params from TOML for this mode
-        2. Initialize object dictionary on controller
-        3. Verify everything written correctly
-        """
+    def stop_recording(self):
+        if self.recording.is_set():
+            self.recording.clear()
+            time = time.time()
+            np.savetxt(f"telemetry_data_{time}.csv", self.data, delimiter = ",")
+        else:
+            print("start recording first")
+            
         
-        if self.set_mode(self.current_mode) and init_obj_dict(self.node, self.current_mode):
-            mode_code = OperationModes.abreviation[self.current_mode]
-
-            for func_name, instance in objdict_data["mode"][mode_code]["comm"].items():
-                func = getattr(object_dictionary_functions, func_name)
-                kwargs = {var_name: (None if val == "None" else int(val)) for var_name, val in instance.items()}
-                func(self.node, **kwargs)
-            return True
-        else:
-            return False   #TODO show error message on GUI: Prepare operation failed
-                
-    def enable_operation(self, timeout):
-        """
-        1. Transition to POWER_ENABLED and OPERATION_ENABLED via goto_state()
-        2. Set power_enabled = True
-        3. Set torque_enabled = True
-        """
-        #if self.cancel_transition.is_set():
-        #    return
-        #goto_state(self.node, desired_state=DriveState.POWER_ENABLED, timeout=timeout)
-        #self.power_enabled = True
-
-        if self.cancel_transition.is_set():
-            return
-        goto_state(self.node, desired_state=DriveState.OPERATION_ENABLED, timeout=timeout)
-        var = sword(self.node)
-
-        print(f'var: {var}')
-        self.power_enabled = True
-        self.torque_enabled = True
-       
-    def stop_volt(self):
-        """
-        1. Shutdown drive via goto_state()
-        2. 
-        3. 
-        """
-        print("test a")
-        if not self.power_enabled:
-            return
-        print("test b")
-        goto_state(self.node, desired_state=DriveState.SWITCHED_ON, timeout=2)
-        self.torque_enabled = False
-        goto_state(self.node, desired_state=DriveState.READY_TO_SWITCH_ON, timeout=2)
-        self.power_enabled = False
-
-    def quick_stop(self):
-        """
-        """
-        print("test a")
-        if not self.torque_enabled:
-            return
-        print("test b")
-        goto_state(self.node, desired_state=DriveState.QUICK_STOP_ACTIVE, timeout=2)
-        self.torque_enabled = False
-
-
+        
     # ============================================
     # RUNTIME UPDATES (called by GUI)
     # ============================================
@@ -448,3 +340,144 @@ class DriveOrganiser:
         Return cached telemetry for GUI (non-blocking).
         """
         return self.read_telemetry()
+
+    def log_telemetry(self):
+        
+        tel = self.read_telemetry()
+        timestamp = time.time()
+
+        self.data.append(tel, timestamp)
+
+
+
+    # ============================================
+    # LIFECYCLE MANAGEMENT
+    # ============================================
+    
+    def start_organiser(self):
+        if self.thread and self.thread.is_alive():
+            return
+        self.shutdown.clear()
+        #self.cmd_q.clear()
+        self.thread = Thread(target=self.organiser_loop, daemon=True)
+        self.thread.start()
+
+    def stop_organiser(self):
+        self.shutdown.set()
+        if self.thread:
+            self.thread.join(timeout=2.0)
+
+    def organiser_loop(self):
+        while not self.shutdown.is_set():
+            if get_DriveState(self.node) == DriveState.FAULT_REACTION_ACITVE:
+                var = sword(self.node)
+                print("Error occured. Drive will be resetet to SWITCH ON DISABLED")
+                print(f'statursword: {var}')
+                goto_state(self.node, desired_state = DriveState.SWITCH_ON_DISABLED)
+
+            # HIGH PRIORITY: handle request stop
+            if self.stop_volt_requested.is_set():
+                self.stop_volt()
+
+                self.stop_volt_requested.clear()
+
+                self.clear_non_stop_commands()  
+            
+            # get command
+            try:
+                cmd = self.cmd_q.get()
+            except queue.Empty:
+                cmd = None
+            # execute command depending on type
+            if cmd is not None:
+                if cmd.type == CmdType.QUICK_STOP:
+                    self.quick_stop()
+                elif cmd.type == CmdType.ENABLE_OPERATION:
+                    self.enable_operation()
+                elif cmd.type == CmdType.UPDATE_PARAM:
+                    name, value = cmd.data
+                    self.update_parameter(name, value)
+                elif cmd.type == CmdType.DISABLE_VOLTAGE:
+                    self.stop_volt()
+                continue
+
+            self.process_param_updates(0.05)
+
+            #get telemtry
+            if self.recording.is_set():
+                self.log_telemetry()
+            else:
+                self.read_telemetry()
+
+            time.sleep(0.01)
+
+    def set_mode(self, desired_mode):
+        self.node.sdo[0x6060].raw = desired_mode
+        time.sleep(5)
+        if self.node.sdo[0x6061].raw == desired_mode:
+            return True
+        else:
+            raise Exception #TODO: define new error
+
+    def prepare_operation(self) -> bool:
+        """
+        1. Read params from TOML for this mode
+        2. Initialize object dictionary on controller
+        3. Verify everything written correctly
+        """
+        
+        if self.set_mode(self.current_mode) and init_obj_dict(self.node, self.current_mode):
+            mode_code = OperationModes.abreviation[self.current_mode]
+
+            for func_name, instance in objdict_data["mode"][mode_code]["comm"].items():
+                func = getattr(object_dictionary_functions, func_name)
+                kwargs = {var_name: (None if val == "None" else int(val)) for var_name, val in instance.items()}
+                func(self.node, **kwargs)
+            return True
+        else:
+            return False   #TODO show error message on GUI: Prepare operation failed
+                
+    def enable_operation(self, timeout):
+        """
+        1. Transition to POWER_ENABLED and OPERATION_ENABLED via goto_state()
+        2. Set power_enabled = True
+        3. Set torque_enabled = True
+        """
+        #if self.cancel_transition.is_set():
+        #    return
+        #goto_state(self.node, desired_state=DriveState.POWER_ENABLED, timeout=timeout)
+        #self.power_enabled = True
+
+        if self.cancel_transition.is_set():
+            return
+        goto_state(self.node, desired_state=DriveState.OPERATION_ENABLED, timeout=timeout)
+        var = sword(self.node)
+
+        print(f'var: {var}')
+        self.power_enabled = True
+        self.torque_enabled = True
+       
+    def stop_volt(self):
+        """
+        1. Shutdown drive via goto_state()
+        2. 
+        3. 
+        """
+        print("test a")
+        if not self.power_enabled:
+            return
+        print("test b")
+        goto_state(self.node, desired_state=DriveState.SWITCHED_ON, timeout=2)
+        self.torque_enabled = False
+        goto_state(self.node, desired_state=DriveState.READY_TO_SWITCH_ON, timeout=2)
+        self.power_enabled = False
+
+    def quick_stop(self):
+        """
+        """
+        print("test a")
+        if not self.torque_enabled:
+            return
+        print("test b")
+        goto_state(self.node, desired_state=DriveState.QUICK_STOP_ACTIVE, timeout=2)
+        self.torque_enabled = False

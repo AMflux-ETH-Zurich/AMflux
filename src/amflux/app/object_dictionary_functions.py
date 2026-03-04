@@ -1,4 +1,4 @@
-#import time
+import time
 #import canopen
 #import keyboard
 #import can
@@ -156,6 +156,7 @@ def pdo_mapping_init(node, network):
 
     #node.rpdo[4]['0x606C.0x00'].phys = 1000
     network.nmt.state = 'OPERATIONAL' 
+    time.sleep(50)
     print(f'node NMT state: {node.nmt.state}')     
 
 
