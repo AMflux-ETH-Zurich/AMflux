@@ -77,7 +77,7 @@ def main():
 
     #print(mc1.object_dictionary.names["Axis configuration.Sensors configuration"])
 
-    #object_dictionary_functions.pdo_mapping_init(mc1, network)
+    object_dictionary_functions.pdo_mapping_init(mc1, network)
     EPOS4 = organiser.DriveOrganiser(mc1, network=network)
 
     app = gui.App(drive=EPOS4)
