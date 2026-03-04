@@ -166,7 +166,7 @@ def axis_configuration_init(node, sens_res: int=None , sys_speed: int=None):
     #Axis control structure
     node.sdo["Axis configuration.Control structure"].raw = 0b00000000000000100000000100100001
     #Commutaton Sensors
-    node.sdo["Axis configuration.Commutaion Sensors"].raw = 0x00000020
+    node.sdo["Axis configuration.Commutation sensors"].raw = 0x00000020
     #Miscellaneous Axis Configuration
     node.sdo["Axis configuration.Axis configuration miscellaneous"].raw = 0x00000000
 
