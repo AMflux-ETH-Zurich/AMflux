@@ -125,7 +125,7 @@ def pdo_mapping_init(node, network):
     #node.sdo[(0x1A01, 0x01)].raw = 0x606C0010  # PDO2 mapping: Velocity actual value
     node.tpdo[2].add_variable("Position actual value") # Position actual value
     #node.sdo[(0x1A01, 0x02)].raw = 0x60640020  # PDO2 mapping: Position actual value
-    node.tpdo[2].add_variable("Current actual value") # Current actual value
+    node.tpdo[2].add_variable("Current actual values.Current actual value") # Current actual value
     #node.tpdo[2].add_variable(0x6061, 0x00) # Modes of operation display
     node.tpdo[2].trans_type = 1 #   1=SYNC; 255=asynchronous
     node.tpdo[2].enabled = True
@@ -150,7 +150,8 @@ def pdo_mapping_init(node, network):
     node.rpdo.save()  
 
     #node.rpdo[4]['0x606C.0x00'].phys = 1000
-    network.nmt.state = 'OPERATIONAL'      
+    network.nmt.state = 'OPERATIONAL' 
+    print(f'node NMT state: {node.nmt.state}')     
 
 
 def axis_configuration_init(node): #sens_res: int=None , sys_speed: int=None
