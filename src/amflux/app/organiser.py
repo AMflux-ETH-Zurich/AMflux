@@ -402,15 +402,15 @@ class DriveOrganiser:
             # TPDO3: Statusword (0x6041)
             # Non-blocking: read cached TPDO values (assume they've arrived during operation)
             
-            position_raw = self.node.tpdo[4][0x6064].raw
+            position_raw = self.node.tpdo[2]['Position actual value'].phys
             position = (position_raw / 4096) * 2 * np.pi
             
-            velocity = self.node.tpdo[4][0x606C].raw
-            torque = self.node.tpdo[4][0x6077].raw
-            current_mode_disp = self.node.tpdo[4][0x6061].raw
+            velocity = self.node.tpdo[2]['Velocity actual value'].phys
+            torque = self.node.tpdo[2]['Current actual value'].phys
+            #current_mode_disp = self.node.tpdo[4][0x6061].raw
             
-            # Statusword from TPDO3 (not TPDO4)
-            status_word = self.node.tpdo[3][0x6041].raw
+            
+            status_word = self.node.tpdo[1]['Statusword'].raw
             
         except Exception as e:
             # Fallback to SDO reads (slower but safe)
