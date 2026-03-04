@@ -406,7 +406,7 @@ class DriveOrganiser:
             position = (position_raw / 4096) * 2 * np.pi
             
             velocity = self.node.tpdo[2]["Velocity actual value"].phys
-            torque = self.node.tpdo[2]["Current actual value"].phys
+            torque = self.node.tpdo[3]["Current actual value"].phys
             #current_mode_disp = self.node.tpdo[4][0x6061].raw
             
             

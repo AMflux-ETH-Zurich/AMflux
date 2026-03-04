@@ -125,10 +125,15 @@ def pdo_mapping_init(node, network):
     #node.sdo[(0x1A01, 0x01)].raw = 0x606C0010  # PDO2 mapping: Velocity actual value
     node.tpdo[2].add_variable("Position actual value") # Position actual value
     #node.sdo[(0x1A01, 0x02)].raw = 0x60640020  # PDO2 mapping: Position actual value
-    node.tpdo[2].add_variable("Current actual values.Current actual value") # Current actual value
+    
     #node.tpdo[2].add_variable(0x6061, 0x00) # Modes of operation display
     node.tpdo[2].trans_type = 1 #   1=SYNC; 255=asynchronous
     node.tpdo[2].enabled = True
+
+    node.tpdo[3].add_variable("Current actual values.Current actual value") # Current actual value
+    node.tpdo[3].trans_type = 1
+    node.tpdo[3].enabled = True
+
 
     # RxPDO1: event-driven, contains controlword
     node.rpdo[1].add_variable("Controlword")  # Controlword
