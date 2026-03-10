@@ -96,6 +96,7 @@ def pdo_mapping_init(node, network):
     # initialize Tpdo's
     node.tpdo[1].add_variable("Statusword") # Statusword
     node.tpdo[1].add_variable("Controlword")
+    node.tpdo[1].add_variable("Modes of operation display")
     node.tpdo[1].trans_type = 255 #   1=SYNC; 255=asynchronous --> with every change of the 402 state machine (in 0x2400.04, bit mask 0x00000002 must be set (which is the default))
     node.tpdo[1].enabled = True
 

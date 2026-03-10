@@ -441,7 +441,7 @@ class DriveOrganiser:
 
             self.process_param_updates(0.05)
 
-            #get telemtry
+            #get telemtry and log if necessary
             if self.recording.is_set():
                 self.log_telemetry()
             else:
@@ -450,9 +450,14 @@ class DriveOrganiser:
             time.sleep(0.01)
 
     def set_mode(self, desired_mode):
+        """Sets the modes of operation entry in OD to the desired mode
+        
+        Args: 
+            desired_mode(OperationMode) = desired mode of operation
+        """
         self.node.sdo[0x6060].raw = desired_mode
         time.sleep(5)
-        if self.node.sdo[0x6061].raw == desired_mode:
+        if self.node.sdo[0x6061].raw == desired_mode: #self.node.tpdo[1]["Modes of operation Display"]
             return True
         else:
             raise Exception #TODO: define new error
@@ -481,10 +486,6 @@ class DriveOrganiser:
         2. Set power_enabled = True
         3. Set torque_enabled = True
         """
-        #if self.cancel_transition.is_set():
-        #    return
-        #goto_state(self.node, desired_state=DriveState.POWER_ENABLED, timeout=timeout)
-        #self.power_enabled = True
 
         if self.cancel_transition.is_set():
             return

@@ -1,8 +1,39 @@
-import queue
-import toml
-import object_dictionary_functions
-from errors import InitializationError, DriveStateDetError, DriveStatePathError, DesiredDriveStateError, DriveStateResetError, InitObjDict, DesiredMode, SanityCheck
-from threading import Thread, Event
+"""
+Drive State Management Module
+
+This module manages the operational state of CANopen-based drive systems following the
+DS402 device profile specification. It provides functionality for:
+
+- Drive state detection and monitoring (8-state finite state machine)
+- Drive command execution (shutdown, switch on, enable operation, etc.)
+- State transitions using breadth-first search pathfinding
+- Fault detection and recovery procedures
+- Timeout-protected state waiting and validation
+
+Key Components:
+    DriveState: Enumeration of 8 drive operational states
+    DriveCommand: Standard CiA 402 control commands
+    DriveStateMap: State transition graph mapping valid state transitions
+    
+Functions:
+    get_DriveState(): Determine current drive state from statusword
+    do_DriveCommand(): Execute a drive command and wait for target state
+    goto_state(): Traverse state machine to desired state using BFS
+    fault_reset(): Reset drive from FAULT state
+    wait_for_state(): Poll drive state with timeout protection
+
+Dependencies:
+    can_functions: CAN communication primitives
+    errors: Custom exception definitions
+    utils: Utility functions
+"""
+
+
+# ======================================================================
+# Imports
+# ======================================================================
+
+from errors import DriveStateDetError, DriveStatePathError, DesiredDriveStateError, DriveStateResetError
 import utils
 
 import time
@@ -11,13 +42,9 @@ from can_functions import cword_write
 from can_functions import sword
 
 
-
-
-
 # ======================================================================
-# Sub-Region: DRIVE STATE FUNCTIONS
+# Drive State Functions
 # ======================================================================
-
 
 class DriveState:
     """
@@ -120,7 +147,7 @@ def get_DriveState(node) -> DriveState:
     
 
 # ======================================================================
-# Sub-Region: DRIVE COMMAND FUNCTIONS
+# Drive command functions
 # ======================================================================
 
 class DriveCommand: 

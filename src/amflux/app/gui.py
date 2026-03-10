@@ -1,10 +1,10 @@
+# ======================================================================
+# Imports
+# ======================================================================
+
 import tkinter as tk
 from tkinter import ttk
 import toml
-#import ttkbootstrap as ttk
-#from main import OperationModes
-
-#used for data buffering (list that supports fast appending and popping)
 from collections import deque
 import math
 import time
@@ -15,16 +15,11 @@ matplotlib.use("TkAgg")
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 #used to create figures and plots
 from matplotlib.figure import Figure
+from organiser import OperationModes
 
-import random
-
-from organiser import DriveOrganiser, OperationModes
-from threading import Thread, Event
-
-from pathlib import Path
-
-
-
+# ======================================================================
+# Object dictionary and utility classes
+# ======================================================================
 
 # OLD: '/home/amfluxpi/AMflux/src/amflux/app/object_dictionary.toml'
 # OLD: '/Users/wendelinroth/Desktop/Code/GitHub/AMflux/src/amflux/app/object_dictionary.toml'
@@ -32,7 +27,6 @@ with open("/home/amfluxpi/AMflux/src/amflux/app/object_dictionary.toml") as data
     objdict_data = toml.load(data)
 
 
-#HELPERS
 operation_modes = [
     "ProfilePosition", 
     "Homing", 
@@ -60,28 +54,9 @@ class PageState:
         6:            "CST"
         }
 
-
-def build_param_editor(parent, param_dict):
-        """
-        param_dict: {"param_name": value}
-        """
-        parent.grid_columnconfigure(1, weight=1)
-
-        tk_vars = {}
-
-        for row, (name, value) in enumerate(param_dict.items()):
-            tk.Label(parent, text=name).grid(
-                row=row, column=0, padx=5, pady=2
-            )
-
-            var = tk.IntVar(value=next(iter(value.values())))
-            entry = ttk.Entry(parent, textvariable=var)
-            entry.grid(row=row, column=1, padx=5, pady=2)
-
-            tk_vars[name] = var
-
-        return tk_vars
-
+# ======================================================================
+# Home page
+# ======================================================================
 
 def HomePage(app, parent):
     """
@@ -147,6 +122,30 @@ def HomePage(app, parent):
     button.pack(pady=10)
 
 
+# ======================================================================
+# Specific mode page
+# ======================================================================
+
+def build_param_editor(parent, param_dict):
+        """
+        param_dict: {"param_name": value}
+        """
+        parent.grid_columnconfigure(1, weight=1)
+
+        tk_vars = {}
+
+        for row, (name, value) in enumerate(param_dict.items()):
+            tk.Label(parent, text=name).grid(
+                row=row, column=0, padx=5, pady=2
+            )
+
+            var = tk.IntVar(value=next(iter(value.values())))
+            entry = ttk.Entry(parent, textvariable=var)
+            entry.grid(row=row, column=1, padx=5, pady=2)
+
+            tk_vars[name] = var
+
+        return tk_vars
 
 def ModePageBuilder(app, parent, modeint, modename): 
     
@@ -273,7 +272,6 @@ def ModePageBuilder(app, parent, modeint, modename):
         command = lambda: app.set_state(PageState.Home)
     )
     back_button.grid(row=0, column=1, padx=50)
-
     
     def stop_record_data():
         set_button.config(text="RECORD", background = "white", command=lambda: record_data())
@@ -291,15 +289,18 @@ def ModePageBuilder(app, parent, modeint, modename):
     record_button.grid(row=4, column=0)
 
     #Motor Status
-    motor_gui = MotorTelemetry(parent, app.drive)
+    MotorTelemetry(parent, app.drive)
     
+
+# ======================================================================
+# Motor telemetry
+# ======================================================================
 
 class MotorTelemetry:
     def __init__(self, parent, drive):
         """initialize the MotorTelemetry class"""
 
         self.drive = drive
-        #self is an argument that refers to the instance of the class itself
         self.root_window = tk.Frame(parent)
 
         #self.root_window.grid_propagate(False)
@@ -311,7 +312,6 @@ class MotorTelemetry:
         self.root_window.grid_rowconfigure(0, weight=0)
         self.root_window.grid_columnconfigure(0, weight=0)
         self.root_window.grid_columnconfigure(1, weight=0)
-
 
         #==========================================================
 
@@ -400,17 +400,10 @@ class MotorTelemetry:
         if self.drive is not None:
             telemetry = self.drive.get_status()
         
-
-        
-        #ATTENTION ATTENTION ATTENTION ATTENTION ATTENTION ATTENTION ATTENTION
-        #simulate motor data for testing purposes
-        
         torque = telemetry[0]
         velocity = telemetry[1]
         position = telemetry[2]
         
-
-
         return torque, velocity, position
     
     def update(self):
@@ -447,7 +440,6 @@ class MotorTelemetry:
         #tells the program the figure needs to be redrawn, but do it when the GUI is idle, so it doesn't block the event loop
         self.canvas_plot.draw_idle()
 
-
         # Calculate dot position
         x = self.center[0] + self.radius * math.cos(position)
         y = self.center[1] - self.radius * math.sin(position)
@@ -463,9 +455,10 @@ class MotorTelemetry:
         
 
 
-# -----------------------------
-# Application Controller
-# -----------------------------
+# ======================================================================
+# Application controller
+# ======================================================================
+
 class App(tk.Tk):
     def __init__(self, drive):
         super().__init__()
@@ -512,9 +505,3 @@ class App(tk.Tk):
             ModePageBuilder(self, self.container, self.state, "Cyclic Synchronous Torque Mode")
         else:
             tk.Label(self.container, text="Unknown state").pack()
-
-'''
-if __name__ == "__main__":
-    app = App()
-    app.mainloop()
-'''
