@@ -1,12 +1,34 @@
+"""
+CAN bus communication functions for CANopen network management and device control.
+
+This module provides utilities for setting up CANopen networks, managing node connections,
+sending CAN messages, and controlling CANopen devices through SDO/PDO communication.
+
+Functions:
+    network_setup: Initializes CANopen network and adds a node
+    network_shutdown: Disconnects and shuts down the CANopen network
+    send_can_message: Sends raw CAN messages on the bus
+    sanity_check: Verifies CAN communication with a test message exchange
+    cword_write: Writes a value to the device Controlword (0x6040)
+    cword_read: Reads the current Controlword value (0x6040)
+    sword: Reads the device Statusword (0x6041)
+
+"""
+
+
+# ======================================================================
+# Imports
+# ======================================================================
+
 import time
 import canopen
-import keyboard
 import can
-import toml
-
-from errors import InitializationError, DriveStateDetError, DriveStatePathError, DesiredDriveStateError, DriveStateResetError, InitObjDict, DesiredMode, SanityCheck
+from errors import SanityCheck
 
 
+# ======================================================================
+# Network control functions
+# ======================================================================
 
 def network_setup(node_id: int, node_eds: str, node_channel: str, net):
     """Sets up CANopen network and adds node.
@@ -75,11 +97,8 @@ def sanity_check(net):
         
 
 # ======================================================================
+# Device control functions
 # ======================================================================
-# Region: DEVICE CONTROL FUNCTIONS
-# ======================================================================
-# ======================================================================
-
 
 def cword_write(node, value: int):
     """
@@ -90,10 +109,12 @@ def cword_write(node, value: int):
     :type value: int
     """
 
-    #node.rpdo[1][0x6040].raw = value
-    #node.rpdo[1].transmit()
+    # write controlword via RPDO
+    node.rpdo[1]["Controlword"].raw = value
+    node.rpdo[1].transmit()
 
-    node.sdo[0x6040].raw = value
+    # write controlword via SDO
+    #node.sdo[0x6040].raw = value
 
 
 def cword_read(node) -> int:
@@ -104,10 +125,12 @@ def cword_read(node) -> int:
     :return: returns Controlword. [binary]
     :rtype: int
     """
-    #return node.tpdo[1][0x6041].raw
+    
+    # read controlword via TPDO
+    return node.tpdo[1]["Controlword"].raw
    
-
-    return node.sdo[0x6040].raw
+    # read controlword via SDO
+    #return node.sdo[0x6040].raw
 
 
 def sword(node) -> int:
@@ -118,6 +141,8 @@ def sword(node) -> int:
     :return: returns Statusword. [binary]
     :rtype: int
     """
-    #return node.tpdo[1][0x6041].raw
+    # read statusword via TPDO
+    return node.tpdo[1]["Statusword"].raw
 
-    return node.sdo[0x6041].raw
+    # read statusword via SDO
+    #return node.sdo[0x6041].raw

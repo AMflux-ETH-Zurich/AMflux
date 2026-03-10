@@ -1,11 +1,3 @@
-import time
-#import canopen
-#import keyboard
-#import can
-#import toml
-from utils import check_init
-
-
 """
 Initialization and configuration functions for EPOS4 motor controllers.
 Each initialization or configuration function corresponds to a section in the EPOS4 Communication Guide. 
@@ -66,40 +58,27 @@ Initialization & Configuration Functions
 Touch Probe (6.2.134-6.2.137, 6.2.140-6.2.142) not implemented.
 """
 
-"""def rxpdo_mapping_init(node):
 
-    #RXPDO1
-    node.sdo[0x1600][0x00].raw = 0 #disable rxpdo1
-    node.sdo[0x1600][0x01].raw = 0x60400010 #control word, 0x6040(index), 0x00(subindex), 0x10(size)
-    node.sdo[0x1600][0x00].raw = 1 #number of mapped objects
+# ======================================================================
+# Imports
+# ======================================================================
 
-    node.sdo[0x1400][0x01].raw = 0x00000200 + node.id  # COB-ID for RXPDO1
-    node.sdo[0x1400][0x02].raw = 255 #transmission type for RXPDO1 (255 = asynchronous)
-
-    node.rpdo[1].clear()
-    node.rpdo[1].add_variable(0x6040, 0x00)
-    node.rpdo[1].cob_id = 0x00000200 + node.id
-    node.rpdo[1].trans_type = 255
+import time
+from utils import check_init
 
 
-    #RXPDO2
-    node.sdo[0x1601][0x00].raw = 0 #disable rxpdo2
-    node.sdo[0x1601][0x01].raw = 0x607A0020 #target position, 0x607A(index), 0x00(subindex), 0x20(size)
-    node.sdo[0x1601][0x02].raw = 0x60FF0020 #target velocity, 0x60FF(index), 0x00(subindex), 0x20(size)
-    node.sdo[0x1601][0x00].raw = 2 #number of mapped objects
-
-    node.sdo[0x1401][0x01].raw = 0x00000300 + node.id  # COB-ID for RXPDO1
-    node.sdo[0x1401][0x02].raw = 255 #transmission type for RXPDO1 (255 = asynchronous)
-
-    node.rpdo[2].clear()
-    node.rpdo[2].add_variable(0x607A, 0x00)
-    node.rpdo[2].add_variable(0x60FF, 0x00)
-    node.rpdo[2].cob_id = 0x00000300 + node.id
-    node.rpdo[2].trans_type = 255"""
-
+# ======================================================================
+# PDO mapping
+# ======================================================================
 
 def pdo_mapping_init(node, network):
-    
+    """initialization of PDO's for CAN network.
+
+    Args:
+        node (RemoteNode): EPOS4 network node
+        network (Network): CAN network
+    """    
+
     # Reset network
     node.nmt.state = 'RESET COMMUNICATION'
     node.nmt.wait_for_bootup(2)
@@ -114,51 +93,45 @@ def pdo_mapping_init(node, network):
         node.tpdo[no].clear()
         node.rpdo[no].clear()
 
-    # TxPDO1: asynchronous/event-driven, contains statusword (is sent if something changes in the 402 state machine)
+    # initialize Tpdo's
     node.tpdo[1].add_variable("Statusword") # Statusword
-    #node.sdo[(0x1A00, 0x01)].raw = 0x60410010  # PDO1 mapping: Statusword
+    node.tpdo[1].add_variable("Controlword")
     node.tpdo[1].trans_type = 255 #   1=SYNC; 255=asynchronous --> with every change of the 402 state machine (in 0x2400.04, bit mask 0x00000002 must be set (which is the default))
     node.tpdo[1].enabled = True
 
-    # TxPDO2: synchronous, contains velocity actual value and position actual value
     node.tpdo[2].add_variable("Velocity actual value") # Velocity actual value
-    #node.sdo[(0x1A01, 0x01)].raw = 0x606C0010  # PDO2 mapping: Velocity actual value
     node.tpdo[2].add_variable("Position actual value") # Position actual value
-    #node.sdo[(0x1A01, 0x02)].raw = 0x60640020  # PDO2 mapping: Position actual value
-    
-    #node.tpdo[2].add_variable(0x6061, 0x00) # Modes of operation display
     node.tpdo[2].trans_type = 1 #   1=SYNC; 255=asynchronous
     node.tpdo[2].enabled = True
 
     node.tpdo[3].add_variable("Current actual values.Current actual value") # Current actual value
-    node.tpdo[3].trans_type = 1
+    node.tpdo[3].trans_type = 1 #   1=SYNC; 255=asynchronous
     node.tpdo[3].enabled = True
 
-
-    # RxPDO1: event-driven, contains controlword
+    # initialize Rpdo's    
     node.rpdo[1].add_variable("Controlword")  # Controlword
-    #node.sdo[(0x1600, 0x01)].raw = 0x60400010  # RxPDO1 mapping: Controlword
     node.rpdo[1].trans_type = 255 #   1=SYNC; 255=asynchronous
     node.rpdo[1].enabled = True
     
-    # RxPDO2: event-driven, contains target velocity and target position
-    #node.rpdo[2].add_variable(0x6060, 0x00)  # Modes of operation
     node.rpdo[2].add_variable("Target velocity")  # Target velocity
-    #node.sdo[(0x1601, 0x01)].raw = 0x60FF0010  # RxPDO2 mapping: Target velocity
     node.rpdo[2].add_variable("Target position")  # Target position
-    #node.sdo[(0x1601, 0x02)].raw = 0x607A0020  # RxPDO2 mapping: Target position
     node.rpdo[2].trans_type = 255 #   1=SYNC; 255=asynchronous
     node.rpdo[2].enabled = True
     
+    # enter pre-operational network state and save mappings
     node.nmt.state = 'PRE-OPERATIONAL'
     node.tpdo.save()
     node.rpdo.save()  
 
-    #node.rpdo[4]['0x606C.0x00'].phys = 1000
+    # enter operational state
     network.nmt.state = 'OPERATIONAL' 
-    time.sleep(50)
+    time.sleep(100)
     print(f'node NMT state: {node.nmt.state}')     
 
+
+# ======================================================================
+# Object dictionary initializaion via SDO's
+# ======================================================================
 
 def axis_configuration_init(node, sens_res: int=None , sys_speed: int=None): 
     #6.2.52

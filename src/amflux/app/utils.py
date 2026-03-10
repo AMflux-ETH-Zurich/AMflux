@@ -1,12 +1,29 @@
-import time
-import canopen
-import keyboard
-import can
-import toml
-import warnings
+"""
+Utility functions for AMflux application.
 
+This module provides helper functions for object dictionary manipulation, user interaction,
+object initialization validation, and hardware diagnostics.
+
+Functions:
+    removekey: Remove a key from a mapping and return a shallow copy.
+    confirm: Prompt user for yes/no confirmation.
+    check_init: Validate that required objects have been properly initialized.
+    SSI_encoder_output_check: Monitor SSI encoder output data in real-time.
+
+"""
+
+
+# ======================================================================
+# Imports
+# ======================================================================
+import time
+import warnings
 from typing import Mapping, Hashable, Dict, Any
-from errors import InitializationError, DriveStateDetError, DriveStatePathError, DesiredDriveStateError, DriveStateResetError, InitObjDict, DesiredMode, SanityCheck
+from errors import InitializationError
+
+# ======================================================================
+# Utils
+# ======================================================================
 
 def removekey(d: Mapping[str, Any], key: Hashable) -> Dict[str, Any]:
     """Return a shallow copy of mapping `d` with `key` removed."""

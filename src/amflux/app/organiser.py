@@ -1,3 +1,23 @@
+"""
+Organizer module for managing EPOS4 drive operations and telemetry.
+
+This module handles the lifecycle management of motor drives, including initialization,
+operation modes, command processing, and telemetry monitoring. It provides both
+synchronous and asynchronous interfaces for controlling drive state transitions and
+reading motor parameters.
+
+Key Components:
+- OperationModes: Enumeration of supported CANopen operation modes (PPM, HMM, PVM, CSP, etc.)
+- init_obj_dict(): Initializes object dictionary entries from TOML configuration
+- DriveOrganiser: Main class managing drive operation with background monitoring thread
+
+The DriveOrganiser uses a command queue for thread-safe communication between GUI and
+the monitoring thread, handles state transitions, records telemetry data, and provides
+parameter updates to the motor controller.
+
+"""
+
+
 # ======================================================================
 # Imports
 # ======================================================================
@@ -7,21 +27,21 @@ from enum import Enum, auto
 import queue
 import toml
 import object_dictionary_functions
-from errors import InitializationError, DriveStateDetError, DriveStatePathError, DesiredDriveStateError, DriveStateResetError, InitObjDict, DesiredMode, SanityCheck
+from errors import InitObjDict, DesiredMode
 from threading import Thread, Event
 from drive import goto_state
 import time
 import numpy as np
-from drive import DriveState, DriveCommand, get_DriveState
+from drive import DriveState, get_DriveState
 from can_functions import sword
 from pathlib import Path
-
 
 
 # ======================================================================
 # Object Dictionary
 # ======================================================================
 
+# load object dicitonary (OD)
 # OLD: '/home/amfluxpi/AMflux/src/amflux/app/object_dictionary.toml'
 # OLD: '/Users/wendelinroth/Desktop/Code/GitHub/AMflux/src/amflux/app/object_dictionary.toml'
 with open("/home/amfluxpi/AMflux/src/amflux/app/object_dictionary.toml") as data:
@@ -43,15 +63,21 @@ class OperationModes:
         CyclicSynchronousVelocity:  "CVP", 
         CyclicSynchronousTorque:    "CTP"}
     
+
 def convert_toml_params(params: dict) -> dict:
-    """Convert TOML parameters, converting "None" strings to Python None"""
+    """Convert TOML parameters, converting "None" strings to Python None. OD variables can be left as "None" to envoke default values"
+
+    Args:
+        params (dict): EPOS4 network node
+    """
     return {k: (None if v == "None" else v) for k, v in params.items()}
+
 
 def init_obj_dict(node, desired_mode):
     """Initializes all the object dictionary instances with helper functions. Values are read from object_dictionary.toml file.
 
     Args:
-        node (int): EPOS4 node
+        node (RemoteNode): EPOS4 node
         desired_mode (OperationModes): OperationMode to be reached after initialization.
 
     Raises:
@@ -164,6 +190,7 @@ def init_obj_dict(node, desired_mode):
     else:
         return True
 
+
 # ======================================================================
 # Drive Organiser
 # ======================================================================
@@ -174,18 +201,14 @@ class CmdType(Enum):
     DISABLE_VOLTAGE = auto()
     UPDATE_PARAM = auto()
 
-
 @dataclass
 class Command:
     type: CmdType
     data: tuple | None = None
     timeout: float | None = None
 
-
 class DriveOrganiser:
-    """
-    Manages drive operation lifecycle and telemetry monitoring.
-    No control loop needed - firmware handles that.
+    """Manages drive operation lifecycle and telemetry monitoring.
     """
     
     def __init__(self, node, network):
@@ -209,13 +232,6 @@ class DriveOrganiser:
         # Recording
         self.recording = Event()
         self.data = np.array()
-        
-        """
-        # Queue for parameter updates from GUI
-        self.param_update_queue = queue.Queue()
-
-        self.recent_telemetry = None
-        """
 
     def request_start(self, timeout=5.0):
         self.cmd_q.put(Command(CmdType.ENABLE_OPERATION, timeout=timeout))
@@ -252,26 +268,31 @@ class DriveOrganiser:
             print("start recording first")
             
         
-        
     # ============================================
-    # RUNTIME UPDATES (called by GUI)
+    # Drive Organiser: runtime updates (called by GUI)
     # ============================================
     
     def update_parameter(self, param_name: str, value: int):
-        """
-        Queue a parameter update to be written in monitor thread.
-        E.g., update_parameter('target_position', 5000)
+        """Queue a parameter update to be written in monitor thread.
+            E.g., update_parameter('target_position', 5000)
+
+        Args:
+            param_name (str):   OD code of the parameter to be updated
+            value (int):        new value for the parameter       
+
         """
         update_command = Command(CmdType.UPDATE_PARAM, (param_name, value))
         self.cmd_q.put(update_command)
     
     # ============================================
-    # MONITORING THREAD
+    # Drive Organiser: parameter updates & telemetry
     # ============================================
     
     def process_param_updates(self, timeout):
-        """
-        Drain queue and write each param to controller OD.
+        """Drain queue and write each param to controller OD.
+
+        Args:
+            timeout (int): timeout limit for this operation
         """
         start = time.time()
         #TODO: handle high priority comm params via PDO
@@ -285,28 +306,28 @@ class DriveOrganiser:
                 getattr(object_dictionary_functions, param_name)(self.node, value)
             except Exception as e:
                 print(f"Error updating {param_name}: {e}")
-            
-            
+
+
     def read_telemetry(self) -> list:
         """
         Read key values from controller TPDOs (non-blocking, cached).
         Falls back to SDO if TPDO access fails.
         """
         try:
-            # TPDO4: Position (0x6064), Velocity (0x606C), Torque (0x6077), Mode (0x6061)
-            # TPDO3: Statusword (0x6041)
+            # TPDO1: Statusword (0x6041)
+            # TPDO2: Position (0x6064), Velocity (0x606C)
+            # TPDO3: Current (0x30D1.0x01)
             # Non-blocking: read cached TPDO values (assume they've arrived during operation)
+            
+            status_word = self.node.tpdo[1]["Statusword"].raw
             
             position_raw = self.node.tpdo[2]["Position actual value"].phys
             position = (position_raw / 4096) * 2 * np.pi
             
             velocity = self.node.tpdo[2]["Velocity actual value"].phys
+
             torque = self.node.tpdo[3]["Current actual values.Current actual value"].phys
-            #current_mode_disp = self.node.tpdo[4][0x6061].raw
-            
-            
-            status_word = self.node.tpdo[1]["Statusword"].raw
-            
+                    
         except Exception as e:
             # Fallback to SDO reads (slower but safe)
             print(f"TPDO read failed: {e}. Falling back to SDO.")
@@ -327,10 +348,10 @@ class DriveOrganiser:
                 status_word = self.node.sdo[0x6041].raw
             except Exception:
                 status_word = None
-            try:
-                current_mode_disp = self.node.sdo[0x6061].raw
-            except Exception:
-                current_mode_disp = None
+            #try:
+            #    current_mode_disp = self.node.sdo[0x6061].raw
+            #except Exception:
+            #    current_mode_disp = None
         
         self.recent_telemetry = [torque, velocity, position, status_word]
         return self.recent_telemetry
@@ -342,6 +363,10 @@ class DriveOrganiser:
         return self.read_telemetry()
 
     def log_telemetry(self):
+        """
+        Log telemetry data with a timestamp.
+        Reads the current telemetry information, captures the current time, and appends both to the data collection.
+        """
         
         tel = self.read_telemetry()
         timestamp = time.time()
@@ -349,16 +374,16 @@ class DriveOrganiser:
         self.data.append(tel, timestamp)
 
 
-
     # ============================================
-    # LIFECYCLE MANAGEMENT
+    # Drive Organiser: lifecycle management
     # ============================================
     
     def start_organiser(self):
         if self.thread and self.thread.is_alive():
             return
         self.shutdown.clear()
-        #self.cmd_q.clear()
+        with self.cmd_q.mutex:
+            self.cmd_q.queue.clear()
         self.thread = Thread(target=self.organiser_loop, daemon=True)
         self.thread.start()
 
@@ -368,6 +393,19 @@ class DriveOrganiser:
             self.thread.join(timeout=2.0)
 
     def organiser_loop(self):
+        """Main event loop for the organizer that manages drive operations and command processing.
+        
+        This loop continuously runs until shutdown is signaled, handling:
+        - Drive fault detection and recovery (resets to SWITCH_ON_DISABLED state)
+        - High priority stop voltage requests
+        - Command queue processing (QUICK_STOP, ENABLE_OPERATION, UPDATE_PARAM, DISABLE_VOLTAGE)
+        - Parameter update processing
+        - Telemetry logging/reading based on recording state
+
+        The loop runs at approximately 100 Hz (0.01s sleep interval) and processes commandsin priority order: 
+        fault state handling > stop requests > command queue > telemetry.
+        """
+        
         while not self.shutdown.is_set():
             if get_DriveState(self.node) == DriveState.FAULT_REACTION_ACITVE:
                 var = sword(self.node)
