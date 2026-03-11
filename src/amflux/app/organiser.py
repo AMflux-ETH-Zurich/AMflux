@@ -234,7 +234,7 @@ class DriveOrganiser:
 
         # Recording
         self.recording = Event()
-        self.data = np.array()
+        self.data = np.array([])
 
     def request_start(self, timeout=5.0):
         self.cmd_q.put(Command(CmdType.ENABLE_OPERATION, timeout=timeout))
