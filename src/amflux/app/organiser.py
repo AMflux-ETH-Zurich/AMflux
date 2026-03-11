@@ -44,7 +44,7 @@ from pathlib import Path
 # load object dicitonary (OD)
 # OLD: '/home/amfluxpi/AMflux/src/amflux/app/object_dictionary.toml'
 # OLD: '/Users/wendelinroth/Desktop/Code/GitHub/AMflux/src/amflux/app/object_dictionary.toml'
-with open("/Users/wendelinroth/Desktop/Code/GitHub/AMflux/src/amflux/app/object_dictionary.toml") as data:
+with open("/home/amfluxpi/AMflux/src/amflux/app/object_dictionary.toml") as data:
     objdict_data = toml.load(data)
 
 
