@@ -460,7 +460,7 @@ class DriveOrganiser:
         """
         self.node.sdo[0x6060].raw = desired_mode
         time.sleep(5)
-        if self.node.sdo[0x6061].raw == desired_mode: #self.node.tpdo[1]["Modes of operation Display"]
+        if self.node.tpdo[1]["Modes of operation Display"]: #self.node.sdo[0x6061].raw == desired_mode
             return True
         else:
             raise Exception #TODO: define new error
