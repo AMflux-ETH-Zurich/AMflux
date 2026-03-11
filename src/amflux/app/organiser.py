@@ -460,10 +460,10 @@ class DriveOrganiser:
         Args: 
             desired_mode(OperationMode) = desired mode of operation
         """
-        self.node.rpdo[1]["Modes of operation"] = desired_mode
+        self.node.rpdo[1]["Modes of operation"].phys = desired_mode
         self.node.rpdo[1].transmit()
         time.sleep(5)
-        if self.node.tpdo[1]["Modes of operation display"] == desired_mode: #self.node.sdo[0x6061].raw == desired_mode
+        if self.node.tpdo[1]["Modes of operation display"].phys == desired_mode: #self.node.sdo[0x6061].raw == desired_mode
             return True
         else:
             raise Exception #TODO: define new error
