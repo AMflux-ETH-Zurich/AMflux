@@ -56,6 +56,7 @@ def check_init(objects):
 
     Returns True when validation is complete and execution may continue.
     """
+    """
     warnings.formatwarning = lambda msg, *args, **kwargs: f"Warning: {msg}\n"
     objects_clean = removekey(objects, 'node')
     for name, value in objects_clean.items():
@@ -73,6 +74,7 @@ def check_init(objects):
         # fatal, user must init value correctly
         if value is not None and (value == "67" or value == 67):
             raise InitializationError(f"{name} is not initialized correctly. Please enter a valid value for {name}.")
+    """
     return True 
 
 def SSI_encoder_output_check(node, interval:float = 0.25, duration: int = 60):

@@ -473,6 +473,7 @@ class DriveOrganiser:
         """
         
         if self.set_mode(self.current_mode) and init_obj_dict(self.node, self.current_mode):
+            print("should return true")
             mode_code = OperationModes.abreviation[self.current_mode]
 
             for func_name, instance in objdict_data["mode"][mode_code]["comm"].items():
