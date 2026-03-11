@@ -458,7 +458,8 @@ class DriveOrganiser:
         Args: 
             desired_mode(OperationMode) = desired mode of operation
         """
-        self.node.sdo[0x6060].raw = desired_mode
+        self.node.tpdo[1]["Modes of operation"].raw = desired_mode
+        self.node.tpdo[1].transmit()
         time.sleep(5)
         if self.node.tpdo[1]["Modes of operation display"] == desired_mode: #self.node.sdo[0x6061].raw == desired_mode
             return True
