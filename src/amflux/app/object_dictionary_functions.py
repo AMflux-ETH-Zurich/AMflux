@@ -448,11 +448,11 @@ def target_torque(node, torque: int = None):
     node.sdo["Target torque"].raw = torque if torque is not None else 0
 
 
-#def motor_rated_torque(node, rated_torque: int = None):
-#    #6.2.112
- #   check_init(locals())
- #   #holds value to which all torque objects are related to, value is defined as nominal current * torque constant, value is in mNm
- #   node.sdo[0x6076].raw = rated_torque if rated_torque is not None else 0
+def motor_rated_torque(node, rated_torque: int = None):
+    #6.2.112
+   check_init(locals())
+   #holds value to which all torque objects are related to, value is defined as nominal current * torque constant, value is in mNm
+   node.sdo[0x6076].raw = rated_torque if rated_torque is not None else 10
 
 
 def target_position(node, position: int = None):
