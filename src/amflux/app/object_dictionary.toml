@@ -85,7 +85,7 @@
     power_up_time               = 300
     commutation_offset_value    = 0
     position_bits               = 0x0000000C
-    communication_additional_delay = -1
+    #not in eds file: communication_additional_delay = -1
 
 
 # =========================================================
