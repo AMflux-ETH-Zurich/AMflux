@@ -116,8 +116,8 @@
     [safety.disable_operation_option_code]
     option_code = 0
 
-    [safety.halt_option_code]
-    option_code = 2
+    #[safety.halt_option_code]
+    #option_code = 2
 
     [safety.fault_reaction_option_code]
     option_code = 2
