@@ -4959,14 +4959,14 @@ DefaultValue=1
 PDOMapping=0
 ObjFlags=0
 
-[605D]
-ParameterName=Halt option code
-ObjectType=0x7
-DataType=0x3
-AccessType=rw
-DefaultValue=1
-PDOMapping=0
-ObjFlags=0
+#[605D] "Object does not exist"
+#ParameterName=Halt option code
+#ObjectType=0x7
+#DataType=0x3
+#AccessType=rw
+#DefaultValue=1
+#PDOMapping=0
+#ObjFlags=0
 
 
 [605E]

@@ -424,14 +424,14 @@ def disable_operation_option_code(node, option_code: int = None):
     #1 is decelerate with slowdown ramp and disabling of drive function, 0 is disable drive function
     node.sdo["Disable operation option code"].raw = option_code if option_code is not None else 1
 
-
+"""
 def halt_option_code(node, option_code: int = None):
     #6.2.99
     check_init(locals())
     #Action performed when halt function is activated
     #1 is decelerate with slowdown ramp and stay in operation enabled, 2 is decelerate with quick stop ramp and stay in operation enabled
     node.sdo[0x605D].raw = option_code if option_code is not None else 1
-
+"""
 
 def fault_reaction_option_code(node, option_code: int = None):
     #6.2.100
