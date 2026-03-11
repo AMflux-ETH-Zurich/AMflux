@@ -349,7 +349,7 @@
             prof_dec = 9
 
             [mode.CSV.conf.profile_deceleration]
-            prof_dec = "None"
+            prof_dec = 9
             
             [mode.CSV.conf.software_position_limit]
             min_pos_limit = "None"
