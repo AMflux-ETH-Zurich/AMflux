@@ -346,7 +346,7 @@
             f_cutoff = "None"
 
             [mode.CSV.conf.quick_stop_deceleration]
-            prof_dec = 10
+            prof_dec = 9
 
             [mode.CSV.conf.profile_deceleration]
             prof_dec = "None"
