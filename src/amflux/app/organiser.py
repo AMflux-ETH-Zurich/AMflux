@@ -475,7 +475,7 @@ class DriveOrganiser:
         2. Initialize object dictionary on controller
         3. Verify everything written correctly
         """
-        
+        goto_state(self.node, desired_state=DriveState.READY_TO_SWITCH_ON, timeout=0.5)
         if self.set_mode(desired_mode=desired_mode) and init_obj_dict(self.node, desired_mode):
             print("should return true")
             mode_code = OperationModes.abreviation[self.current_mode]
