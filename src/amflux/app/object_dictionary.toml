@@ -81,7 +81,7 @@
     data_rate                   = 1000
     data_bits                   = 0x00000C00
     encoding_type               = 0
-    timeout_time                = 200
+    timeout_time                = 30 #used to be 200
     power_up_time               = 300
     commutation_offset_value    = 0
     position_bits               = 0x0000000C
