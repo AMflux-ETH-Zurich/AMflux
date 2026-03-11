@@ -56,6 +56,7 @@ def check_init(objects):
 
     Returns True when validation is complete and execution may continue.
     """
+    warnings.formatwarning = lambda msg, *args, **kwargs: f"Warning: {msg}\n"
     objects_clean = removekey(objects, 'node')
     for name, value in objects_clean.items():
         # warn user about default value

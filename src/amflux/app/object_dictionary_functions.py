@@ -196,7 +196,7 @@ def ssi_abs_encoder_init(node, data_rate: int=None, data_bits: int=None, encodin
     #SSI position raw value complemete
     #READ ONLY node.sdo[0x3012][0xD].raw = position_raw_value_complete
     #SSI communication additional delay
-    node.sdo["SSI absolute encoder.ssi communication additional delay"].raw = communication_additional_delay if communication_additional_delay is not None else -1 #REFER TO RENISHAW EN
+    #node.sdo["SSI absolute encoder.ssi communication additional delay"].raw = communication_additional_delay if communication_additional_delay is not None else -1 #REFER TO RENISHAW EN
 
 
 def electrical_system_init(node, electrical_resistance: int=None, electrical_inductance: int=None):
