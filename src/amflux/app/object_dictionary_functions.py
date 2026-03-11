@@ -365,7 +365,7 @@ def abort_connection_option_init(node, abort_option: int = None):
     #Specifies the action that will be performed when one of the errors labeled “a” is detected
     # 2 -> «Disable voltage» command
     # 3 -> Decelerate with quick stop ramp; disabling of the drive function
-    node.sdo["Shutdown option code"].raw = abort_option if abort_option is not None else 1
+    node.sdo["Abort connection option code"].raw = abort_option if abort_option is not None else 1
 
 
 def mode_of_operation_init(node, op_mode: int):
