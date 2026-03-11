@@ -505,3 +505,14 @@ class App(tk.Tk):
             ModePageBuilder(self, self.container, self.state, "Cyclic Synchronous Torque Mode")
         else:
             tk.Label(self.container, text="Unknown state").pack()
+
+
+def main():
+   
+
+    # Start user interface
+    app = App(drive=None)
+    app.mainloop()
+
+if __name__ == "__main__":
+    main()

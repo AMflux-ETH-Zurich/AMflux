@@ -44,7 +44,7 @@ from pathlib import Path
 # load object dicitonary (OD)
 # OLD: '/home/amfluxpi/AMflux/src/amflux/app/object_dictionary.toml'
 # OLD: '/Users/wendelinroth/Desktop/Code/GitHub/AMflux/src/amflux/app/object_dictionary.toml'
-with open("/home/amfluxpi/AMflux/src/amflux/app/object_dictionary.toml") as data:
+with open("/Users/wendelinroth/Desktop/Code/GitHub/AMflux/src/amflux/app/object_dictionary.toml") as data:
     objdict_data = toml.load(data)
 
 
@@ -228,6 +228,9 @@ class DriveOrganiser:
         # Power state
         self.power_enabled = False
         self.torque_enabled = False
+
+        # Telemetry
+        self.recent_telemetry = []
 
         # Recording
         self.recording = Event()
