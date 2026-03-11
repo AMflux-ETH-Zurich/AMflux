@@ -463,6 +463,7 @@ class DriveOrganiser:
         self.node.rpdo[1]["Modes of operation"].phys = desired_mode
         self.node.rpdo[1].transmit()
         time.sleep(5)
+        print(f"set mode, mode of operation display {self.node.tpdo[1]["Modes of operation display"].phys}")
         if self.node.tpdo[1]["Modes of operation display"].phys == desired_mode: #self.node.sdo[0x6061].raw == desired_mode
             return True
         else:

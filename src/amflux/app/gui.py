@@ -224,7 +224,7 @@ def ModePageBuilder(app, parent, modeint, modename):
             except ValueError:
                 objdict_data["mode"][mode_code]["comm"][name] = tk_var.get()
         print("finished setting")
-        print(f"{app.drive.current_mode}")
+        print(f" drive.current mode in gui: {app.drive.current_mode}")
         if app.drive.prepare_operation(app.drive.current_mode):
             print("ready to enable operation.")
             set_button.config(text="UPDATE", command=lambda: update_params())
