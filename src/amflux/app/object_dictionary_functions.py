@@ -78,7 +78,7 @@ def pdo_mapping_init(node, network):
         node (RemoteNode): EPOS4 network node
         network (Network): CAN network
     """    
-
+    print(f'ATTENTION: node NMT state: {node.nmt.state}')    
     # Reset network
     node.nmt.state = 'RESET COMMUNICATION'
     node.nmt.wait_for_bootup(2)
