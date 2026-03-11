@@ -468,14 +468,14 @@ class DriveOrganiser:
         else:
             raise Exception #TODO: define new error
 
-    def prepare_operation(self) -> bool:
+    def prepare_operation(self, desired_mode) -> bool:
         """
         1. Read params from TOML for this mode
         2. Initialize object dictionary on controller
         3. Verify everything written correctly
         """
         
-        if self.set_mode(self.current_mode) and init_obj_dict(self.node, self.current_mode):
+        if self.set_mode(desired_mode=desired_mode) and init_obj_dict(self.node, desired_mode):
             print("should return true")
             mode_code = OperationModes.abreviation[self.current_mode]
 
