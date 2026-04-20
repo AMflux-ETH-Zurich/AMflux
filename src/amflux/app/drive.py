@@ -375,6 +375,7 @@ def goto_state(node, desired_state, timeout):
     final_state = get_DriveState(node)
     
     if final_state == desired_state:
+        print(f"transition to {desired_state} successfull")
         return
     else:
         raise DesiredDriveStateError(f"{desired_state} state could not be reached. Current state: {final_state}")

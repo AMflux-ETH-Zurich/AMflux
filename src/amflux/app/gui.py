@@ -114,7 +114,8 @@ def HomePage(app, parent):
             app.set_state(PageState.CyclicSynchronousTorque)
             app.drive.current_mode = OperationModes.CyclicSynchronousTorque
 
-        print(app.drive.node.sdo["Modes of operation display"]) 
+        app.drive.goto_state(app.drive.node, app.drive.DriveCommand.SHUTDOWN, app.drive.DriveState.SWITCH_ON_DISABLE, 5)
+        print(app.drive.node.sdo["Modes of operation display"].phys()) 
 
     button = ttk.Button(
         parent,
@@ -231,7 +232,7 @@ def ModePageBuilder(app, parent, modeint, modename):
             print("ready to enable operation.")
             set_button.config(text="UPDATE", command=lambda: update_params())
         else:
-            print("enabling operation failed")
+            print("setting parameters failed")
 
         
     set_button = ttk.Button(editing, text="SET", command=lambda: set_params())
@@ -503,7 +504,7 @@ class App(tk.Tk):
         elif self.state == 4:
             ModePageBuilder(self, self.container, self.state, "Cyclic Synchronous Position Mode")
         elif self.state == 5:
-            ModePageBuilder(self, self.container, self.state, "Cyclic Synchronous Position Mode")
+            ModePageBuilder(self, self.container, self.state, "Cyclic Synchronous Velocity Mode")
         elif self.state == 6:
             ModePageBuilder(self, self.container, self.state, "Cyclic Synchronous Torque Mode")
         else:
