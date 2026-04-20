@@ -60,7 +60,7 @@ class OperationModes:
         Homing:                     "HMM",
         ProfileVelocity:            "PVM",
         CyclicSynchronousPosition:  "CSP",
-        CyclicSynchronousVelocity:  "CVP", 
+        CyclicSynchronousVelocity:  "CSV", 
         CyclicSynchronousTorque:    "CTP"}
     
 
