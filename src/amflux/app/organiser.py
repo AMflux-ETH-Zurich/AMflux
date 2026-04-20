@@ -189,7 +189,7 @@ def init_obj_dict(node, desired_mode):
         raise DesiredMode("No mode of operation selected, or selected mode is not prermittable. Please select a valid mode of operation")
     else:
         print("testtest init_obj")
-        return True
+        return
 
 
 # ======================================================================
@@ -479,7 +479,8 @@ class DriveOrganiser:
         3. Verify everything written correctly
         """
         goto_state(self.node, desired_state=DriveState.READY_TO_SWITCH_ON, timeout=5)
-        if self.set_mode(desired_mode=desired_mode) and init_obj_dict(self.node, desired_mode):
+        if self.set_mode(desired_mode=desired_mode):
+            init_obj_dict(self.node, desired_mode)
             print("should return true")
             mode_code = OperationModes.abreviation[self.current_mode]
 
