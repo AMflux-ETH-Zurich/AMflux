@@ -188,6 +188,7 @@ def init_obj_dict(node, desired_mode):
     elif completion_flag == False: #TODO: check if this works wit else/completion flag. does it get called?
         raise DesiredMode("No mode of operation selected, or selected mode is not prermittable. Please select a valid mode of operation")
     else:
+        print("testtest init_obj")
         return True
 
 
@@ -463,10 +464,12 @@ class DriveOrganiser:
         self.node.rpdo[1]["Modes of operation"].phys = desired_mode
         self.node.rpdo[1].transmit()
         time.sleep(5)
-        print(f"set mode, mode of operation display {self.node.tpdo[1]["Modes of operation display"].phys}")
+        print(f"set mode, mode of operation display: {self.node.tpdo[1]["Modes of operation display"].phys}")
         if self.node.tpdo[1]["Modes of operation display"].phys == desired_mode: #self.node.sdo[0x6061].raw == desired_mode
+            print("testest set_mode")
             return True
         else:
+            print("testest set_mode false")
             raise Exception #TODO: define new error
 
     def prepare_operation(self, desired_mode) -> bool:
