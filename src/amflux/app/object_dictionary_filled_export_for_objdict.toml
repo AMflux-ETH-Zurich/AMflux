@@ -43,7 +43,7 @@
     auxiliary_loop_observer_load_corr_gain = "None"
     auxiliary_loop_observer_friction  = "None"
     auxiliary_loop_observer_inertia   = "None"
-    dual_loop_miscellaneous           = 
+    dual_loop_miscellaneous           = "None"
 
     [motor.si_unit_position]
     si_unit_pos = 0x00B50000
