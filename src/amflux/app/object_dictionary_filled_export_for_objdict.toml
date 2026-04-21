@@ -29,21 +29,21 @@
     main_loop_p_gain_low              = 10000
     main_loop_p_gain_high             = 100000
     main_loop_gain_scheduler          = 12500
-    main_loop_filter_coeff_a          = 67
-    main_loop_filter_coeff_b          = 67
-    main_loop_filter_coeff_c          = 67
-    main_loop_filter_coeff_d          = 67
-    main_loop_filter_coeff_e          = 67
-    auxiliary_loop_p_gain             = 67
+    main_loop_filter_coeff_a          = "None"
+    main_loop_filter_coeff_b          = "None"
+    main_loop_filter_coeff_c          = "None"
+    main_loop_filter_coeff_d          = "None"
+    main_loop_filter_coeff_e          = "None"
+    auxiliary_loop_p_gain             = "None"
     auxiliary_loop_i_gain             = 1000
     auxiliary_loop_ff_velocity_gain   = 1000
     auxiliary_loop_ff_acceleration_gain = 1000
     auxiliary_loop_observer_pos_corr_gain = 1000
     auxiliary_loop_observer_vel_corr_gain = 1000
-    auxiliary_loop_observer_load_corr_gain = 67
-    auxiliary_loop_observer_friction  = 67
-    auxiliary_loop_observer_inertia   = 67
-    dual_loop_miscellaneous           = 67
+    auxiliary_loop_observer_load_corr_gain = "None"
+    auxiliary_loop_observer_friction  = "None"
+    auxiliary_loop_observer_inertia   = "None"
+    dual_loop_miscellaneous           = 
 
     [motor.si_unit_position]
     si_unit_pos = 0x00B50000
@@ -81,9 +81,9 @@
     data_rate                   = 1000
     data_bits                   = 0x00000C00
     encoding_type               = 0x0001
-    timeout_time                = 67
+    timeout_time                = "None"
     power_up_time               = 0
-    commutation_offset_value    = 67
+    commutation_offset_value    = "None"
     position_bits               = 0x0000000C
     #not in eds file: communication_additional_delay = -1
 
@@ -96,16 +96,16 @@
     abort_option = 2
 
     #[safety.mode_of_operation_init]
-    #op_mode = 67
+    #op_mode = "None"
 
     [safety.following_error_window_init]
-    following_error_window = 4294967295
+    following_error_window = 42949"None"295
 
     [safety.following_error_timeout_init]
     following_error_timeout = 0
 
     [safety.position_window_init]
-    position_window = 4294967295
+    position_window = 42949"None"295
 
     [safety.position_window_time_init]
     position_window_time = 0
@@ -291,7 +291,7 @@
             prof_dec = 100
 
             [mode.CSP.conf.following_error_window_init]
-            following_error_window = 4294967295
+            following_error_window = 42949"None"295
 
             [mode.CSP.conf.software_position_limit]
             min_pos_limit = 0
