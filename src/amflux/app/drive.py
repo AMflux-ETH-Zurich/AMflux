@@ -136,7 +136,7 @@ def get_DriveState(node) -> DriveState:
         return DriveState.QUICK_STOP_ACTIVE
 
     # Fault reaction active
-    if (b6 == 0 and b5 == 1 and b3 == 1 and b2 == 1 and b1 == 1 and b0 == 1):
+    if (b6 == 0 and b5 == 0 and b3 == 1 and b2 == 1 and b1 == 1 and b0 == 1):
         return DriveState.FAULT_REACTION_ACTIVE
 
     # Fault
@@ -168,22 +168,43 @@ class DriveCommand:
     FAULT_RESET         = 0b10000000
 
 
-DriveStateMap = {DriveState.NOT_READY_TO_SWITCH_ON : [(DriveCommand.SWITCH_ON, DriveState.SWITCH_ON_DISABLED)], 
-                  DriveState.SWITCH_ON_DISABLED     : [(DriveCommand.SHUTDOWN, DriveState.READY_TO_SWITCH_ON)], 
-                  DriveState.READY_TO_SWITCH_ON     : [(DriveCommand.DISABLE_VOLTAGE, DriveState.SWITCH_ON_DISABLED), 
-                                                       (DriveCommand.SWITCH_ON, DriveState.SWITCHED_ON), 
-                                                       (DriveCommand.ENABLE_OPERATION, DriveState.OPERATION_ENABLED)],
-                  DriveState.SWITCHED_ON            : [(DriveCommand.SHUTDOWN, DriveState.READY_TO_SWITCH_ON),
-                                                       (DriveCommand.DISABLE_OPERATION, DriveState.SWITCH_ON_DISABLED), 
-                                                       (DriveCommand.ENABLE_OPERATION, DriveState.OPERATION_ENABLED)],
-                  DriveState.OPERATION_ENABLED      : [(DriveCommand.DISABLE_OPERATION, DriveState.SWITCHED_ON), 
-                                                       (DriveCommand.SHUTDOWN, DriveState.READY_TO_SWITCH_ON), 
-                                                       (DriveCommand.DISABLE_VOLTAGE, DriveState.SWITCH_ON_DISABLED), 
-                                                       (DriveCommand.QUICK_STOP, DriveState.QUICK_STOP_ACTIVE)],
-                  DriveState.QUICK_STOP_ACTIVE      : [(DriveCommand.ENABLE_OPERATION, DriveState.OPERATION_ENABLED), 
-                                                       (DriveCommand.DISABLE_VOLTAGE, DriveState.SWITCH_ON_DISABLED)],
-                  DriveState.FAULT                  : [(DriveCommand.FAULT_RESET, DriveState.SWITCH_ON_DISABLED)]}
+DriveStateMap = {
+    DriveState.SWITCH_ON_DISABLED: [
+        (DriveCommand.SHUTDOWN, DriveState.READY_TO_SWITCH_ON)
+    ],
 
+    DriveState.READY_TO_SWITCH_ON: [
+        (DriveCommand.DISABLE_VOLTAGE, DriveState.SWITCH_ON_DISABLED),
+        (DriveCommand.SWITCH_ON, DriveState.SWITCHED_ON),
+        (DriveCommand.ENABLE_OPERATION, DriveState.OPERATION_ENABLED),   # "Switch on & Enable operation"
+    ],
+
+    DriveState.SWITCHED_ON: [
+        (DriveCommand.SHUTDOWN, DriveState.READY_TO_SWITCH_ON),
+        (DriveCommand.DISABLE_VOLTAGE, DriveState.SWITCH_ON_DISABLED),
+        (DriveCommand.ENABLE_OPERATION, DriveState.OPERATION_ENABLED),
+    ],
+
+    DriveState.OPERATION_ENABLED: [
+        (DriveCommand.DISABLE_OPERATION, DriveState.SWITCHED_ON),
+        (DriveCommand.SHUTDOWN, DriveState.READY_TO_SWITCH_ON),
+        (DriveCommand.DISABLE_VOLTAGE, DriveState.SWITCH_ON_DISABLED),
+        (DriveCommand.QUICK_STOP, DriveState.QUICK_STOP_ACTIVE),
+    ],
+
+    DriveState.QUICK_STOP_ACTIVE: [
+        (DriveCommand.ENABLE_OPERATION, DriveState.OPERATION_ENABLED),   # transition 16
+        (DriveCommand.DISABLE_VOLTAGE, DriveState.SWITCH_ON_DISABLED),   # transition 12
+    ],
+
+    DriveState.FAULT_REACTION_ACTIVE: [
+        # automatic transition to FAULT (transition 14), no command edge
+    ],
+
+    DriveState.FAULT: [
+        (DriveCommand.FAULT_RESET, DriveState.SWITCH_ON_DISABLED)
+    ],
+}
 
 def fault_reset(node, reset_tries: int = 1, timeout: float = 5.0) -> None:
     """Resets the drive from a FAULT state to SWITCH_ON_DISABLED state.
