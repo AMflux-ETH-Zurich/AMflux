@@ -216,7 +216,7 @@ class DriveOrganiser:
         # Network and Node
         self.node = node
         self.network = network
-        self.drivestate = get_DriveState()
+        self.drivestate = get_DriveState(self.node)
 
         self.current_mode = OperationModes.Homing
         
