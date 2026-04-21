@@ -114,8 +114,9 @@ def HomePage(app, parent):
             app.set_state(PageState.CyclicSynchronousTorque)
             app.drive.current_mode = OperationModes.CyclicSynchronousTorque
 
-        app.drive.stop_volt()
-        print(app.drive.node.sdo["Modes of operation display"].phys()) 
+        #   app.drive.stop_volt()
+        print(app.drive.node.tpdo[1]["Statusword"].phys) 
+        print(app.drive.drivestate)
 
     button = ttk.Button(
         parent,
