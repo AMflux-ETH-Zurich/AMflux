@@ -213,7 +213,7 @@ def ModePageBuilder(app, parent, modeint, modename):
             return
         for param_name, tk_var in variables.items():
             value = tk_var.get()  
-            app.drive.update_parameter(param_name, value)
+            app.drive.request_update_param(param_name, value, 5)
     
     def set_params():
         if app.drive is None:
@@ -253,21 +253,21 @@ def ModePageBuilder(app, parent, modeint, modename):
     run_button = ttk.Button(
         commanding,
         text="ENABLE",
-        command= lambda: app.drive.enable_operation(10)
+        command= lambda: app.drive.request_start()#enable_operation(10)
     )
     run_button.grid(row=0, column=0)
 
     pause_button = ttk.Button(
         commanding,
         text="QUICK-STOP",
-        command= lambda: app.drive.quick_stop()
+        command= lambda: app.drive.request_quick_stop()
     )
     pause_button.grid(row=1, column=0)
 
     stop_button = ttk.Button(
         commanding,
         text="DISABLE",
-        command= lambda: app.drive.stop_volt()
+        command= lambda: app.drive.request_disable_voltage()
     )
     stop_button.grid(row=2, column=0)
 

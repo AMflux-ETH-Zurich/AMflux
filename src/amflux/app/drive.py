@@ -292,7 +292,7 @@ def DriveState_BFS(start_state, target_state, Drive_State_map):
         list[tuple[DriveCommand, DriveState]] | None:
             A route as (command, reached_state) steps, or None if no path exists.
     """    
-    
+    print(f"BFS: {start_state} , {target_state}")
     if start_state == target_state:
         return []
     
