@@ -17,7 +17,7 @@ Key Components:
     
 Functions:
     get_DriveState(): Determine current drive state from statusword
-    do_DriveCommand(): Execute a drive command and wait for target state
+    execute_transition(): Execute one legal state transition
     goto_state(): Traverse state machine to desired state using BFS
     fault_reset(): Reset drive from FAULT state
     wait_for_state(): Poll drive state with timeout protection
@@ -25,7 +25,6 @@ Functions:
 Dependencies:
     can_functions: CAN communication primitives
     errors: Custom exception definitions
-    utils: Utility functions
 """
 
 
@@ -33,11 +32,9 @@ Dependencies:
 # Imports
 # ======================================================================
 
-from errors import DriveStateDetError, DriveStatePathError, DesiredDriveStateError, DriveStateResetError
-import utils
-
+from collections import deque
 import time
-from can_functions import cword_read
+from errors import DriveStateDetError, DriveStatePathError, DesiredDriveStateError, DriveStateResetError
 from can_functions import cword_write
 from can_functions import sword
 
@@ -73,78 +70,46 @@ class DriveState:
     QUICK_STOP_ACTIVE      = 5
     FAULT_REACTION_ACTIVE  = 6
     FAULT                  = 7
-    
+
+STATE_NAMES = {
+    DriveState.NOT_READY_TO_SWITCH_ON: "NOT_READY_TO_SWITCH_ON",
+    DriveState.SWITCH_ON_DISABLED: "SWITCH_ON_DISABLED",
+    DriveState.READY_TO_SWITCH_ON: "READY_TO_SWITCH_ON",
+    DriveState.SWITCHED_ON: "SWITCHED_ON",
+    DriveState.OPERATION_ENABLED: "OPERATION_ENABLED",
+    DriveState.QUICK_STOP_ACTIVE: "QUICK_STOP_ACTIVE",
+    DriveState.FAULT_REACTION_ACTIVE: "FAULT_REACTION_ACTIVE",
+    DriveState.FAULT: "FAULT",
+}
+
+
+STATE_MASKS = {
+    DriveState.NOT_READY_TO_SWITCH_ON: (0x4F, 0x00),
+    DriveState.SWITCH_ON_DISABLED: (0x4F, 0x40),
+    DriveState.READY_TO_SWITCH_ON: (0x6F, 0x21),
+    DriveState.SWITCHED_ON: (0x6F, 0x23),
+    DriveState.OPERATION_ENABLED: (0x6F, 0x27),
+    DriveState.QUICK_STOP_ACTIVE: (0x6F, 0x07),
+    DriveState.FAULT_REACTION_ACTIVE: (0x4F, 0x0F),
+    DriveState.FAULT: (0x4F, 0x08),
+}
+
+
+def format_drive_state(state: int) -> str:
+    """Return a readable state label for logs and exceptions."""
+    return f"{STATE_NAMES.get(state, 'UNKNOWN_STATE')} ({state})"
+
 
 def get_DriveState(node) -> DriveState:
-    """
-    Determine the drive state based on the statusword bits.
-    This function extracts specific bits from a statusword obtained from a node
-    and maps the bit pattern to a corresponding DriveState enum value. It evaluates
-    the state machine bits (Ready to switch on, Switched on, Operation enabled, Fault,
-    Quick stop, and Switch on disabled) to determine the current drive operational state.
-
-
-    Args:
-        node (int): The node object from which to retrieve the statusword.
-
-    Raises:
-        DriveStateDetError: If the statusword bit pattern does not match any known 
-        drive state, indicating an invalid or unexpected state combination.
-    
-    Returns:
-        DriveState:  An enum value representing the current drive state, which can be:
-                        - NOT_READY_TO_SWITCH_ON
-                        - SWITCH_ON_DISABLED
-                        - READY_TO_SWITCH_ON
-                        - SWITCHED_ON
-                        - OPERATION_ENABLED
-                        - QUICK_STOP_ACTIVE
-                        - FAULT_REACTION_ACTIVE
-                        - FAULT
-    """      
+    """Determine the drive state from the DS402 statusword."""
     statusword = sword(node)
 
-    b0 = (statusword >> 0) & 1  # Ready to switch on (compares right most bit)
-    b1 = (statusword >> 1) & 1  # Switched on (right most bit falls off, now compare second bit)
-    b2 = (statusword >> 2) & 1  # Operation enabled
-    b3 = (statusword >> 3) & 1  # Fault
-    b5 = (statusword >> 5) & 1  # Quick stop
-    b6 = (statusword >> 6) & 1  # Switch on disabled
+    for state, (bitmask, bits) in STATE_MASKS.items():
+        if statusword & bitmask == bits:
+            return state
 
-    # Not ready to switch on
-    if (b6 == 0 and b5 == 0 and b3 == 0 and b2 == 0 and b1 == 0 and b0 == 0):
-        return DriveState.NOT_READY_TO_SWITCH_ON
+    raise DriveStateDetError(f"Unknown drive state with statusword: {statusword:#06x}")
 
-    # Switch on disabled
-    if (b6 == 1 and b5 == 0 and b3 == 0 and b2 == 0 and b1 == 0 and b0 == 0):
-        return DriveState.SWITCH_ON_DISABLED
-
-    # Ready to switch on
-    if (b6 == 0 and b5 == 1 and b3 == 0 and b2 == 0 and b1 == 0 and b0 == 1):
-        return DriveState.READY_TO_SWITCH_ON
-
-    # Switched on
-    if (b6 == 0 and b5 == 1 and b3 == 0 and b2 == 0 and b1 == 1 and b0 == 1):
-        return DriveState.SWITCHED_ON
-
-    # Operation enabled
-    if (b6 == 0 and b5 == 1 and b3 == 0 and b2 == 1 and b1 == 1 and b0 == 1):
-        return DriveState.OPERATION_ENABLED
-
-    # Quick stop active
-    if (b6 == 0 and b5 == 0 and b3 == 0 and b2 == 1 and b1 == 1 and b0 == 1):
-        return DriveState.QUICK_STOP_ACTIVE
-
-    # Fault reaction active
-    if (b6 == 0 and b5 == 0 and b3 == 1 and b2 == 1 and b1 == 1 and b0 == 1):
-        return DriveState.FAULT_REACTION_ACTIVE
-
-    # Fault
-    if (b6 == 0 and b5 == 0 and b3 == 1 and b2 == 0 and b1 == 0 and b0 == 0):
-        return DriveState.FAULT
-    
-    raise DriveStateDetError(f"Unknown drive state with statusword: {statusword:#04x}")
-    
 
 # ======================================================================
 # Drive command functions
@@ -164,242 +129,170 @@ class DriveCommand:
     ENABLE_OPERATION    = 0b00001111
     DISABLE_VOLTAGE     = 0b00000000
     QUICK_STOP          = 0b00000010
-    DISABLE_OPERATION   = 0b00000111           
+    DISABLE_OPERATION   = 0b00000111
     FAULT_RESET         = 0b10000000
 
 
-DriveStateMap = {
-    DriveState.SWITCH_ON_DISABLED: [
-        (DriveCommand.SHUTDOWN, DriveState.READY_TO_SWITCH_ON)
-    ],
-
-    DriveState.READY_TO_SWITCH_ON: [
-        (DriveCommand.DISABLE_VOLTAGE, DriveState.SWITCH_ON_DISABLED),
-        (DriveCommand.SWITCH_ON, DriveState.SWITCHED_ON),
-        (DriveCommand.ENABLE_OPERATION, DriveState.OPERATION_ENABLED),   # "Switch on & Enable operation"
-    ],
-
-    DriveState.SWITCHED_ON: [
-        (DriveCommand.SHUTDOWN, DriveState.READY_TO_SWITCH_ON),
-        (DriveCommand.DISABLE_VOLTAGE, DriveState.SWITCH_ON_DISABLED),
-        (DriveCommand.ENABLE_OPERATION, DriveState.OPERATION_ENABLED),
-    ],
-
-    DriveState.OPERATION_ENABLED: [
-        (DriveCommand.DISABLE_OPERATION, DriveState.SWITCHED_ON),
-        (DriveCommand.SHUTDOWN, DriveState.READY_TO_SWITCH_ON),
-        (DriveCommand.DISABLE_VOLTAGE, DriveState.SWITCH_ON_DISABLED),
-        (DriveCommand.QUICK_STOP, DriveState.QUICK_STOP_ACTIVE),
-    ],
-
-    DriveState.QUICK_STOP_ACTIVE: [
-        (DriveCommand.ENABLE_OPERATION, DriveState.OPERATION_ENABLED),   # transition 16
-        (DriveCommand.DISABLE_VOLTAGE, DriveState.SWITCH_ON_DISABLED),   # transition 12
-    ],
-
-    DriveState.FAULT_REACTION_ACTIVE: [
-        # automatic transition to FAULT (transition 14), no command edge
-    ],
-
-    DriveState.FAULT: [
-        (DriveCommand.FAULT_RESET, DriveState.SWITCH_ON_DISABLED)
-    ],
+TRANSITION_COMMANDS = {
+    (DriveState.NOT_READY_TO_SWITCH_ON, DriveState.SWITCH_ON_DISABLED): None,
+    (DriveState.FAULT_REACTION_ACTIVE, DriveState.FAULT): None,
+    (DriveState.FAULT, DriveState.SWITCH_ON_DISABLED): DriveCommand.FAULT_RESET,
+    (DriveState.SWITCH_ON_DISABLED, DriveState.READY_TO_SWITCH_ON): DriveCommand.SHUTDOWN,
+    (DriveState.READY_TO_SWITCH_ON, DriveState.SWITCHED_ON): DriveCommand.SWITCH_ON,
+    (DriveState.SWITCHED_ON, DriveState.OPERATION_ENABLED): DriveCommand.ENABLE_OPERATION,
+    (DriveState.OPERATION_ENABLED, DriveState.SWITCHED_ON): DriveCommand.DISABLE_OPERATION,
+    (DriveState.SWITCHED_ON, DriveState.READY_TO_SWITCH_ON): DriveCommand.SHUTDOWN,
+    (DriveState.READY_TO_SWITCH_ON, DriveState.SWITCH_ON_DISABLED): DriveCommand.DISABLE_VOLTAGE,
+    (DriveState.OPERATION_ENABLED, DriveState.READY_TO_SWITCH_ON): DriveCommand.SHUTDOWN,
+    (DriveState.OPERATION_ENABLED, DriveState.SWITCH_ON_DISABLED): DriveCommand.DISABLE_VOLTAGE,
+    (DriveState.OPERATION_ENABLED, DriveState.QUICK_STOP_ACTIVE): DriveCommand.QUICK_STOP,
+    (DriveState.QUICK_STOP_ACTIVE, DriveState.OPERATION_ENABLED): DriveCommand.ENABLE_OPERATION,
+    (DriveState.QUICK_STOP_ACTIVE, DriveState.SWITCH_ON_DISABLED): DriveCommand.DISABLE_VOLTAGE,
 }
 
+
+DriveStateMap = {state: [] for state in STATE_NAMES}
+for (from_state, to_state), _controlword in TRANSITION_COMMANDS.items():
+    DriveStateMap[from_state].append(to_state)
+
+
 def fault_reset(node, reset_tries: int = 1, timeout: float = 5.0) -> None:
-    """Resets the drive from a FAULT state to SWITCH_ON_DISABLED state.
-    
-    Args:
-        node: The CANopen node representing the drive.
-        reset_tries (int): Number of attempts to reset the fault.
-        timeout (float): Maximum time to wait for the reset to complete.
-        
-    Raises:
-        DriveStateResetError: If the drive does not reach SWITCH_ON_DISABLED state after the specified number of attempts.
-    """
+    """Reset the drive from FAULT to SWITCH_ON_DISABLED."""
+    deadline = time.monotonic() + timeout
+
     for _ in range(reset_tries):
-        current_cword = cword_read(node)
-        new_cword = current_cword | 0x0080
-        cword_write(node, new_cword)
-        time.sleep(0.1)
-        if get_DriveState(node) ==  DriveState.SWITCH_ON_DISABLED:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
+
+        # Generate a clean rising edge on bit 7 for fault reset.
+        cword_write(node, DriveCommand.DISABLE_VOLTAGE)
+        time.sleep(0.05)
+        cword_write(node, DriveCommand.FAULT_RESET)
+        try:
+            wait_for_state(node, DriveState.SWITCH_ON_DISABLED, remaining)
             return
-    raise DriveStateResetError(f"Failed to reach Fault_RESET in {reset_tries} attempts")
+        except TimeoutError:
+            time.sleep(0.05)
+
+    raise DriveStateResetError(
+        f"Failed to reset drive from {format_drive_state(DriveState.FAULT)} "
+        f"to {format_drive_state(DriveState.SWITCH_ON_DISABLED)}"
+    )
 
 
 def wait_for_state(node, desired_state: int, timeout: float = 5.0):
-    """Gives the drive some time to reach the desired state.
-    
-    Args:
-        node: The CANopen node representing the drive.
-        desired_state (int): The target drive state to wait for.
-        timeout (float): Maximum time to wait for the desired state.
-        
-    Raises:
-        TimeoutError: If the drive does not reach the desired state within the timeout period.
-    """
-    
-    start_time = time.time()
+    """Poll until the drive reaches the desired state or the timeout expires."""
+    start_time = time.monotonic()
 
     while True:                                                                    
-        current_state = get_DriveState(node) 
-        if current_state == DriveState.FAULT: 
-            print("ATTENTION: Fault Reaction Active. Reset Drive? (3 tries)")
-            if utils.confirm():
-                fault_reset(node, reset_tries=3, timeout=timeout)
-                time.sleep(0.05)
+        current_state = get_DriveState(node)
         if current_state == desired_state:
             return True
-        if time.time() - start_time > timeout:
-            raise TimeoutError(f"Timeout waiting for state {desired_state}, current state is {current_state}")
+        if time.monotonic() - start_time > timeout:
+            raise TimeoutError(
+                f"Timeout waiting for state {format_drive_state(desired_state)}, "
+                f"current state is {format_drive_state(current_state)}"
+            )
         time.sleep(0.01)  # Avoid busy waiting
 
 
-def do_DriveCommand(node, command: int, target: DriveState, timeout: int) -> True:
-    """
-    Sets the DS402 Controlword for the given command on node and waits until the drive reaches the target state within timeout. 
-    Special-cases FAULT_RESET by calling fault_reset() instead of writing the normal command bits.
-    
-    Args:
-        node (int): EPOS4 Node
-        command (DriveCommand): desired DriveCommand
-        target (DriveState): expected DriveState after completing function
-        timeout (int)
+def execute_transition(node, from_state: int, to_state: int, timeout: float) -> None:
+    """Execute one legal DS402 state transition."""
+    try:
+        controlword = TRANSITION_COMMANDS[(from_state, to_state)]
+    except KeyError as exc:
+        raise DriveStatePathError(
+            f"Illegal state transition from {format_drive_state(from_state)} "
+            f"to {format_drive_state(to_state)}"
+        ) from exc
 
-    Raises:
-        TimeoutError: raises if State cannot be switched within timeout
+    if controlword is None:
+        wait_for_state(node, to_state, timeout)
+        return
 
-    Returns:
-        True: returns True if successfull, else Exception error is raised.
-    """    
-    current_cword = cword_read(node)
-
-    # Special case: Fault reset (set bit 7, keep all other bits)
-    if command == DriveCommand.FAULT_RESET:
+    if controlword == DriveCommand.FAULT_RESET:
         fault_reset(node, reset_tries=3, timeout=timeout)
-        return True
+        return
 
-    low  = command & 0x00FF #Otto sagt aufpassen!
-    high = current_cword & 0xFF00
-    new_cword = high | low
-
-    cword_write(node, new_cword)
-
-    if(wait_for_state(node, target, timeout)):
-        return #True
-
-    raise TimeoutError(f"Failed to reach state {target} in time")
+    cword_write(node, controlword)
+    wait_for_state(node, to_state, timeout)
 
 
-def shutdown_drive(node):
-    current_state = get_DriveState(node)
-
-    if current_state == DriveState.OPERATION_ENABLED or current_state == DriveState.QUICK_STOP_ACTIVE:
-        do_DriveCommand(node, DriveCommand.DISABLE_VOLTAGE, DriveState.SWITCH_ON_DISABLED, 5)
-    elif current_state == DriveState.SWITCHED_ON:
-        do_DriveCommand(node, DriveCommand.SHUTDOWN, DriveState.READY_TO_SWITCH_ON, 5)
+def shutdown_drive(node, timeout: float = 5.0):
+    """Drive the node into SWITCH_ON_DISABLED."""
+    goto_state(node, DriveState.SWITCH_ON_DISABLED, timeout)
     
 
 def DriveState_BFS(start_state, target_state, Drive_State_map):
-    """Naive breadth-firs-search algorithm to traverse DriveState map.  
-       ATTENTION: THIS FUNCTION IS 100% WRITTEN BY AI
-
-    Args:
-        start_state (DriveState): Current drive state.
-        target_state (DriveState): Desired drive state.
-        drive_state_map (dict): Mapping {state: [(command, next_state), ...]}.
-
-    Returns:
-        list[tuple[DriveCommand, DriveState]] | None:
-            A route as (command, reached_state) steps, or None if no path exists.
-    """    
-    print(f"BFS: {start_state} , {target_state}")
+    """Return the shortest state path between start_state and target_state."""
+    print(f"BFS: {format_drive_state(start_state)} -> {format_drive_state(target_state)}")
     if start_state == target_state:
-        return []
+        return [start_state]
     
-    queue = [start_state]
-    visited = {start_state}
-    parent = {}
+    queue = deque([start_state])
+    parent = {start_state: None}
 
     while queue:
-        current = queue.pop(0)
-
-        if current == target_state:
-            break
+        current = queue.popleft()
         
-        for command, next_state in Drive_State_map.get(current, []):
-            if next_state not in visited:
-                visited.add(next_state)
-                parent[next_state] = (current, command)
+        for next_state in Drive_State_map.get(current, []):
+            if next_state not in parent:
+                parent[next_state] = current
+                if next_state == target_state:
+                    queue.clear()
+                    break
                 queue.append(next_state)
 
-    
-    if target_state not in visited:
+    if target_state not in parent:
         return None
     
     route = []
     state = target_state
 
-    while state != start_state:
-        prev_state, command = parent[state]
-        route.append((command, state))
-        state = prev_state
+    while state is not None:
+        route.append(state)
+        state = parent[state]
 
     route.reverse()
     return route
 
 
 def goto_state(node, desired_state, timeout):
-    """Traverses state-machine to get to desired DriveState
+    """Traverse the DS402 state machine to reach the desired DriveState.
 
     Args:
         node (int): EPOS4 node
         desired_state (DriveState): State to be reached.
-        timeout (int): timeout for do_DriveCommand()
+        timeout (int): Overall timeout for reaching the desired state.
 
     Raises:
         DriveStatePathError: raised if route cannot be found/is not valid
-        DesiredDriveStateError: raised if goto_state() fails generally
-    """   
-    current_state = get_DriveState(node)
-    
-    route = DriveState_BFS(current_state, desired_state, DriveStateMap)
+        DesiredDriveStateError: raised if goto_state() times out generally
+    """
+    deadline = time.monotonic() + timeout
 
-    if route is None:
-        raise DriveStatePathError(f"No valid path to {desired_state} was found")
-    
-    for step in route:
-        next_command = step[0]
-        next_state = step[1]
-        try:
-            do_DriveCommand(node, next_command, next_state, timeout)
-        except DriveStateDetError as e:
-            # Specific drive-state errors you expect
-            shutdown_drive(node)
-            print(f"Drive state determination error: {e}")
-            raise
-        except TimeoutError as e:
-            # Timeout errors from nested calls
-            shutdown_drive(node)
-            print(f"Timeout during state transition: {e}")
-            raise
-        except Exception as e:
-            # Unexpected errors—log and fail fast
-            shutdown_drive(node)
-            print(f"Unexpected error: {e} current State: {get_DriveState(node)}")
-            raise
-        finally:
-           # Cleanup that always runs: e.g., disable watchdog, log state, etc.
-            print(f"Attempted transition to {next_state}")
+    while True:
+        current_state = get_DriveState(node)
+        if current_state == desired_state:
+            print(f"transition to {format_drive_state(desired_state)} successfull")
+            return
 
-        
-    final_state = get_DriveState(node)
-    
-    if final_state == desired_state:
-        print(f"transition to {desired_state} successfull")
-        return
-    else:
-        raise DesiredDriveStateError(f"{desired_state} state could not be reached. Current state: {final_state}")
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise DesiredDriveStateError(
+                f"{format_drive_state(desired_state)} state could not be reached. "
+                f"Current state: {format_drive_state(current_state)}"
+            )
 
+        route = DriveState_BFS(current_state, desired_state, DriveStateMap)
+        if route is None or len(route) < 2:
+            raise DriveStatePathError(
+                f"No valid path from {format_drive_state(current_state)} "
+                f"to {format_drive_state(desired_state)} was found"
+            )
 
+        next_state = route[1]
+        execute_transition(node, current_state, next_state, remaining)
+        print(f"Attempted transition to {format_drive_state(next_state)}")
 
