@@ -168,7 +168,31 @@ class DriveCommand:
     FAULT_RESET         = 0b10000000
 
 
-DriveStateMap = {DriveState.NOT_READY_TO_SWITCH_ON : [(DriveCommand.SWITCH_ON, DriveState.OPERATION_ENABLED)], 
+STATE_NAMES = {
+    DriveState.NOT_READY_TO_SWITCH_ON: "NOT_READY_TO_SWITCH_ON",
+    DriveState.SWITCH_ON_DISABLED: "SWITCH_ON_DISABLED",
+    DriveState.READY_TO_SWITCH_ON: "READY_TO_SWITCH_ON",
+    DriveState.SWITCHED_ON: "SWITCHED_ON",
+    DriveState.OPERATION_ENABLED: "OPERATION_ENABLED",
+    DriveState.QUICK_STOP_ACTIVE: "QUICK_STOP_ACTIVE",
+    DriveState.FAULT_REACTION_ACTIVE: "FAULT_REACTION_ACTIVE",
+    DriveState.FAULT: "FAULT",
+}
+
+AUTOMATIC_TRANSITIONS = {
+    # DS402 enters SWITCH_ON_DISABLED automatically after internal startup.
+    DriveState.NOT_READY_TO_SWITCH_ON: DriveState.SWITCH_ON_DISABLED,
+    # FAULT_REACTION_ACTIVE settles into FAULT without a command.
+    DriveState.FAULT_REACTION_ACTIVE: DriveState.FAULT,
+}
+
+
+def format_drive_state(state: int) -> str:
+    """Return a readable state label for logs and exceptions."""
+    return f"{STATE_NAMES.get(state, 'UNKNOWN_STATE')} ({state})"
+
+
+DriveStateMap = {DriveState.NOT_READY_TO_SWITCH_ON : [],
                   DriveState.SWITCH_ON_DISABLED     : [(DriveCommand.SHUTDOWN, DriveState.READY_TO_SWITCH_ON)], 
                   DriveState.READY_TO_SWITCH_ON     : [(DriveCommand.DISABLE_VOLTAGE, DriveState.SWITCH_ON_DISABLED), 
                                                        (DriveCommand.SWITCH_ON, DriveState.SWITCHED_ON), 
@@ -206,7 +230,7 @@ def fault_reset(node, reset_tries: int = 1, timeout: float = 5.0) -> None:
     raise DriveStateResetError(f"Failed to reach Fault_RESET in {reset_tries} attempts")
 
 
-def wait_for_state(node, desired_state: int, timeout: float = 5.0):
+def wait_for_state(node, desired_state: int, timeout: float = 5.0, reset_on_fault: bool = True):
     """Gives the drive some time to reach the desired state.
     
     Args:
@@ -221,17 +245,39 @@ def wait_for_state(node, desired_state: int, timeout: float = 5.0):
     start_time = time.time()
 
     while True:                                                                    
-        current_state = get_DriveState(node) 
-        if current_state == DriveState.FAULT: 
+        current_state = get_DriveState(node)
+        if current_state == desired_state:
+            return True
+        if current_state == DriveState.FAULT and reset_on_fault:
             print("ATTENTION: Fault Reaction Active. Reset Drive? (3 tries)")
             if utils.confirm():
                 fault_reset(node, reset_tries=3, timeout=timeout)
                 time.sleep(0.05)
-        if current_state == desired_state:
-            return True
         if time.time() - start_time > timeout:
-            raise TimeoutError(f"Timeout waiting for state {desired_state}, current state is {current_state}")
+            raise TimeoutError(
+                f"Timeout waiting for state {format_drive_state(desired_state)}, "
+                f"current state is {format_drive_state(current_state)}"
+            )
         time.sleep(0.01)  # Avoid busy waiting
+
+
+def wait_for_commandable_state(node, desired_state: int, timeout: float = 5.0) -> int:
+    """Wait through automatic DS402 states until a commandable state is reached."""
+    start_time = time.time()
+    current_state = get_DriveState(node)
+
+    while current_state in AUTOMATIC_TRANSITIONS and current_state != desired_state:
+        auto_target = AUTOMATIC_TRANSITIONS[current_state]
+        remaining = timeout - (time.time() - start_time)
+        if remaining <= 0:
+            raise TimeoutError(
+                f"Timeout waiting for automatic transition from "
+                f"{format_drive_state(current_state)} to {format_drive_state(auto_target)}"
+            )
+        wait_for_state(node, auto_target, timeout=remaining, reset_on_fault=False)
+        current_state = get_DriveState(node)
+
+    return current_state
 
 
 def do_DriveCommand(node, command: int, target: DriveState, timeout: int) -> True:
@@ -341,11 +387,22 @@ def goto_state(node, desired_state, timeout):
         DesiredDriveStateError: raised if goto_state() fails generally
     """   
     current_state = get_DriveState(node)
+    if current_state == desired_state:
+        print(f"Drive already in {format_drive_state(desired_state)}")
+        return
+
+    current_state = wait_for_commandable_state(node, desired_state, timeout)
+    if current_state == desired_state:
+        print(f"Drive reached {format_drive_state(desired_state)} automatically")
+        return
     
     route = DriveState_BFS(current_state, desired_state, DriveStateMap)
 
     if route is None:
-        raise DriveStatePathError(f"No valid path to {desired_state} was found")
+        raise DriveStatePathError(
+            f"No valid path from {format_drive_state(current_state)} "
+            f"to {format_drive_state(desired_state)} was found"
+        )
     
     for step in route:
         next_command = step[0]
@@ -365,20 +422,22 @@ def goto_state(node, desired_state, timeout):
         except Exception as e:
             # Unexpected errors—log and fail fast
             shutdown_drive(node)
-            print(f"Unexpected error: {e} current State: {get_DriveState(node)}")
+            print(f"Unexpected error: {e} current State: {format_drive_state(get_DriveState(node))}")
             raise
         finally:
            # Cleanup that always runs: e.g., disable watchdog, log state, etc.
-            print(f"Attempted transition to {next_state}")
+            print(f"Attempted transition to {format_drive_state(next_state)}")
 
         
     final_state = get_DriveState(node)
     
     if final_state == desired_state:
-        print(f"transition to {desired_state} successfull")
+        print(f"transition to {format_drive_state(desired_state)} successfull")
         return
     else:
-        raise DesiredDriveStateError(f"{desired_state} state could not be reached. Current state: {final_state}")
-
+        raise DesiredDriveStateError(
+            f"{format_drive_state(desired_state)} state could not be reached. "
+            f"Current state: {format_drive_state(final_state)}"
+        )
 
 
