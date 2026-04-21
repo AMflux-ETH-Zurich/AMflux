@@ -99,13 +99,13 @@
     #op_mode = "None"
 
     [safety.following_error_window_init]
-    following_error_window = 42949"None"295
+    following_error_window = 4294967295
 
     [safety.following_error_timeout_init]
     following_error_timeout = 0
 
     [safety.position_window_init]
-    position_window = 42949"None"295
+    position_window = 4294967295
 
     [safety.position_window_time_init]
     position_window_time = 0
@@ -291,7 +291,7 @@
             prof_dec = 100
 
             [mode.CSP.conf.following_error_window_init]
-            following_error_window = 42949"None"295
+            following_error_window = 4294967295
 
             [mode.CSP.conf.software_position_limit]
             min_pos_limit = 0
