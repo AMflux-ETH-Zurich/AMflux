@@ -241,14 +241,17 @@ class DriveOrganiser:
         self.data = np.array([])
 
     def request_start(self, timeout=5.0):
+        print("requested: enable operation")
         self.cmd_q.put(Command(CmdType.ENABLE_OPERATION, timeout=timeout))
 
     def request_disable_voltage(self):
+        print("requested: disable voltage")
         self.stop_volt_requested.set()
         self.cancel_transition.set()
         self.cmd_q.put(Command(CmdType.DISABLE_VOLTAGE))
 
     def request_quick_stop(self):
+        print("requested: quick stop")
         if(get_DriveState(self.node) != DriveState.OPERATION_ENABLED):
             #TODO: print something or raise error?
             return
@@ -257,9 +260,11 @@ class DriveOrganiser:
         self.cmd_q.put(Command(CmdType.QUICK_STOP))
 
     def request_update_param(self, name, value, timeout=5.0):
+        print("requested: update params")
         self.cmd_q.put(Command(CmdType.UPDATE_PARAM, data=(name, value)))
 
     def start_recording(self):
+        print("execute: start recording")
         if self.recording.is_set():
             print("already recording")
         else:
@@ -267,6 +272,7 @@ class DriveOrganiser:
             self.recording.set()
 
     def stop_recording(self):
+        print("execute: stop recording")
         if self.recording.is_set():
             self.recording.clear()
             time = time.time()
@@ -499,7 +505,7 @@ class DriveOrganiser:
         2. Set power_enabled = True
         3. Set torque_enabled = True
         """
-
+        print("execute: enable operation")
         if self.cancel_transition.is_set():
             return
         goto_state(self.node, desired_state=DriveState.OPERATION_ENABLED, timeout=timeout)
@@ -515,6 +521,7 @@ class DriveOrganiser:
         2. 
         3. 
         """
+        print("execute: disable voltage")
         print("test a")
         if not self.power_enabled:
             return
@@ -527,6 +534,7 @@ class DriveOrganiser:
     def quick_stop(self):
         """
         """
+        print("execute: quick stop")
         print("test a")
         if not self.torque_enabled:
             return
