@@ -3,20 +3,20 @@
 # =========================================================
 
     [motor.axis_configuration_init]
-    sens_res  = 
-    sys_speed = 67
+    sens_res  = 32768
+    sys_speed = 1000
 
     [motor.motor_init]
     motor_type      = 10
     nominal_current = 5000
-    current_lim     = 10000
+    current_lim     = 30000
     pole_pairs      = 10
-    therm_const     = 300
+    therm_const     = 10000
     tor_const       = 2000000
 
     [motor.electrical_system_init]
-    electrical_resistance = 983.3333333
-    electrical_inductance = 4000
+    electrical_resistance = 2441
+    electrical_inductance = 14463
 
     [motor.velocity_observer_parameter_init]
     pos_corr_gain  = 400
@@ -26,51 +26,51 @@
     inertia        = 1000
 
     [motor.dual_loop_position_control_parameter_init]
-    main_loop_p_gain_low              = "None"
-    main_loop_p_gain_high             = "None"
-    main_loop_gain_scheduler          = "None"
-    main_loop_filter_coeff_a          = "None"
-    main_loop_filter_coeff_b          = "None"
-    main_loop_filter_coeff_c          = "None"
-    main_loop_filter_coeff_d          = "None"
-    main_loop_filter_coeff_e          = "None"
-    auxiliary_loop_p_gain             = "None"
-    auxiliary_loop_i_gain             = "None"
-    auxiliary_loop_ff_velocity_gain   = "None"
-    auxiliary_loop_ff_acceleration_gain = "None"
-    auxiliary_loop_observer_pos_corr_gain = "None"
-    auxiliary_loop_observer_vel_corr_gain = "None"
-    auxiliary_loop_observer_load_corr_gain = "None"
-    auxiliary_loop_observer_friction  = "None"
-    auxiliary_loop_observer_inertia   = "None"
-    dual_loop_miscellaneous           = "None"
+    main_loop_p_gain_low              = 10000
+    main_loop_p_gain_high             = 100000
+    main_loop_gain_scheduler          = 12500
+    main_loop_filter_coeff_a          = 67
+    main_loop_filter_coeff_b          = 67
+    main_loop_filter_coeff_c          = 67
+    main_loop_filter_coeff_d          = 67
+    main_loop_filter_coeff_e          = 67
+    auxiliary_loop_p_gain             = 67
+    auxiliary_loop_i_gain             = 1000
+    auxiliary_loop_ff_velocity_gain   = 1000
+    auxiliary_loop_ff_acceleration_gain = 1000
+    auxiliary_loop_observer_pos_corr_gain = 1000
+    auxiliary_loop_observer_vel_corr_gain = 1000
+    auxiliary_loop_observer_load_corr_gain = 67
+    auxiliary_loop_observer_friction  = 67
+    auxiliary_loop_observer_inertia   = 67
+    dual_loop_miscellaneous           = 67
 
     [motor.si_unit_position]
-    si_unit_pos = "None"
+    si_unit_pos = 0x00B50000
 
     [motor.si_unit_velocity]
-    si_unit_vel = "None"
+    si_unit_vel = 0x00B44700
 
     [motor.si_unit_acceleration]
-    si_unit_acc = "None"
+    si_unit_acc = 0x00C00300
 
     [motor.position_offset]
-    pos_offset = "None"
+    pos_offset = 0
 
     [motor.velocity_offset]
-    vel_offset = "None"
+    vel_offset = 0
 
     [motor.torque_offset]
-    tor_offset = "None"
+    tor_offset = 0
 
     [motor.digital_outputs]
-    phys_outputs = "None"
+    phys_outputs = 0x00000000
 
     #[motor.motor_rated_torque]
     #rated_torque = "None"
 
     [motor.motor_type]
-    motor_type = "None"
+    motor_type = 10
 
 
 # =========================================================
@@ -80,10 +80,10 @@
     [encoder.ssi_abs_encoder_init]
     data_rate                   = 1000
     data_bits                   = 0x00000C00
-    encoding_type               = 0
-    timeout_time                = 30 #used to be 200
-    power_up_time               = 300
-    commutation_offset_value    = 2100
+    encoding_type               = 0x0001
+    timeout_time                = 67
+    power_up_time               = 0
+    commutation_offset_value    = 67
     position_bits               = 0x0000000C
     #not in eds file: communication_additional_delay = -1
 
@@ -99,16 +99,16 @@
     #op_mode = 67
 
     [safety.following_error_window_init]
-    following_error_window = "None"
+    following_error_window = 4294967295
 
     [safety.following_error_timeout_init]
-    following_error_timeout = "None"
+    following_error_timeout = 0
 
     [safety.position_window_init]
-    position_window = "None"
+    position_window = 4294967295
 
     [safety.position_window_time_init]
-    position_window_time = "None"
+    position_window_time = 0
 
     [safety.shutdown_option_code]
     option_code = 0
@@ -123,17 +123,17 @@
     option_code = 2
 
     [safety.software_position_limit]
-    min_pos_limit = "None"
-    max_pos_limit = "None"
+    min_pos_limit = 0
+    max_pos_limit = 0
 
     [safety.max_profile_velocity]
-    max_velocity = 300
+    max_velocity = 340
 
     [safety.max_motor_speed]
-    max_velocity = 300
+    max_velocity = 1000
 
     [safety.max_acceleration]
-    max_acc = 10
+    max_acc = 100000
 
 
 # =========================================================
@@ -147,35 +147,35 @@
         #CONFIGURATION PARAMETERS
 
             [mode.PPM.conf.software_position_limit]
-            min_pos_limit = 67
-            max_pos_limit = 67
+            min_pos_limit = 0
+            max_pos_limit = 0
 
             [mode.PPM.conf.max_profile_velocity]
-            max_velocity = 67
+            max_velocity = 340
 
             [mode.PPM.conf.max_motor_speed]
-            max_velocity = 67
+            max_velocity = 1000
 
             [mode.PPM.conf.quick_stop_deceleration]
-            prof_dec = 67
+            prof_dec = 100
 
             [mode.PPM.conf.max_acceleration]
-            max_acc = 67
+            max_acc = 100000
 
 
         #COMMANDING PARAMETERS
 
             [mode.PPM.comm.target_position]
-            position = 89
+            position = 0
 
             [mode.PPM.comm.profile_velocity]
-            prof_velocity = 89
+            prof_velocity = 300
 
             [mode.PPM.comm.profile_acceleration]
-            prof_acc = 89
+            prof_acc = 100
 
             [mode.PPM.comm.profile_deceleration]
-            prof_dec = 89
+            prof_dec = 100
 
 
     # ----------------------------
@@ -185,41 +185,41 @@
         #CONFIGURATION PARAMETERS
 
             [mode.HMM.conf.digital_input_properties_init]
-            polarity = 67
+            polarity = 0x0000
 
             [mode.HMM.conf.config_digital_inputs_init]
-            input_1_config = 67
-            input_2_config = 67
-            input_3_config = 67
-            input_4_config = 67
-            input_5_config = 67
-            input_6_config = 67
-            input_7_config = 67
-            input_8_config = 67
+            input_1_config = 255
+            input_2_config = 255
+            input_3_config = 255
+            input_4_config = 255
+            input_5_config = 255
+            input_6_config = 255
+            input_7_config = 255
+            input_8_config = 255
 
             [mode.HMM.conf.motion_profile_type]
-            profile = 67
+            profile = 0
 
         #COMMANDING PARAMETERS
 
             [mode.HMM.comm.homing_method_init]
-            homing_method = 89
+            homing_method = 37
 
             [mode.HMM.comm.homing_speeds]
-            speed_sw_srch = 89
-            speed_zero_srch = 89
+            speed_sw_srch = 100
+            speed_zero_srch = 10
 
             [mode.HMM.comm.homing_acceleration]
-            homing_acc = 89
+            homing_acc = 10
 
             [mode.HMM.comm.home_offset_distance_init]
-            home_offset_distance = 89
+            home_offset_distance = 0
 
             [mode.HMM.comm.home_position_init]
-            homeposition = 89
+            homeposition = 0
 
             [mode.HMM.comm.current_threshold_homing_init]
-            current_threshold_homing = 89
+            current_threshold_homing = 500
             
 
     # ----------------------------
@@ -229,37 +229,37 @@
         #CONFIGURATION PARAMETERS
 
             [mode.PVM.conf.software_position_limit]
-            min_pos_limit = 67
-            max_pos_limit = 67
+            min_pos_limit = 0
+            max_pos_limit = 0
 
             [mode.PVM.conf.max_profile_velocity]
-            max_velocity = 67
+            max_velocity = 340
 
             [mode.PVM.conf.max_motor_speed]
-            max_velocity = 67
+            max_velocity = 1000
 
             #Left out max gear speed
 
             [mode.PVM.conf.quick_stop_deceleration]
-            prof_dec = 67
+            prof_dec = 100
 
             [mode.PVM.conf.max_acceleration]
-            prof_acc = 67
+            prof_acc = 100000
 
 
         #COMMANDING PARAMETERS
 
             [mode.PVM.comm.target_velocity]
-            vel = 89
+            vel = 0
 
             [mode.PVM.comm.profile_acceleration]
-            prof_acc = 89
+            prof_acc = 100
 
             [mode.PVM.comm.profile_deceleration]
-            prof_dec = 89
+            prof_dec = 100
 
             [mode.PVM.comm.motion_profile_type]
-            profile = 89
+            profile = 0
 
 
     # ----------------------------
@@ -269,57 +269,57 @@
         #CONFIGURATION PARAMETERS
 
             [mode.CSP.conf.motor_init]
-            nominal_current = 67
-            tor_const = 67
+            nominal_current = 5000
+            tor_const = 2000000
 
             [mode.CSP.conf.current_control_parameter_init]
-            p_gain = 67
-            i_gain = 67
+            p_gain = 7347747
+            i_gain = 1235943
 
             [mode.CSP.conf.position_control_parameter_init]
-            p_gain = 67
-            i_gain = 67
-            d_gain = 67
-            ffv_gain = 67
-            ffa_gain = 67
-            i_gain_si_unit = 67
+            p_gain = 8594189
+            i_gain = 93631411
+            d_gain = 250576
+            ffv_gain = 12371
+            ffa_gain = 2682
+            i_gain_si_unit = 0xFA040300
 
             [mode.CSP.conf.quick_stop_deceleration]
-            prof_dec = 67
+            prof_dec = 100
 
             [mode.CSP.conf.profile_deceleration]
-            prof_dec = 67
+            prof_dec = 100
 
             [mode.CSP.conf.following_error_window_init]
-            following_error_window = 67
+            following_error_window = 4294967295
 
             [mode.CSP.conf.software_position_limit]
-            min_pos_limit = 67
-            max_pos_limit = 67
+            min_pos_limit = 0
+            max_pos_limit = 0
 
             [mode.CSP.conf.motor_rated_torque]
-            rated_torque = 67
+            rated_torque = 10000000
 
             [mode.CSP.conf.max_motor_speed]
-            max_velocity = 67
+            max_velocity = 1000
 
             #Left out max gear speed
 
             [mode.CSP.conf.interpolation_time_period]
-            time_period_val = 67
-            time_index = 67
+            time_period_val = 0
+            time_index = -3
 
 
         #COMMANDING PARAMETERS
 
             [mode.CSP.comm.target_position]
-            position = 89
+            position = 0
 
             [mode.CSP.comm.position_offset]
-            pos_offset = 89
+            pos_offset = 0
 
             [mode.CSP.comm.torque_offset]
-            tor_offset = 89
+            tor_offset = 0
 
 
 
@@ -335,15 +335,15 @@
             tor_const = 2000000
 
             [mode.CSV.conf.current_control_parameter_init]
-            p_gain = "None"
-            i_gain = "None"
+            p_gain = 7347747
+            i_gain = 1235943
 
             [mode.CSV.conf.velocity_control_parameter_init]
-            p_gain = "None"
-            i_gain = "None"
-            ffv_gain = "None"
-            ffa_gain = "None"
-            f_cutoff = "None"
+            p_gain = 1003576
+            i_gain = 63225306
+            ffv_gain = 15976
+            ffa_gain = 3982
+            f_cutoff = 602
 
             [mode.CSV.conf.quick_stop_deceleration]
             prof_dec = 9
@@ -352,11 +352,11 @@
             prof_dec = 9
             
             [mode.CSV.conf.software_position_limit]
-            min_pos_limit = "None"
-            max_pos_limit = "None"
+            min_pos_limit = 0
+            max_pos_limit = 0
 
             [mode.CSV.conf.motor_rated_torque]
-            rated_torque = "None"
+            rated_torque = 10000000
 
             [mode.CSV.conf.max_motor_speed]
             max_velocity = 300
@@ -365,19 +365,19 @@
 
             [mode.CSV.conf.interpolation_time_period]
             time_period_val = 0
-            time_index = "None"
+            time_index = -3
 
 
         #COMMANDING PARAMETERS
 
             [mode.CSV.comm.target_velocity]
-            vel = 67
+            vel = 0
 
             [mode.CSV.comm.velocity_offset]
-            vel_offset = 67
+            vel_offset = 0
 
             [mode.CSV.comm.torque_offset]
-            tor_offset = 67
+            tor_offset = 0
 
 
     # ----------------------------
@@ -387,36 +387,36 @@
     #CONFIGURATION PARAMETERS
 
         [mode.CST.conf.motor_init]
-        nominal_current = 67
-        tor_const = 67
+        nominal_current = 5000
+        tor_const = 2000000
 
         [mode.CST.conf.max_motor_speed]
-        max_velocity = 67
+        max_velocity = 1000
 
          #Left out max gear speed
 
         [mode.CST.conf.current_control_parameter_init]
-        p_gain = 67
-        i_gain = 67
+        p_gain = 7347747
+        i_gain = 1235943
 
         [mode.CST.conf.quick_stop_deceleration]
-        prof_dec = 67
+        prof_dec = 100
 
         [mode.CST.conf.profile_deceleration]
-        prof_dec = 67
+        prof_dec = 100
 
         [mode.CST.conf.motor_rated_torque]
-        rated_torque = 67
+        rated_torque = 10000000
 
         [mode.CST.conf.software_position_limit]
-        min_pos_limit = 67
-        max_pos_limit = 67
+        min_pos_limit = 0
+        max_pos_limit = 0
 
 
     #COMMANDING PARAMETERS
 
         [mode.CST.comm.target_torque]
-        torque = 67
+        torque = 0
 
         [mode.CST.comm.torque_offset]
-        tor_offset = 67
+        tor_offset = 0

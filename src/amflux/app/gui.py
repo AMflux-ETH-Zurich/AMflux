@@ -23,7 +23,7 @@ from organiser import OperationModes
 
 # OLD: '/home/amfluxpi/AMflux/src/amflux/app/object_dictionary.toml'
 # OLD: '/Users/wendelinroth/Desktop/Code/GitHub/AMflux/src/amflux/app/object_dictionary.toml'
-with open("/home/amfluxpi/AMflux/src/amflux/app/object_dictionary.toml") as data:
+with open("/home/amfluxpi/AMflux/src/amflux/app/object_dictionary_filled_export_for_objdict.toml") as data:
     objdict_data = toml.load(data)
 
 
