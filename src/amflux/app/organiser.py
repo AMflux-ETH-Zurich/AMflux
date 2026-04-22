@@ -473,7 +473,7 @@ class DriveOrganiser:
                 if cmd.type == CmdType.QUICK_STOP:
                     self.quick_stop()
                 elif cmd.type == CmdType.ENABLE_OPERATION:
-                    self.enable_operation()
+                    self.enable_operation(5)
                 elif cmd.type == CmdType.UPDATE_PARAM:
                     name, value = cmd.data
                     self.update_parameter(name, value)
