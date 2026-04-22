@@ -522,6 +522,7 @@ class DriveOrganiser:
 
             for func_name, instance in objdict_data["mode"][mode_code]["comm"].items():
                 func = getattr(object_dictionary_functions, func_name)
+                print(f"DEBUGGING PREPARE OPERATION{instance}")
                 kwargs = {var_name: (None if val == "None" else int(val)) for var_name, val in instance.items()}
                 func(self.node, **kwargs)
             return True
