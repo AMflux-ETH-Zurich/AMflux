@@ -127,7 +127,7 @@
     max_pos_limit = 0
 
     [safety.max_profile_velocity]
-    max_velocity = 340
+    max_velocity = 200
 
     [safety.max_motor_speed]
     max_velocity = 1000
