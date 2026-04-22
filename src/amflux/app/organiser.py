@@ -444,7 +444,7 @@ class DriveOrganiser:
         """
         
         while not self.shutdown.is_set():
-            if get_DriveState(self.node) == DriveState.FAULT_REACTION_ACITVE:
+            if get_DriveState(self.node) == DriveState.FAULT_REACTION_ACTIVE:
                 var = sword(self.node)
                 print("Error occured. Drive will be resetet to SWITCH ON DISABLED")
                 print(f'statursword: {var}')
