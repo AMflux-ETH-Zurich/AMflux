@@ -116,7 +116,7 @@ def HomePage(app, parent):
 
         #   app.drive.stop_volt()
         print(app.drive.node.tpdo[1]["Statusword"].phys) 
-        print(app.drive.drivestate)
+        print(f"current state of the drive {app.drive.drivestate} (printed form guy.py)")
 
     button = ttk.Button(
         parent,

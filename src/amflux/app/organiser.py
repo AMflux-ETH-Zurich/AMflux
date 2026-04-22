@@ -459,7 +459,9 @@ class DriveOrganiser:
                 self.log_telemetry()
             else:
                 self.read_telemetry()
-
+            
+            print("Organiser Loop iteration")
+            print(f"{self.cmd_q}")
             time.sleep(0.01)
 
     def set_mode(self, desired_mode):
