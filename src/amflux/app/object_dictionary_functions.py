@@ -484,14 +484,14 @@ def max_motor_speed(node, max_velocity: int = None):
     #6.2.119
     check_init(locals())
     #indicates maximum allowed motor speed, value is given in rpm
-    node.sdo["Max motor speed"].raw = max_velocity if max_velocity is not None else 50000
+    node.sdo["Max motor speed"].raw = max_velocity if max_velocity is not None else 250
 
 
 def profile_velocity(node, prof_velocity: int = None):
     #6.2.120
     check_init(locals())
     #represents the velocity normally attained at the end of the accleeratiion ramp during a profiled move (ppm, pvm), value is given in rpm
-    node.sdo["Profile velocity"].raw = prof_velocity if prof_velocity is not None else 1000
+    node.sdo["Profile velocity"].raw = prof_velocity if prof_velocity is not None else 200
 
 
 def profile_acceleration(node, prof_acc: int = None):
