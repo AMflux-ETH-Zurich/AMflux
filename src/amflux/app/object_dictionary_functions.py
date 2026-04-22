@@ -126,7 +126,7 @@ def pdo_mapping_init(node, network):
     node.rpdo.save()  
 
     # enter operational state
-    network.nmt.state = 'OPERATIONAL' 
+    node.nmt.state = 'OPERATIONAL' 
     time.sleep(5)
     print(f'node NMT state: {node.nmt.state}')     
 
