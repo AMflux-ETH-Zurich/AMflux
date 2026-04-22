@@ -50,8 +50,8 @@ with open("/home/amfluxpi/AMflux/src/amflux/app/object_dictionary_filled_export_
 
 class OperationModes:
     ProfilePosition             = 1
-    Homing                      = 3
-    ProfileVelocity             = 6
+    Homing                      = 6
+    ProfileVelocity             = 3
     CyclicSynchronousPosition   = 8
     CyclicSynchronousVelocity   = 9
     CyclicSynchronousTorque     = 10
