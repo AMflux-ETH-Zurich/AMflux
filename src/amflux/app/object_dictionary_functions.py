@@ -477,7 +477,7 @@ def max_profile_velocity(node, max_velocity: int = None):
     #6.2.118
     check_init(locals())
     #used as a velocity limit in a ppm or pvm move, value is given in rpm
-    node.sdo["Max profile velocity"].raw = max_velocity if max_velocity is not None else 50000
+    node.sdo["Max profile velocity"].raw = max_velocity if max_velocity is not None else 250
 
 
 def max_motor_speed(node, max_velocity: int = None):
