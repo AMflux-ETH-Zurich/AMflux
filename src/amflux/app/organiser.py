@@ -294,12 +294,17 @@ class DriveOrganiser:
     # Drive Organiser: runtime updates (called by GUI)
     # ============================================
     def set_parameter(self, mode_code, param_dict):
-        for func, (name, value) in param_dict.items():
+        for name, value in param_dict.items():
             try:
-                objdict_data["mode"][mode_code]["comm"][func][name] = int(value)
-                print(f'{name}')
+                for func_name, instance in objdict_data["mode"][mode_code]["comm"].items():
+                    if name in instance:
+                        instance[name] = int(value)
+                        break
             except ValueError:
-                objdict_data["mode"][mode_code]["comm"][name] = value
+                for func_name, instance in objdict_data["mode"][mode_code]["comm"].items():
+                    if name in instance:
+                        instance[name] = value
+                        break
         print("finished setting commanding parameters, preparing operation")
         print(f"selected operation mode in gui: {self.current_mode}")
         if self.prepare_operation(self.current_mode):
