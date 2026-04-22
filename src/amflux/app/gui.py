@@ -40,18 +40,18 @@ operation_modes = [
 class PageState:
     Home                        = 0
     ProfilePosition             = 1
-    Homing                      = 6
+    Homing                      = 2
     ProfileVelocity             = 3
-    CyclicSynchronousPosition   = 8
-    CyclicSynchronousVelocity   = 9
-    CyclicSynchronousTorque     = 10
+    CyclicSynchronousPosition   = 4
+    CyclicSynchronousVelocity   = 5
+    CyclicSynchronousTorque     = 6
     abreviation = {
         1:            "PPM", 
-        6:            "HMM",
+        2:            "HMM",
         3:            "PVM",
-        8:            "CSP",
-        9:            "CSV", 
-        10:            "CST"
+        4:            "CSP",
+        5:            "CSV", 
+        6:            "CST"
         }
 
 # ======================================================================
