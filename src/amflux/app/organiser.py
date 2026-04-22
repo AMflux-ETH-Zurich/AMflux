@@ -294,7 +294,7 @@ class DriveOrganiser:
     # Drive Organiser: runtime updates (called by GUI)
     # ============================================
     def set_parameter(self, mode_code, param_dict):
-        for func, (name, value) in enumerate(param_dict.items()):
+        for func, (name, value) in param_dict.items():
             try:
                 objdict_data["mode"][mode_code]["comm"][func][name] = int(value)
                 print(f'{name}')
