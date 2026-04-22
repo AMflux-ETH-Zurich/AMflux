@@ -201,6 +201,7 @@ class CmdType(Enum):
     QUICK_STOP = auto()
     DISABLE_VOLTAGE = auto()
     UPDATE_PARAM = auto()
+    SET_PARAM = auto()
 
 @dataclass
 class Command:
@@ -217,6 +218,10 @@ class DriveOrganiser:
         self.node = node
         self.network = network
         self.drivestate = get_DriveState(self.node)
+
+        #loop handling
+        #self.start = self.start_organiser()
+        #self.stop = self.stop_organiser()
 
         self.current_mode = OperationModes.Homing
         
@@ -240,7 +245,7 @@ class DriveOrganiser:
         self.recording = Event()
         self.data = np.array([])
 
-    def request_start(self, timeout=5.0):
+    def request_enable_operation(self, timeout=5.0):
         print("requested: enable operation")
         self.cmd_q.put(Command(CmdType.ENABLE_OPERATION, timeout=timeout))
 
@@ -263,6 +268,10 @@ class DriveOrganiser:
         print("requested: update params")
         self.cmd_q.put(Command(CmdType.UPDATE_PARAM, data=(name, value)))
 
+    def request_set_param(self, mode_code, param_dict):
+        print("requested: set params and preparing operation")
+        self.cmd_q.put(Command(CmdType.SET_PARAM, data=(mode_code, param_dict)))
+
     def start_recording(self):
         print("execute: start recording")
         if self.recording.is_set():
@@ -284,7 +293,21 @@ class DriveOrganiser:
     # ============================================
     # Drive Organiser: runtime updates (called by GUI)
     # ============================================
-    
+    def set_parameter(self, mode_code, param_dict):
+        for name, value in param_dict.items():
+            try:
+                objdict_data["mode"][mode_code]["comm"][name] = int(value)
+                print(f'{name}')
+            except ValueError:
+                objdict_data["mode"][mode_code]["comm"][name] = value
+        print("finished setting commanding parameters, preparing operation")
+        print(f"selected operation mode in gui: {self.current_mode}")
+        if self.prepare_operation(self.current_mode):
+            #self.ready = True
+            print("ready to enable operation.")
+        else:
+            print("setting parameters failed")
+
     def update_parameter(self, param_name: str, value: int):
         """Queue a parameter update to be written in monitor thread.
             E.g., update_parameter('target_position', 5000)
@@ -296,10 +319,6 @@ class DriveOrganiser:
         """
         update_command = Command(CmdType.UPDATE_PARAM, (param_name, value))
         self.cmd_q.put(update_command)
-    
-    # ============================================
-    # Drive Organiser: parameter updates & telemetry
-    # ============================================
     
     def process_param_updates(self, timeout):
         """Drain queue and write each param to controller OD.
@@ -320,7 +339,10 @@ class DriveOrganiser:
             except Exception as e:
                 print(f"Error updating {param_name}: {e}")
 
-
+    # ============================================
+    # Drive Organiser: telemetry
+    # ============================================
+    
     def read_telemetry(self) -> list:
         """
         Read key values from controller TPDOs (non-blocking, cached).
@@ -399,11 +421,13 @@ class DriveOrganiser:
             self.cmd_q.queue.clear()
         self.thread = Thread(target=self.organiser_loop, daemon=True)
         self.thread.start()
+        print("organiser loop started")
 
     def stop_organiser(self):
         self.shutdown.set()
         if self.thread:
             self.thread.join(timeout=2.0)
+        print("organiser loop stopped")
 
     def organiser_loop(self):
         """Main event loop for the organizer that manages drive operations and command processing.
@@ -450,6 +474,9 @@ class DriveOrganiser:
                     self.update_parameter(name, value)
                 elif cmd.type == CmdType.DISABLE_VOLTAGE:
                     self.stop_volt()
+                elif cmd.type == CmdType.SET_PARAM:
+                    mode_code, param_dict = cmd.data
+                    self.set_parameter(mode_code, param_dict)
                 continue
 
             self.process_param_updates(0.05)

@@ -117,6 +117,8 @@ def HomePage(app, parent):
         #   app.drive.stop_volt()
         print(app.drive.node.tpdo[1]["Statusword"].phys) 
         print(f"current state of the drive {app.drive.drivestate} (printed form guy.py)")
+        app.drive.start_organiser()
+        
 
     button = ttk.Button(
         parent,
@@ -215,28 +217,22 @@ def ModePageBuilder(app, parent, modeint, modename):
             value = tk_var.get()  
             app.drive.request_update_param(param_name, value, 5)
     
-    def set_params():
+    def set_button_func():
         if app.drive is None:
             print("Warning: Network not initialized, cannot update parameters")
             return
-        print("set1")
+        #print("set1")
         mode_code = PageState.abreviation[modeint]
+        param_dict = {}
         for name, tk_var in variables.items():
-            try:
-                objdict_data["mode"][mode_code]["comm"][name] = int(tk_var.get())
-                print(f'{name}')
-            except ValueError:
-                objdict_data["mode"][mode_code]["comm"][name] = tk_var.get()
-        print("finished setting")
-        print(f" drive.current mode in gui: {app.drive.current_mode}")
-        if app.drive.prepare_operation(app.drive.current_mode):
-            print("ready to enable operation.")
-            set_button.config(text="UPDATE", command=lambda: update_params())
-        else:
-            print("setting parameters failed")
+            value = int(tk_var.get())
+            param_dict[name] = value  
+            
+        app.drive.request_set_param(mode_code, param_dict)
+        print("wait for confirmation of: prepare operation")
+        set_button.config(text="UPDATE", command=lambda: update_params())
 
-        
-    set_button = ttk.Button(editing, text="SET", command=lambda: set_params())
+    set_button = ttk.Button(editing, text="SET", command=lambda: set_button_func())
     set_button.grid(column=1)
     
 
@@ -253,7 +249,7 @@ def ModePageBuilder(app, parent, modeint, modename):
     run_button = ttk.Button(
         commanding,
         text="ENABLE",
-        command= lambda: app.drive.request_start()#enable_operation(10)
+        command= lambda: app.drive.request_enable_operation()#enable_operation(10)
     )
     run_button.grid(row=0, column=0)
 
