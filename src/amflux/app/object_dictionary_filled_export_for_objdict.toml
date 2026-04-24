@@ -83,7 +83,7 @@
     encoding_type               = 0x0001
     timeout_time                = "None"
     power_up_time               = 0
-    commutation_offset_value    = "None"
+    commutation_offset_value    = 2100
     position_bits               = 0x0000000C
     #not in eds file: communication_additional_delay = -1
 
