@@ -140,7 +140,7 @@ def axis_configuration_init(node, sens_res: int=None , sys_speed: int=None):
     #Axis configuration for absolute SSI encoder
     node.sdo["Axis configuration.Sensors configuration"].raw = 0x00000300
     #Axis control structure
-    node.sdo["Axis configuration.Control structure"].raw = 0b00000000000000100000000100100001
+    node.sdo["Axis configuration.Control structure"].raw = 0b100000000100010001
     #Commutaton Sensors
     node.sdo["Axis configuration.Commutation sensors"].raw = 0x00000020
     #Miscellaneous Axis Configuration
