@@ -273,8 +273,8 @@
             tor_const = 2000000
 
             [mode.CSP.conf.current_control_parameter_init]
-            p_gain = 7347747
-            i_gain = 1235943
+            p_gain = 6804685
+            i_gain = 1083076
 
             [mode.CSP.conf.position_control_parameter_init]
             p_gain = 8594189
@@ -396,8 +396,8 @@
          #Left out max gear speed
 
         [mode.CST.conf.current_control_parameter_init]
-        p_gain = 7347747
-        i_gain = 1235943
+        p_gain = 6804685
+        i_gain = 1083076
 
         [mode.CST.conf.quick_stop_deceleration]
         prof_dec = 100
