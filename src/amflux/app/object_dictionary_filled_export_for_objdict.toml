@@ -80,7 +80,7 @@
     [encoder.ssi_abs_encoder_init]
     data_rate                   = 2000
     data_bits                   = 0x00000F00
-    encoding_type               = 0x0001
+    encoding_type               = 0x0011
     timeout_time                = 30
     power_up_time               = 200
     commutation_offset_value    = 2100
