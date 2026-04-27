@@ -143,6 +143,7 @@ def sword(node) -> int:
     """
     # read statusword via TPDO
     return node.tpdo[1]["Statusword"].raw
+    
 
     # read statusword via SDO
     #return node.sdo[0x6041].raw

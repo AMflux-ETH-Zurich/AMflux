@@ -45,14 +45,31 @@ class PageState:
     CyclicSynchronousPosition   = 4
     CyclicSynchronousVelocity   = 5
     CyclicSynchronousTorque     = 6
-    abreviation = {
-        1:            "PPM", 
-        2:            "HMM",
-        3:            "PVM",
-        4:            "CSP",
-        5:            "CSV", 
-        6:            "CST"
-        }
+
+
+MODE_NAME_TO_SELECTION = {
+    "ProfilePosition": (PageState.ProfilePosition, OperationModes.ProfilePosition),
+    "Homing": (PageState.Homing, OperationModes.Homing),
+    "ProfileVelocity": (PageState.ProfileVelocity, OperationModes.ProfileVelocity),
+    "CyclicSynchronousPosition": (
+        PageState.CyclicSynchronousPosition,
+        OperationModes.CyclicSynchronousPosition,
+    ),
+    "CyclicSynchronousVelocity": (
+        PageState.CyclicSynchronousVelocity,
+        OperationModes.CyclicSynchronousVelocity,
+    ),
+    "CyclicSynchronousTorque": (
+        PageState.CyclicSynchronousTorque,
+        OperationModes.CyclicSynchronousTorque,
+    ),
+}
+
+
+PAGE_TO_OPERATION_MODE = {
+    page_state: desired_mode
+    for _mode_name, (page_state, desired_mode) in MODE_NAME_TO_SELECTION.items()
+}
 
 # ======================================================================
 # Home page
@@ -94,25 +111,14 @@ def HomePage(app, parent):
     #Start button
     def start_button_func():
         selected = opt.get()
+        selection = MODE_NAME_TO_SELECTION.get(selected)
+        if selection is None:
+            print("Please select a valid operation mode.")
+            return
 
-        if selected == "ProfilePosition":
-            app.set_state(PageState.ProfilePosition)
-            app.drive.current_mode = OperationModes.ProfilePosition
-        elif selected == "Homing":
-            app.set_state(PageState.Homing)
-            app.drive.current_mode = OperationModes.Homing
-        elif selected == "ProfileVelocity":
-            app.set_state(PageState.ProfileVelocity)
-            app.drive.current_mode = OperationModes.ProfileVelocity
-        elif selected == "CyclicSynchronousPosition":
-            app.set_state(PageState.CyclicSynchronousPosition)
-            app.drive.current_mode = OperationModes.CyclicSynchronousPosition
-        elif selected == "CyclicSynchronousVelocity":
-            app.set_state(PageState.CyclicSynchronousVelocity)
-            app.drive.current_mode = OperationModes.CyclicSynchronousVelocity
-        elif selected == "CyclicSynchronousTorque":
-            app.set_state(PageState.CyclicSynchronousTorque)
-            app.drive.current_mode = OperationModes.CyclicSynchronousTorque
+        page_state, desired_mode = selection
+        app.set_state(page_state)
+        app.drive.current_mode = desired_mode
 
         #   app.drive.stop_volt()
         print(app.drive.node.tpdo[1]["Statusword"].phys) 
@@ -205,7 +211,8 @@ def ModePageBuilder(app, parent, modeint, modename):
     editing = tk.Frame(parent)
     editing.grid(row=2, column=3)
 
-    mode_code = PageState.abreviation[modeint]
+    desired_mode = PAGE_TO_OPERATION_MODE[modeint]
+    mode_code = OperationModes.abreviation[desired_mode]
 
     variables = build_param_editor(editing, objdict_data["mode"][mode_code]["comm"])
 
@@ -222,13 +229,12 @@ def ModePageBuilder(app, parent, modeint, modename):
             print("Warning: Network not initialized, cannot update parameters")
             return
         #print("set1")
-        mode_code = PageState.abreviation[modeint]
         param_dict = {}
         for name, tk_var in variables.items():
             value = int(tk_var.get())
             param_dict[name] = value  
             
-        app.drive.request_set_param(mode_code, param_dict)
+        app.drive.request_set_param(desired_mode, param_dict)
         print("wait for confirmation of: prepare operation")
         set_button.config(text="UPDATE", command=lambda: update_params())
 

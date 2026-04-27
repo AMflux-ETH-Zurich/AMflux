@@ -63,11 +63,6 @@ class OperationModes:
         CyclicSynchronousVelocity:  "CSV", 
         CyclicSynchronousTorque:    "CST"}
 
-
-MODE_BY_ABBREVIATION = {
-    abbreviation: mode for mode, abbreviation in OperationModes.abreviation.items()
-}
-
 POSITION_RELEVANT_MODES = {
     OperationModes.ProfilePosition,
     OperationModes.Homing,
@@ -78,30 +73,15 @@ VELOCITY_RELEVANT_MODES = {
     OperationModes.ProfileVelocity,
     OperationModes.CyclicSynchronousVelocity,
 }
-
-
-def normalize_operation_mode(mode):
-    """Normalize an operation mode value, abbreviation, or attribute name."""
-    if mode in OperationModes.abreviation:
-        return mode
-
-    if isinstance(mode, str):
-        if mode in MODE_BY_ABBREVIATION:
-            return MODE_BY_ABBREVIATION[mode]
-
-        attr_value = getattr(OperationModes, mode, None)
-        if attr_value in OperationModes.abreviation:
-            return attr_value
-
-    raise DesiredMode(
-        f"Invalid mode of operation: {mode}. "
-        "Please select a valid mode of operation."
-    )
-
-
 def mode_to_abbreviation(mode) -> str:
-    """Return the TOML mode abbreviation for a normalized operation mode."""
-    return OperationModes.abreviation[normalize_operation_mode(mode)]
+    """Return the TOML mode abbreviation for a canonical operation mode."""
+    try:
+        return OperationModes.abreviation[mode]
+    except KeyError as exc:
+        raise DesiredMode(
+            f"Invalid mode of operation: {mode}. "
+            "Please select a valid mode of operation."
+        ) from exc
 
 
 def convert_toml_value(value):
@@ -143,9 +123,7 @@ def init_obj_dict(node, desired_mode):
     Raises:
         DesiredMode: raised if no desired mode is given
     """    
-    desired_mode = normalize_operation_mode(desired_mode)
     mode_code = mode_to_abbreviation(desired_mode)
-    completion_flag = False
 
     apply_od_section(node, objdict_data["motor"], "motor")
     apply_od_section(node, objdict_data["encoder"], "encoder")
@@ -158,13 +136,6 @@ def init_obj_dict(node, desired_mode):
         )
 
     apply_od_section(node, mode_data["conf"], f"mode.{mode_code}.conf")
-    completion_flag = True
-
-    if completion_flag is False:
-        raise DesiredMode(
-            "No mode of operation selected, or selected mode is not permissible. "
-            "Please select a valid mode of operation."
-        )
 
 
 # ======================================================================
@@ -244,10 +215,11 @@ class DriveOrganiser:
         print("requested: update params")
         self.cmd_q.put(Command(CmdType.UPDATE_PARAM, data=(name, value)))
 
-    def request_set_param(self, mode_code, param_dict):
-        self.current_mode = normalize_operation_mode(mode_code)
+    def request_set_param(self, desired_mode, param_dict):
+        mode_to_abbreviation(desired_mode)
+        self.current_mode = desired_mode
         print("requested: set params and preparing operation")
-        self.cmd_q.put(Command(CmdType.SET_PARAM, data=(mode_code, param_dict)))
+        self.cmd_q.put(Command(CmdType.SET_PARAM, data=(desired_mode, param_dict)))
 
     def start_recording(self):
         print("execute: start recording")
@@ -270,13 +242,6 @@ class DriveOrganiser:
     # ============================================
     # Drive Organiser: runtime updates (called by GUI)
     # ============================================
-    def _resolve_mode(self, mode):
-        self.current_mode = normalize_operation_mode(mode)
-        return self.current_mode
-
-    def _current_mode_code(self) -> str:
-        return mode_to_abbreviation(self.current_mode)
-
     def _read_sdo_value(self, entry_name: str):
         try:
             return self.node.sdo[entry_name].raw
@@ -332,7 +297,6 @@ class DriveOrganiser:
         )
 
     def _print_prepare_diagnostics(self, desired_mode):
-        desired_mode = normalize_operation_mode(desired_mode)
         print("prepare_operation diagnostics:")
         print(f"  mode display: {self._read_mode_display()}")
         print(
@@ -392,15 +356,15 @@ class DriveOrganiser:
         if cleared_types:
             print(f"cleared stale commands after stop request: {cleared_types}")
 
-    def set_parameter(self, mode_code, param_dict):
-        desired_mode = self._resolve_mode(mode_code)
-        normalized_mode_code = mode_to_abbreviation(desired_mode)
+    def set_parameter(self, desired_mode, param_dict):
+        mode_code = mode_to_abbreviation(desired_mode)
+        self.current_mode = desired_mode
 
         for name, value in param_dict.items():
-            self._update_mode_command_config(normalized_mode_code, name, value)
+            self._update_mode_command_config(mode_code, name, value)
 
         print("finished setting commanding parameters, preparing operation")
-        print(f"selected operation mode in gui: {normalized_mode_code}")
+        print(f"selected operation mode in gui: {mode_code}")
         if self.prepare_operation(desired_mode):
             print("ready to enable operation.")
         else:
@@ -414,7 +378,7 @@ class DriveOrganiser:
             value (int):        new value for the parameter       
 
         """
-        mode_code = self._current_mode_code()
+        mode_code = mode_to_abbreviation(self.current_mode)
         func_name, kwargs = self._update_mode_command_config(mode_code, param_name, value)
         print(f"applying update parameter: {func_name} -> {kwargs}")
         getattr(object_dictionary_functions, func_name)(self.node, **kwargs)
@@ -562,8 +526,8 @@ class DriveOrganiser:
                     elif cmd.type == CmdType.DISABLE_VOLTAGE:
                         self.stop_volt()
                     elif cmd.type == CmdType.SET_PARAM:
-                        mode_code, param_dict = cmd.data
-                        self.set_parameter(mode_code, param_dict)
+                        desired_mode, param_dict = cmd.data
+                        self.set_parameter(desired_mode, param_dict)
 
                 if self.recording.is_set():
                     self.log_telemetry()
@@ -581,7 +545,8 @@ class DriveOrganiser:
         Args: 
             desired_mode(OperationMode) = desired mode of operation
         """
-        desired_mode = self._resolve_mode(desired_mode)
+        mode_to_abbreviation(desired_mode)
+        self.current_mode = desired_mode
         self.node.rpdo[1]["Modes of operation"].phys = desired_mode
         self.node.rpdo[1].transmit()
 
@@ -605,7 +570,8 @@ class DriveOrganiser:
         4. Write mode command parameters
         5. Print targeted readback diagnostics
         """
-        desired_mode = self._resolve_mode(desired_mode)
+        mode_to_abbreviation(desired_mode)
+        self.current_mode = desired_mode
         mode_code = mode_to_abbreviation(desired_mode)
 
         init_obj_dict(self.node, desired_mode)
