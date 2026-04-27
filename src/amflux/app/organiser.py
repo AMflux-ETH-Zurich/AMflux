@@ -25,16 +25,16 @@ parameter updates to the motor controller.
 from dataclasses import dataclass
 from enum import Enum, auto
 import queue
+import traceback
 import toml
 import object_dictionary_functions
-from errors import InitObjDict, DesiredMode
+from errors import DesiredMode
 from threading import Thread, Event
 from drive import goto_state
 import time
 import numpy as np
 from drive import DriveState, get_DriveState
 from can_functions import sword
-from pathlib import Path
 
 
 # ======================================================================
@@ -61,8 +61,53 @@ class OperationModes:
         ProfileVelocity:            "PVM",
         CyclicSynchronousPosition:  "CSP",
         CyclicSynchronousVelocity:  "CSV", 
-        CyclicSynchronousTorque:    "CTP"}
-    
+        CyclicSynchronousTorque:    "CST"}
+
+
+MODE_BY_ABBREVIATION = {
+    abbreviation: mode for mode, abbreviation in OperationModes.abreviation.items()
+}
+
+POSITION_RELEVANT_MODES = {
+    OperationModes.ProfilePosition,
+    OperationModes.Homing,
+    OperationModes.CyclicSynchronousPosition,
+}
+
+VELOCITY_RELEVANT_MODES = {
+    OperationModes.ProfileVelocity,
+    OperationModes.CyclicSynchronousVelocity,
+}
+
+
+def normalize_operation_mode(mode):
+    """Normalize an operation mode value, abbreviation, or attribute name."""
+    if mode in OperationModes.abreviation:
+        return mode
+
+    if isinstance(mode, str):
+        if mode in MODE_BY_ABBREVIATION:
+            return MODE_BY_ABBREVIATION[mode]
+
+        attr_value = getattr(OperationModes, mode, None)
+        if attr_value in OperationModes.abreviation:
+            return attr_value
+
+    raise DesiredMode(
+        f"Invalid mode of operation: {mode}. "
+        "Please select a valid mode of operation."
+    )
+
+
+def mode_to_abbreviation(mode) -> str:
+    """Return the TOML mode abbreviation for a normalized operation mode."""
+    return OperationModes.abreviation[normalize_operation_mode(mode)]
+
+
+def convert_toml_value(value):
+    """Convert a TOML value into the runtime representation."""
+    return None if value == "None" else value
+
 
 def convert_toml_params(params: dict) -> dict:
     """Convert TOML parameters, converting "None" strings to Python None. OD variables can be left as "None" to envoke default values"
@@ -70,7 +115,22 @@ def convert_toml_params(params: dict) -> dict:
     Args:
         params (dict): EPOS4 network node
     """
-    return {k: (None if v == "None" else v) for k, v in params.items()}
+    return {k: convert_toml_value(v) for k, v in params.items()}
+
+
+def apply_od_section(node, section: dict, section_name: str) -> None:
+    """Apply one TOML object-dictionary section to the controller."""
+    for func_name, params in section.items():
+        func = getattr(object_dictionary_functions, func_name)
+        kwargs = convert_toml_params(params)
+        try:
+            func(node, **kwargs)
+        except Exception as exc:
+            print(
+                f"OD apply failed for {section_name}.{func_name} "
+                f"with params {kwargs}: {exc}"
+            )
+            raise
 
 
 def init_obj_dict(node, desired_mode):
@@ -83,113 +143,28 @@ def init_obj_dict(node, desired_mode):
     Raises:
         DesiredMode: raised if no desired mode is given
     """    
-    motor_data = objdict_data["motor"]
-    for func_name, params in motor_data.items():
-        func = getattr(object_dictionary_functions, func_name)
-        try:
-            func(node, **convert_toml_params(params))
-        except InitObjDict as e:
-            print(f"There was a problem Initialiting {func}, check dictionary values.")
-            raise
-        
-    
-    encoder_data = objdict_data["encoder"]
-    for func_name, params in encoder_data.items():
-        func = getattr(object_dictionary_functions, func_name)
-        try:
-            func(node, **convert_toml_params(params))
-        except InitObjDict as e:
-            print(f"There was a problem Initialiting {func}, check dictionary values.")
-            raise
-        
+    desired_mode = normalize_operation_mode(desired_mode)
+    mode_code = mode_to_abbreviation(desired_mode)
+    completion_flag = False
 
-    safety_data = objdict_data["safety"]
-    for func_name, params in safety_data.items():
-        func = getattr(object_dictionary_functions, func_name)
-        try:
-            func(node, **convert_toml_params(params))
-        except InitObjDict as e:
-            print(f"There was a problem Initialiting {func}, check dictionary values.")
-            raise
-        
+    apply_od_section(node, objdict_data["motor"], "motor")
+    apply_od_section(node, objdict_data["encoder"], "encoder")
+    apply_od_section(node, objdict_data["safety"], "safety")
 
-    if desired_mode == OperationModes.ProfilePosition:
-        PPM_data = objdict_data["mode"]["PPM"]["conf"]
-        completion_flag = False
-        for func_name, params in PPM_data.items():
-            func = getattr(object_dictionary_functions, func_name)
-            try:
-                func(node, **convert_toml_params(params))
-            except InitObjDict as e:
-                print(f"There was a problem Initialiting {func}, check dictionary values.")
-                raise
-            else:
-                completion_flag = True
-            
-    elif desired_mode == OperationModes.Homing:
-        HMM_data = objdict_data["mode"]["HMM"]["conf"]
-        for func_name, params in HMM_data.items():
-            func = getattr(object_dictionary_functions, func_name)
-            try:
-                func(node, **convert_toml_params(params))
-            except InitObjDict as e:
-                print(f"There was a problem Initialiting {func}, check dictionary values.")
-                raise
-            else:
-                completion_flag = True
-            
-    elif desired_mode == OperationModes.ProfileVelocity:
-        PVM_data = objdict_data["mode"]["PVM"]["conf"]
-        for func_name, params in PVM_data.items():
-            func = getattr(object_dictionary_functions, func_name)
-            try:
-                func(node, **convert_toml_params(params))
-            except InitObjDict as e:
-                print(f"There was a problem Initialiting {func}, check dictionary values.")
-                raise
-            else:
-                completion_flag = True
-            
-    elif desired_mode == OperationModes.CyclicSynchronousPosition:
-        CSP_data = objdict_data["mode"]["CSP"]["conf"]
-        for func_name, params in CSP_data.items():
-            func = getattr(object_dictionary_functions, func_name)
-            try:
-                func(node, **convert_toml_params(params))
-            except InitObjDict as e:
-                print(f"There was a problem Initialiting {func}, check dictionary values.")
-                raise
-            else:
-                completion_flag = True
-            
-    elif desired_mode == OperationModes.CyclicSynchronousVelocity:
-        CSV_data = objdict_data["mode"]["CSV"]["conf"]
-        for func_name, params in CSV_data.items():
-            func = getattr(object_dictionary_functions, func_name)
-            try:
-                func(node, **convert_toml_params(params))
-            except InitObjDict as e:
-                print(f"There was a problem Initialiting {func}, check dictionary values.")
-                raise
-            else:
-                completion_flag = True
-            
-    elif desired_mode == OperationModes.CyclicSynchronousTorque:
-        CST_data = objdict_data["mode"]["CST"]["conf"]
-        for func_name, params in CST_data.items():
-            func = getattr(object_dictionary_functions, func_name)
-            try:
-                func(node, **convert_toml_params(params))
-            except InitObjDict as e:
-                print(f"There was a problem Initialiting {func}, check dictionary values.")
-                raise
-            else:
-                completion_flag = True
-    elif completion_flag == False: #TODO: check if this works wit else/completion flag. does it get called?
-        raise DesiredMode("No mode of operation selected, or selected mode is not prermittable. Please select a valid mode of operation")
-    else:
-        print("testtest init_obj")
-        return
+    mode_data = objdict_data.get("mode", {}).get(mode_code)
+    if mode_data is None or "conf" not in mode_data:
+        raise DesiredMode(
+            f"No TOML configuration found for mode {mode_code} ({desired_mode})."
+        )
+
+    apply_od_section(node, mode_data["conf"], f"mode.{mode_code}.conf")
+    completion_flag = True
+
+    if completion_flag is False:
+        raise DesiredMode(
+            "No mode of operation selected, or selected mode is not permissible. "
+            "Please select a valid mode of operation."
+        )
 
 
 # ======================================================================
@@ -247,6 +222,7 @@ class DriveOrganiser:
 
     def request_enable_operation(self, timeout=5.0):
         print("requested: enable operation")
+        self.cancel_transition.clear()
         self.cmd_q.put(Command(CmdType.ENABLE_OPERATION, timeout=timeout))
 
     def request_disable_voltage(self):
@@ -269,6 +245,7 @@ class DriveOrganiser:
         self.cmd_q.put(Command(CmdType.UPDATE_PARAM, data=(name, value)))
 
     def request_set_param(self, mode_code, param_dict):
+        self.current_mode = normalize_operation_mode(mode_code)
         print("requested: set params and preparing operation")
         self.cmd_q.put(Command(CmdType.SET_PARAM, data=(mode_code, param_dict)))
 
@@ -293,56 +270,162 @@ class DriveOrganiser:
     # ============================================
     # Drive Organiser: runtime updates (called by GUI)
     # ============================================
-    def set_parameter(self, mode_code, param_dict):
-        for name, value in param_dict.items():
+    def _resolve_mode(self, mode):
+        self.current_mode = normalize_operation_mode(mode)
+        return self.current_mode
+
+    def _current_mode_code(self) -> str:
+        return mode_to_abbreviation(self.current_mode)
+
+    def _read_sdo_value(self, entry_name: str):
+        try:
+            return self.node.sdo[entry_name].raw
+        except Exception as exc:
+            return f"<read failed: {exc}>"
+
+    def _read_mode_display(self):
+        try:
+            return self.node.tpdo[1]["Modes of operation display"].phys
+        except Exception:
             try:
-                for func_name, instance in objdict_data["mode"][mode_code]["comm"].items():
-                    if name in instance:
-                        instance[name] = int(value)
-                        break
-            except ValueError:
-                for func_name, instance in objdict_data["mode"][mode_code]["comm"].items():
-                    if name in instance:
-                        instance[name] = value
-                        break
+                return self.node.sdo["Modes of operation display"].raw
+            except Exception as exc:
+                return f"<read failed: {exc}>"
+
+    def _update_mode_command_config(self, mode_code: str, name: str, value):
+        """Update one in-memory mode command entry and return its function kwargs."""
+        comm_data = objdict_data["mode"][mode_code]["comm"]
+        normalized_value = convert_toml_value(value)
+
+        if name in comm_data:
+            instance = comm_data[name]
+            if isinstance(normalized_value, dict):
+                updated = False
+                for arg_name, arg_value in normalized_value.items():
+                    if arg_name in instance:
+                        instance[arg_name] = convert_toml_value(arg_value)
+                        updated = True
+                if not updated:
+                    raise KeyError(
+                        f"No matching argument names found for command '{name}'."
+                    )
+            else:
+                arg_names = list(instance.keys())
+                if not arg_names:
+                    raise KeyError(f"Command '{name}' has no TOML parameters to update.")
+                target_arg = arg_names[0]
+                instance[target_arg] = normalized_value
+                if len(arg_names) > 1:
+                    print(
+                        f"update command '{name}': applied scalar value to "
+                        f"'{target_arg}', remaining args kept from TOML."
+                    )
+            return name, convert_toml_params(instance)
+
+        for func_name, instance in comm_data.items():
+            if name in instance:
+                instance[name] = normalized_value
+                return func_name, convert_toml_params(instance)
+
+        raise KeyError(
+            f"Unknown command parameter '{name}' for mode {mode_code}."
+        )
+
+    def _print_prepare_diagnostics(self, desired_mode):
+        desired_mode = normalize_operation_mode(desired_mode)
+        print("prepare_operation diagnostics:")
+        print(f"  mode display: {self._read_mode_display()}")
+        print(
+            f"  motor pole pairs: "
+            f"{self._read_sdo_value('Motor data.Number of pole pairs')}"
+        )
+        print(
+            f"  SSI encoding type: "
+            f"{self._read_sdo_value('SSI absolute encoder.SSI encoding type')}"
+        )
+        print(
+            f"  SSI commutation offset: "
+            f"{self._read_sdo_value('SSI absolute encoder.SSI commutation offset value')}"
+        )
+        print(
+            f"  current controller gains: "
+            f"P={self._read_sdo_value('Current control parameter set.Current controller P gain')}, "
+            f"I={self._read_sdo_value('Current control parameter set.Current controller I gain')}"
+        )
+
+        if desired_mode in POSITION_RELEVANT_MODES:
+            print(
+                f"  position controller gains: "
+                f"P={self._read_sdo_value('Position control parameter set.Position controller P gain')}, "
+                f"I={self._read_sdo_value('Position control parameter set.Position controller I gain')}, "
+                f"D={self._read_sdo_value('Position control parameter set.Position controller D gain')}"
+            )
+
+        if desired_mode in VELOCITY_RELEVANT_MODES:
+            print(
+                f"  velocity controller gains: "
+                f"P={self._read_sdo_value('Velocity control parameter set.Velocity controller P gain')}, "
+                f"I={self._read_sdo_value('Velocity control parameter set.Velocity controller I gain')}, "
+                f"FFV={self._read_sdo_value('Velocity control parameter set.Velocity controller FF velocity gain')}, "
+                f"FFA={self._read_sdo_value('Velocity control parameter set.Velocity controller FF acceleration gain')}"
+            )
+
+    def clear_non_stop_commands(self):
+        """Remove stale non-stop commands after a stop-voltage request."""
+        cleared_types = []
+        retained_commands = []
+
+        while True:
+            try:
+                cmd = self.cmd_q.get_nowait()
+            except queue.Empty:
+                break
+
+            if cmd.type == CmdType.DISABLE_VOLTAGE:
+                retained_commands.append(cmd)
+            else:
+                cleared_types.append(cmd.type.name)
+
+        for cmd in retained_commands:
+            self.cmd_q.put(cmd)
+
+        if cleared_types:
+            print(f"cleared stale commands after stop request: {cleared_types}")
+
+    def set_parameter(self, mode_code, param_dict):
+        desired_mode = self._resolve_mode(mode_code)
+        normalized_mode_code = mode_to_abbreviation(desired_mode)
+
+        for name, value in param_dict.items():
+            self._update_mode_command_config(normalized_mode_code, name, value)
+
         print("finished setting commanding parameters, preparing operation")
-        print(f"selected operation mode in gui: {self.current_mode}")
-        if self.prepare_operation(self.current_mode):
-            #self.ready = True
+        print(f"selected operation mode in gui: {normalized_mode_code}")
+        if self.prepare_operation(desired_mode):
             print("ready to enable operation.")
         else:
             print("setting parameters failed")
 
     def update_parameter(self, param_name: str, value: int):
-        """Queue a parameter update to be written in monitor thread.
-            E.g., update_parameter('target_position', 5000)
+        """Apply a queued parameter update from the organiser thread.
 
         Args:
             param_name (str):   OD code of the parameter to be updated
             value (int):        new value for the parameter       
 
         """
-        update_command = Command(CmdType.UPDATE_PARAM, (param_name, value))
-        self.cmd_q.put(update_command)
+        mode_code = self._current_mode_code()
+        func_name, kwargs = self._update_mode_command_config(mode_code, param_name, value)
+        print(f"applying update parameter: {func_name} -> {kwargs}")
+        getattr(object_dictionary_functions, func_name)(self.node, **kwargs)
     
     def process_param_updates(self, timeout):
-        """Drain queue and write each param to controller OD.
+        """Deprecated queue path; updates are processed directly from cmd_q.
 
         Args:
             timeout (int): timeout limit for this operation
         """
-        start = time.time()
-        #TODO: handle high priority comm params via PDO
-        while not self.param_update_queue.empty():
-            if time.time() - start > timeout:
-                print(f"Timeout exceeded in process_param_updates")
-                break
-            param_name, value = self.param_update_queue.get()
-            print(f"updating {param_name, value}")
-            try:
-                getattr(object_dictionary_functions, param_name)(self.node, value)
-            except Exception as e:
-                print(f"Error updating {param_name}: {e}")
+        return
 
     # ============================================
     # Drive Organiser: telemetry
@@ -449,52 +532,48 @@ class DriveOrganiser:
         """
         
         while not self.shutdown.is_set():
-            if get_DriveState(self.node) == DriveState.FAULT_REACTION_ACTIVE:
-                var = sword(self.node)
-                print("Error occured. Drive will be resetet to SWITCH ON DISABLED")
-                print(f'statursword: {var}')
-                goto_state(self.node, desired_state = DriveState.SWITCH_ON_DISABLED)
-
-            # HIGH PRIORITY: handle request stop
-            if self.stop_volt_requested.is_set():
-                self.stop_volt()
-
-                self.stop_volt_requested.clear()
-
-                self.clear_non_stop_commands()  
-            
-            # get command
             try:
-                cmd = self.cmd_q.get()
-            except queue.Empty:
-                cmd = None
-            # execute command depending on type
-            if cmd is not None:
-                if cmd.type == CmdType.QUICK_STOP:
-                    self.quick_stop()
-                elif cmd.type == CmdType.ENABLE_OPERATION:
-                    self.enable_operation(5)
-                elif cmd.type == CmdType.UPDATE_PARAM:
-                    name, value = cmd.data
-                    self.update_parameter(name, value)
-                elif cmd.type == CmdType.DISABLE_VOLTAGE:
+                if get_DriveState(self.node) == DriveState.FAULT_REACTION_ACTIVE:
+                    var = sword(self.node)
+                    print("Error occurred. Drive will be reset to SWITCH ON DISABLED")
+                    print(f"statusword: {var}")
+                    goto_state(self.node, desired_state=DriveState.SWITCH_ON_DISABLED, timeout=5)
+
+                # HIGH PRIORITY: handle request stop
+                if self.stop_volt_requested.is_set():
                     self.stop_volt()
-                elif cmd.type == CmdType.SET_PARAM:
-                    mode_code, param_dict = cmd.data
-                    self.set_parameter(mode_code, param_dict)
-                continue
+                    self.stop_volt_requested.clear()
+                    self.clear_non_stop_commands()
+                    self.cancel_transition.clear()
 
-            self.process_param_updates(0.05)
+                try:
+                    cmd = self.cmd_q.get(timeout=0.01)
+                except queue.Empty:
+                    cmd = None
 
-            #get telemtry and log if necessary
-            if self.recording.is_set():
-                self.log_telemetry()
-            else:
-                self.read_telemetry()
-            
-            print("Organiser Loop iteration")
-            print(f"{self.cmd_q}")
-            time.sleep(0.01)
+                if cmd is not None:
+                    if cmd.type == CmdType.QUICK_STOP:
+                        self.quick_stop()
+                    elif cmd.type == CmdType.ENABLE_OPERATION:
+                        self.enable_operation(cmd.timeout or 5.0)
+                    elif cmd.type == CmdType.UPDATE_PARAM:
+                        name, value = cmd.data
+                        self.update_parameter(name, value)
+                    elif cmd.type == CmdType.DISABLE_VOLTAGE:
+                        self.stop_volt()
+                    elif cmd.type == CmdType.SET_PARAM:
+                        mode_code, param_dict = cmd.data
+                        self.set_parameter(mode_code, param_dict)
+
+                if self.recording.is_set():
+                    self.log_telemetry()
+                else:
+                    self.read_telemetry()
+
+            except Exception as exc:
+                print(f"organiser loop error: {exc}")
+                traceback.print_exc()
+                time.sleep(0.05)
 
     def set_mode(self, desired_mode):
         """Sets the modes of operation entry in OD to the desired mode
@@ -502,37 +581,42 @@ class DriveOrganiser:
         Args: 
             desired_mode(OperationMode) = desired mode of operation
         """
+        desired_mode = self._resolve_mode(desired_mode)
         self.node.rpdo[1]["Modes of operation"].phys = desired_mode
         self.node.rpdo[1].transmit()
-        time.sleep(5)
-        print(f"set mode via rpdo: mode of operation display: {self.node.tpdo[1]["Modes of operation display"].phys}")
-        if self.node.tpdo[1]["Modes of operation display"].phys == desired_mode: #self.node.sdo[0x6061].raw == desired_mode
-            print("testest set_mode")
-            return True
-        else:
-            print("testest set_mode false")
-            raise Exception #TODO: define new error
+
+        deadline = time.monotonic() + 2.0
+        while time.monotonic() < deadline:
+            mode_display = self._read_mode_display()
+            if mode_display == desired_mode:
+                print(f"set mode via rpdo: mode of operation display: {mode_display}")
+                return True
+            time.sleep(0.05)
+
+        mode_display = self._read_mode_display()
+        print(f"set mode via rpdo: mode of operation display: {mode_display}")
+        return False
 
     def prepare_operation(self, desired_mode) -> bool:
         """
-        1. Read params from TOML for this mode
+        1. Normalize selected mode
         2. Initialize object dictionary on controller
-        3. Verify everything written correctly
+        3. Set and verify mode of operation
+        4. Write mode command parameters
+        5. Print targeted readback diagnostics
         """
-        #goto_state(self.node, desired_state=DriveState.READY_TO_SWITCH_ON, timeout=5)
-        if self.set_mode(desired_mode=desired_mode):
-            init_obj_dict(self.node, desired_mode)
-            print("should return true")
-            mode_code = OperationModes.abreviation[self.current_mode]
+        desired_mode = self._resolve_mode(desired_mode)
+        mode_code = mode_to_abbreviation(desired_mode)
 
-            for func_name, instance in objdict_data["mode"][mode_code]["comm"].items():
-                func = getattr(object_dictionary_functions, func_name)
-                print(f"DEBUGGING PREPARE OPERATION{instance}")
-                kwargs = {var_name: (None if val == "None" else int(val)) for var_name, val in instance.items()}
-                func(self.node, **kwargs)
-            return True
-        else:
-            return False   #TODO show error message on GUI: Prepare operation failed
+        init_obj_dict(self.node, desired_mode)
+
+        if not self.set_mode(desired_mode):
+            print(f"prepare_operation failed: mode display did not switch to {mode_code}")
+            return False
+
+        apply_od_section(self.node, objdict_data["mode"][mode_code]["comm"], f"mode.{mode_code}.comm")
+        self._print_prepare_diagnostics(desired_mode)
+        return True
                 
     def enable_operation(self, timeout):
         """
