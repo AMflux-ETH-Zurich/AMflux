@@ -185,7 +185,7 @@ class DriveOrganiser:
         self.torque_enabled = False
 
         # Telemetry
-        self.recent_telemetry = []
+        self.recent_telemetry = [None, None, None, None]
 
         # Recording
         self.recording = Event()
@@ -443,11 +443,11 @@ class DriveOrganiser:
         self.recent_telemetry = [torque, velocity, position, status_word]
         return self.recent_telemetry
         
-    def get_status(self) -> dict:
+    def get_status(self) -> list:
         """
-        Return cached telemetry for GUI (non-blocking).
+        Return cached telemetry for GUI without triggering controller reads.
         """
-        return self.read_telemetry()
+        return list(self.recent_telemetry)
 
     def log_telemetry(self):
         """

@@ -403,62 +403,77 @@ class MotorTelemetry:
         self.update()
 
     def read_motor_data(self):
-        
-        if self.drive is not None:
-            telemetry = self.drive.get_status()
-        
+        if self.drive is None:
+            return None, None, None
+
+        telemetry = self.drive.get_status()
+        if telemetry is None or len(telemetry) < 3:
+            return None, None, None
+
         torque = telemetry[0]
         velocity = telemetry[1]
         position = telemetry[2]
-        
+
         return torque, velocity, position
+
+    def _format_readback(self, label, value, unit):
+        if value is None:
+            return f"{label}:\n-- {unit}"
+        return f"{label}:\n{value:.2f} {unit}"
     
     def update(self):
         """update the GUI with new motor data"""
+        try:
+            t = time.time() - self.start_time
+            torque, velocity, position = self.read_motor_data()
 
-        t = time.time() - self.start_time
-        torque, velocity, position = self.read_motor_data()
+            # Append NaN for unavailable values so plots stay alive without fake zeros.
+            torque_plot = float("nan") if torque is None else torque
+            velocity_plot = float("nan") if velocity is None else velocity
 
-        #append new data to the deques
-        self.time_data.append(t)
-        self.torque_data.append(torque)
-        self.velocity_data.append(velocity)
+            self.time_data.append(t)
+            self.torque_data.append(torque_plot)
+            self.velocity_data.append(velocity_plot)
 
-        #updating the plots with new data
-        self.torque_line.set_data(self.time_data, self.torque_data)
-        self.velocity_line.set_data(self.time_data, self.velocity_data)
+            #updating the plots with new data
+            self.torque_line.set_data(self.time_data, self.torque_data)
+            self.velocity_line.set_data(self.time_data, self.velocity_data)
 
-        # Update text values on plots
-        self.torque_text.set_text(f"Torque:\n{torque:.2f} Nm")
-        self.velocity_text.set_text(f"Velocity:\n{velocity:.2f} RPM")
+            # Update text values on plots
+            self.torque_text.set_text(self._format_readback("Torque", torque, "Nm"))
+            self.velocity_text.set_text(self._format_readback("Velocity", velocity, "RPM"))
 
-        #set x-axis to show moving window
-        if t < self.display_window:
-            self.ax_torque.set_xlim(0, self.display_window)
-            self.ax_velocity.set_xlim(0, self.display_window)
-        else:
-            self.ax_torque.set_xlim(t - self.display_window, t)
-            self.ax_velocity.set_xlim(t - self.display_window, t)
+            #set x-axis to show moving window
+            if t < self.display_window:
+                self.ax_torque.set_xlim(0, self.display_window)
+                self.ax_velocity.set_xlim(0, self.display_window)
+            else:
+                self.ax_torque.set_xlim(t - self.display_window, t)
+                self.ax_velocity.set_xlim(t - self.display_window, t)
 
-        #set y-axis limits
-        self.ax_torque.set_ylim(0, 20)
-        self.ax_velocity.set_ylim(0, 100)
+            #set y-axis limits
+            self.ax_torque.set_ylim(0, 20)
+            self.ax_velocity.set_ylim(0, 100)
 
-        #tells the program the figure needs to be redrawn, but do it when the GUI is idle, so it doesn't block the event loop
-        self.canvas_plot.draw_idle()
+            #tells the program the figure needs to be redrawn, but do it when the GUI is idle, so it doesn't block the event loop
+            self.canvas_plot.draw_idle()
 
-        # Calculate dot position
-        x = self.center[0] + self.radius * math.cos(position)
-        y = self.center[1] - self.radius * math.sin(position)
+            if position is not None:
+                x = self.center[0] + self.radius * math.cos(position)
+                y = self.center[1] - self.radius * math.sin(position)
+                self.canvas_widget.coords(self.dot, x - 5, y - 5, x + 5, y + 5)
+                self.canvas_widget.itemconfig(
+                    self.position_text,
+                    text=f"Position:\n{position:.2f} rad",
+                )
+            else:
+                self.canvas_widget.itemconfig(self.position_text, text="Position:\n-- rad")
 
-        #update the position of the motor dot
-        self.canvas_widget.coords(self.dot, x - 5, y - 5, x + 5, y + 5)
-        
-        # Update position text on canvas
-        self.canvas_widget.itemconfig(self.position_text, text=f"Position:\n{position:.2f} rad")
-        
-        # Continue updating if not on home page
-        self.root_window.after(200, self.update)
+        except Exception as exc:
+            print(f"MotorTelemetry update failed: {exc}")
+        finally:
+            if self.root_window.winfo_exists():
+                self.root_window.after(200, self.update)
         
 
 

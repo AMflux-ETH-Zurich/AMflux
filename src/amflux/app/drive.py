@@ -102,7 +102,7 @@ def format_drive_state(state: int) -> str:
 
 def get_DriveState(node) -> DriveState:
     """Determine the drive state from the DS402 statusword."""
-    statusword = sword(node)
+    #statusword = sword(node)
     print(f"get_DriveState {statusword}")
     for state, (bitmask, bits) in STATE_MASKS.items():
         if statusword & bitmask == bits:
