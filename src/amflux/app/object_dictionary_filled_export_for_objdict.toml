@@ -15,8 +15,8 @@
     tor_const       = 2000000
 
     [motor.electrical_system_init]
-    electrical_resistance = 2441
-    electrical_inductance = 14463
+    electrical_resistance = 2261
+    electrical_inductance = 14160
 
     [motor.velocity_observer_parameter_init]
     pos_corr_gain  = 400
@@ -78,13 +78,13 @@
 # =========================================================
 
     [encoder.ssi_abs_encoder_init]
-    data_rate                   = 1000
-    data_bits                   = 0x00000C00
-    encoding_type               = 0x0001
-    timeout_time                = "None"
-    power_up_time               = 0
-    commutation_offset_value    = "None"
-    position_bits               = 0x0000000C
+    data_rate                   = 2000
+    data_bits                   = 0x00000F00
+    encoding_type               = 0x0011
+    timeout_time                = 30
+    power_up_time               = 200
+    commutation_offset_value    = 2100
+    position_bits               = 0x0000000F
     #not in eds file: communication_additional_delay = -1
 
 
@@ -273,8 +273,8 @@
             tor_const = 2000000
 
             [mode.CSP.conf.current_control_parameter_init]
-            p_gain = 7347747
-            i_gain = 1235943
+            p_gain = 6804685
+            i_gain = 1083076
 
             [mode.CSP.conf.position_control_parameter_init]
             p_gain = 8594189
@@ -335,14 +335,14 @@
             tor_const = 2000000
 
             [mode.CSV.conf.current_control_parameter_init]
-            p_gain = 7347747
-            i_gain = 1235943
+            p_gain = 6804685
+            i_gain = 1083076
 
             [mode.CSV.conf.velocity_control_parameter_init]
-            p_gain = 1003576
-            i_gain = 63225306
-            ffv_gain = 15976
-            ffa_gain = 3982
+            p_gain = 833914
+            i_gain = 52536612
+            ffv_gain = 15840
+            ffa_gain = 3309
             f_cutoff = 602
 
             [mode.CSV.conf.quick_stop_deceleration]
@@ -396,8 +396,8 @@
          #Left out max gear speed
 
         [mode.CST.conf.current_control_parameter_init]
-        p_gain = 7347747
-        i_gain = 1235943
+        p_gain = 6804685
+        i_gain = 1083076
 
         [mode.CST.conf.quick_stop_deceleration]
         prof_dec = 100
