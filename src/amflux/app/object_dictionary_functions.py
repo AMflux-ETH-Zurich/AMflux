@@ -212,7 +212,7 @@ def resolve_dcf_path(dcf_path=None) -> Path:
         raise FileNotFoundError(f"DCF file not found: {path}")
 
     module_dir = Path(__file__).resolve().parent
-    env_path = os.getenv("AMFLUX_DCF_PATH")
+    env_path = os.getenv("/home/amfluxpi/AMflux/src/amflux/app/test.dcf ")
     candidates = []
     if env_path:
         candidates.append(Path(env_path).expanduser())
