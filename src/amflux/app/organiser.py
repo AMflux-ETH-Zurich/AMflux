@@ -333,6 +333,7 @@ class DriveOrganiser:
                 f"I={self._read_sdo_value('Velocity control parameter set.Velocity controller I gain')}, "
                 f"FFV={self._read_sdo_value('Velocity control parameter set.Velocity controller FF velocity gain')}, "
                 f"FFA={self._read_sdo_value('Velocity control parameter set.Velocity controller FF acceleration gain')}"
+                f"Target Velocity = {self._read_sdo_value("Target velocity")}"
             )
 
     def clear_non_stop_commands(self):
