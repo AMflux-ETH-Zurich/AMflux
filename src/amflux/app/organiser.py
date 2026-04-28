@@ -607,10 +607,10 @@ class DriveOrganiser:
         3. 
         """
         print("execute: disable voltage")
-        print("test a")
+        #print("test a")
         if not self.power_enabled:
             return
-        print("test b")
+        print("test b, disable voltage direct failed")
         goto_state(self.node, desired_state=DriveState.SWITCHED_ON, timeout=2)
         self.torque_enabled = False
         goto_state(self.node, desired_state=DriveState.READY_TO_SWITCH_ON, timeout=2)

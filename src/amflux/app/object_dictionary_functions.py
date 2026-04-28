@@ -160,7 +160,7 @@ def motor_init(node, motor_type: int=None, nominal_current: int=None, current_li
     #output current limit in mA
     node.sdo["Motor data.Output current limit"].raw = current_lim if current_lim is not None else 30000
     #number of pole pairs
-    node.sdo["Motor data.Number of pole pairs"].raw = pole_pairs if pole_pairs is not None else 1
+    node.sdo["Motor data.Number of pole pairs"].raw = pole_pairs if pole_pairs is not None else 10
     #thermal time constant of windings
     node.sdo["Motor data.Thermal time constant winding"].raw = therm_const if therm_const is not None else 40
     #torque constant of motor
