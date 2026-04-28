@@ -5631,7 +5631,7 @@ LowLimit=1
 HighLimit=50000
 PDOMapping=1
 ObjFlags=0
-ParameterValue=340
+ParameterValue=250
 
 [6080]
 ParameterName=Max motor speed
