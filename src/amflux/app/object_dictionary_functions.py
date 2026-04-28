@@ -63,8 +63,260 @@ Touch Probe (6.2.134-6.2.137, 6.2.140-6.2.142) not implemented.
 # Imports
 # ======================================================================
 
+import configparser
+from functools import lru_cache
+import os
+from pathlib import Path
+import re
 import time
 from utils import check_init
+
+
+_DCF_SECTION_RE = re.compile(r"^(?P<index>[0-9A-Fa-f]{4})(?:sub(?P<subindex>[0-9A-Fa-f]+))?$")
+
+_DCF_BASE_PREFIXES = frozenset(
+    {
+        "3000",
+        "3001",
+        "3002",
+        "3012",
+        "30A0",
+        "30A1",
+        "30A2",
+        "30A3",
+        "30A4",
+        "3141",
+        "3142",
+        "6007",
+        "605A",
+        "605B",
+        "605C",
+        "605E",
+        "6065",
+        "6066",
+        "6067",
+        "6068",
+        "6076",
+        "607D",
+        "607F",
+        "6080",
+        "6081",
+        "6083",
+        "6084",
+        "6085",
+        "6086",
+        "6098",
+        "6099",
+        "609A",
+        "60A8",
+        "60A9",
+        "60AA",
+        "60C2",
+        "60C5",
+        "60FE",
+        "6402",
+    }
+)
+
+_MODE_COMMAND_DCF_MAP = {
+    "PPM": {
+        "target_position": {"position": "607A"},
+        "profile_velocity": {"prof_velocity": "6081"},
+        "profile_acceleration": {"prof_acc": "6083"},
+        "profile_deceleration": {"prof_dec": "6084"},
+    },
+    "HMM": {
+        "homing_method_init": {"homing_method": "6098"},
+        "homing_speeds": {
+            "speed_sw_srch": "6099sub1",
+            "speed_zero_srch": "6099sub2",
+        },
+        "homing_acceleration": {"homing_acc": "609A"},
+        "home_offset_distance_init": {"home_offset_distance": "30B1"},
+        "home_position_init": {"homeposition": "30B0"},
+        "current_threshold_homing_init": {
+            "current_threshold_homing": "30B2",
+        },
+    },
+    "PVM": {
+        "target_velocity": {"vel": "60FF"},
+        "profile_acceleration": {"prof_acc": "6083"},
+        "profile_deceleration": {"prof_dec": "6084"},
+        "motion_profile_type": {"profile": "6086"},
+    },
+    "CSP": {
+        "target_position": {"position": "607A"},
+        "position_offset": {"pos_offset": "60B0"},
+        "torque_offset": {"tor_offset": "60B2"},
+    },
+    "CSV": {
+        "target_velocity": {"vel": "60FF"},
+        "velocity_offset": {"vel_offset": "60B1"},
+        "torque_offset": {"tor_offset": "60B2"},
+    },
+    "CST": {
+        "target_torque": {"torque": "6071"},
+        "torque_offset": {"tor_offset": "60B2"},
+    },
+}
+
+_MODE_COMMAND_DCF_KEYS = frozenset(
+    entry_key.upper()
+    for command_map in _MODE_COMMAND_DCF_MAP.values()
+    for kwargs_map in command_map.values()
+    for entry_key in kwargs_map.values()
+)
+
+
+def _parse_dcf_value(value):
+    if value is None:
+        return None
+
+    text = str(value).strip()
+    if text == "" or text.lower() == "none":
+        return None
+
+    try:
+        return int(text, 0)
+    except ValueError:
+        return text
+
+
+def _entry_sort_key(entry):
+    subindex = -1 if entry["subindex"] is None else entry["subindex"]
+    return (entry["index"], subindex)
+
+
+def _dcf_prefix(entry_key: str) -> str:
+    return entry_key.split("sub", 1)[0]
+
+
+def _mode_command_defaults(entries: dict) -> dict:
+    mode_config = {}
+    for mode_code, command_map in _MODE_COMMAND_DCF_MAP.items():
+        comm = {}
+        for func_name, kwargs_map in command_map.items():
+            comm[func_name] = {
+                arg_name: entries.get(entry_key.upper(), {}).get("value")
+                for arg_name, entry_key in kwargs_map.items()
+            }
+        mode_config[mode_code] = {"comm": comm}
+    return mode_config
+
+
+def resolve_dcf_path(dcf_path=None) -> Path:
+    if dcf_path is not None:
+        path = Path(dcf_path).expanduser()
+        if path.exists():
+            return path
+        raise FileNotFoundError(f"DCF file not found: {path}")
+
+    module_dir = Path(__file__).resolve().parent
+    env_path = os.getenv("AMFLUX_DCF_PATH")
+    candidates = []
+    if env_path:
+        candidates.append(Path(env_path).expanduser())
+
+    candidates.extend(
+        [
+            module_dir / "test.dcf",
+            module_dir / "export_for_objdict.dcf",
+            module_dir / "AMflux_Projects_Files.dcf",
+            Path("/Users/wendelinroth/Downloads/test.dcf 2"),
+            Path("/Users/wendelinroth/Downloads/test.dcf"),
+            Path("/Users/wendelinroth/Downloads/export_for_objdict.dcf"),
+            Path("/home/amfluxpi/AMflux/src/amflux/app/test.dcf"),
+            Path("/home/amfluxpi/AMflux/src/amflux/app/export_for_objdict.dcf"),
+        ]
+    )
+
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+
+    searched = "\n".join(str(candidate) for candidate in candidates)
+    raise FileNotFoundError(
+        "No DCF file found. Set AMFLUX_DCF_PATH or place a DCF at one of:\n"
+        f"{searched}"
+    )
+
+
+@lru_cache(maxsize=4)
+def load_dcf_entries(dcf_path=None):
+    config_path = resolve_dcf_path(dcf_path)
+    parser = configparser.ConfigParser(interpolation=None)
+    parser.optionxform = str
+    with config_path.open(encoding="utf-8") as dcf_file:
+        parser.read_file(dcf_file)
+
+    entries = {}
+    for section_name in parser.sections():
+        match = _DCF_SECTION_RE.fullmatch(section_name)
+        if match is None:
+            continue
+
+        subindex = match.group("subindex")
+        key = section_name.upper()
+        entries[key] = {
+            "key": key,
+            "index": int(match.group("index"), 16),
+            "subindex": int(subindex, 16) if subindex is not None else None,
+            "parameter_name": parser.get(section_name, "ParameterName", fallback=key),
+            "access_type": parser.get(section_name, "AccessType", fallback="").lower(),
+            "value": _parse_dcf_value(
+                parser.get(section_name, "ParameterValue", fallback=None)
+            ),
+        }
+
+    return config_path, entries
+
+
+@lru_cache(maxsize=4)
+def load_drive_configuration(dcf_path=None) -> dict:
+    config_path, entries = load_dcf_entries(dcf_path)
+    return {
+        "dcf_path": str(config_path),
+        "mode": _mode_command_defaults(entries),
+    }
+
+
+def apply_dcf_base_configuration(node, dcf_path=None) -> int:
+    config_path, entries = load_dcf_entries(dcf_path)
+    applied_entries = 0
+
+    for entry in sorted(entries.values(), key=_entry_sort_key):
+        access_type = entry["access_type"]
+        if "w" not in access_type:
+            continue
+
+        entry_key = entry["key"]
+        if _dcf_prefix(entry_key) not in _DCF_BASE_PREFIXES:
+            continue
+        if entry_key in _MODE_COMMAND_DCF_KEYS:
+            continue
+
+        value = entry["value"]
+        if value is None or isinstance(value, str):
+            continue
+
+        try:
+            if entry["subindex"] is None:
+                node.sdo[entry["index"]].phys = value
+            else:
+                node.sdo[entry["index"]][entry["subindex"]].phys = value
+            applied_entries += 1
+        except Exception as exc:
+            print(
+                f"DCF apply failed for {entry_key} "
+                f"({entry['parameter_name']}={value}): {exc}"
+            )
+            raise
+
+    print(
+        f"applied DCF base configuration from {config_path} "
+        f"({applied_entries} entries)"
+    )
+    return applied_entries
 
 
 # ======================================================================
@@ -662,6 +914,5 @@ def config_digital_inputs_init(node, input_1_config: int = None, input_2_config:
     node.sdo["Configuration of digital inputs.High-speed digital input 3 configuration"].phys = input_7_config if input_7_config is not None else 255
     #input 8 (HsDgIn4)
     node.sdo["Configuration of digital inputs.High-speed digital input 4 configuration"].phys = input_8_config if input_8_config is not None else 255
-
 
 

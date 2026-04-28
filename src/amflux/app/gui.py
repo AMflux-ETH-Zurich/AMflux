@@ -4,7 +4,6 @@
 
 import tkinter as tk
 from tkinter import ttk
-import toml
 from collections import deque
 import math
 import time
@@ -15,16 +14,14 @@ matplotlib.use("TkAgg")
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 #used to create figures and plots
 from matplotlib.figure import Figure
+import object_dictionary_functions
 from organiser import OperationModes
 
 # ======================================================================
 # Object dictionary and utility classes
 # ======================================================================
 
-# OLD: '/home/amfluxpi/AMflux/src/amflux/app/object_dictionary.toml'
-# OLD: '/Users/wendelinroth/Desktop/Code/GitHub/AMflux/src/amflux/app/object_dictionary.toml'
-with open("/home/amfluxpi/AMflux/src/amflux/app/object_dictionary_filled_export_for_objdict.toml") as data:
-    objdict_data = toml.load(data)
+objdict_data = object_dictionary_functions.load_drive_configuration()
 
 
 operation_modes = [
@@ -151,7 +148,10 @@ def build_param_editor(parent, param_dict):
                 row=row, column=0, padx=5, pady=2
             )
 
-            var = tk.IntVar(value=next(iter(value.values())))
+            current_value = next(iter(value.values()), None)
+            var = tk.StringVar(
+                value="" if current_value is None else str(current_value)
+            )
             entry = ttk.Entry(parent, textvariable=var)
             entry.grid(row=row, column=1, padx=5, pady=2)
 
@@ -221,7 +221,7 @@ def ModePageBuilder(app, parent, modeint, modename):
             print("Warning: Network not initialized, cannot update parameters")
             return
         for param_name, tk_var in variables.items():
-            value = tk_var.get()  
+            value = tk_var.get()
             app.drive.request_update_param(param_name, value, 5)
     
     def set_button_func():
@@ -231,8 +231,7 @@ def ModePageBuilder(app, parent, modeint, modename):
         #print("set1")
         param_dict = {}
         for name, tk_var in variables.items():
-            value = int(tk_var.get())
-            param_dict[name] = value  
+            param_dict[name] = tk_var.get()
             
         app.drive.request_set_param(desired_mode, param_dict)
         print("wait for confirmation of: prepare operation")

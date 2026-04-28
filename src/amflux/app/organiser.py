@@ -8,7 +8,7 @@ reading motor parameters.
 
 Key Components:
 - OperationModes: Enumeration of supported CANopen operation modes (PPM, HMM, PVM, CSP, etc.)
-- init_obj_dict(): Initializes object dictionary entries from TOML configuration
+- init_obj_dict(): Initializes object dictionary entries from DCF configuration
 - DriveOrganiser: Main class managing drive operation with background monitoring thread
 
 The DriveOrganiser uses a command queue for thread-safe communication between GUI and
@@ -26,7 +26,6 @@ from dataclasses import dataclass
 from enum import Enum, auto
 import queue
 import traceback
-import toml
 import object_dictionary_functions
 from errors import DesiredMode
 from threading import Thread, Event
@@ -41,11 +40,8 @@ from can_functions import sword
 # Object Dictionary
 # ======================================================================
 
-# load object dicitonary (OD)
-# OLD: '/home/amfluxpi/AMflux/src/amflux/app/object_dictionary.toml'
-# OLD: '/Users/wendelinroth/Desktop/Code/GitHub/AMflux/src/amflux/app/object_dictionary.toml'
-with open("/home/amfluxpi/AMflux/src/amflux/app/object_dictionary_filled_export_for_objdict.toml") as data:
-    objdict_data = toml.load(data)
+# Shared DCF-backed drive configuration.
+objdict_data = object_dictionary_functions.load_drive_configuration()
 
 
 class OperationModes:
@@ -74,7 +70,7 @@ VELOCITY_RELEVANT_MODES = {
     OperationModes.CyclicSynchronousVelocity,
 }
 def mode_to_abbreviation(mode) -> str:
-    """Return the TOML mode abbreviation for a canonical operation mode."""
+    """Return the command-section abbreviation for a canonical operation mode."""
     try:
         return OperationModes.abreviation[mode]
     except KeyError as exc:
@@ -84,25 +80,35 @@ def mode_to_abbreviation(mode) -> str:
         ) from exc
 
 
-def convert_toml_value(value):
-    """Convert a TOML value into the runtime representation."""
-    return None if value == "None" else value
+def convert_config_value(value):
+    """Convert config values into runtime values used by OD helper functions."""
+    if value is None:
+        return None
+    if isinstance(value, str):
+        stripped = value.strip()
+        if stripped == "" or stripped.lower() == "none":
+            return None
+        try:
+            return int(stripped, 0)
+        except ValueError:
+            return stripped
+    return value
 
 
-def convert_toml_params(params: dict) -> dict:
-    """Convert TOML parameters, converting "None" strings to Python None. OD variables can be left as "None" to envoke default values"
+def convert_config_params(params: dict) -> dict:
+    """Convert config parameters, allowing None to trigger OD helper defaults.
 
     Args:
         params (dict): EPOS4 network node
     """
-    return {k: convert_toml_value(v) for k, v in params.items()}
+    return {k: convert_config_value(v) for k, v in params.items()}
 
 
 def apply_od_section(node, section: dict, section_name: str) -> None:
-    """Apply one TOML object-dictionary section to the controller."""
+    """Apply one DCF-derived object-dictionary section to the controller."""
     for func_name, params in section.items():
         func = getattr(object_dictionary_functions, func_name)
-        kwargs = convert_toml_params(params)
+        kwargs = convert_config_params(params)
         try:
             func(node, **kwargs)
             print(f"applied od section {section_name}")
@@ -115,7 +121,7 @@ def apply_od_section(node, section: dict, section_name: str) -> None:
 
 
 def init_obj_dict(node, desired_mode):
-    """Initializes all the object dictionary instances with helper functions. Values are read from object_dictionary.toml file.
+    """Initialize controller OD entries from the shared DCF snapshot.
 
     Args:
         node (RemoteNode): EPOS4 node
@@ -125,18 +131,13 @@ def init_obj_dict(node, desired_mode):
         DesiredMode: raised if no desired mode is given
     """    
     mode_code = mode_to_abbreviation(desired_mode)
-
-    apply_od_section(node, objdict_data["motor"], "motor")
-    apply_od_section(node, objdict_data["encoder"], "encoder")
-    apply_od_section(node, objdict_data["safety"], "safety")
-
-    mode_data = objdict_data.get("mode", {}).get(mode_code)
-    if mode_data is None or "conf" not in mode_data:
-        raise DesiredMode(
-            f"No TOML configuration found for mode {mode_code} ({desired_mode})."
-        )
-
-    apply_od_section(node, mode_data["conf"], f"mode.{mode_code}.conf")
+    print(
+        f"initializing controller configuration from DCF for mode {mode_code}: "
+        f"{objdict_data['dcf_path']}"
+    )
+    object_dictionary_functions.apply_dcf_base_configuration(
+        node, objdict_data["dcf_path"]
+    )
 
 
 # ======================================================================
@@ -217,9 +218,9 @@ class DriveOrganiser:
         self.cmd_q.put(Command(CmdType.UPDATE_PARAM, data=(name, value)))
 
     def request_set_param(self, desired_mode, param_dict):
-        mode_to_abbreviation(desired_mode)
+        mode_code = mode_to_abbreviation(desired_mode)
         self.current_mode = desired_mode
-        print("requested: set params and preparing operation")
+        print(f"requested: set params and preparing operation for mode {mode_code}")
         self.cmd_q.put(Command(CmdType.SET_PARAM, data=(desired_mode, param_dict)))
 
     def start_recording(self):
@@ -261,7 +262,7 @@ class DriveOrganiser:
     def _update_mode_command_config(self, mode_code: str, name: str, value):
         """Update one in-memory mode command entry and return its function kwargs."""
         comm_data = objdict_data["mode"][mode_code]["comm"]
-        normalized_value = convert_toml_value(value)
+        normalized_value = convert_config_value(value)
 
         if name in comm_data:
             instance = comm_data[name]
@@ -269,7 +270,7 @@ class DriveOrganiser:
                 updated = False
                 for arg_name, arg_value in normalized_value.items():
                     if arg_name in instance:
-                        instance[arg_name] = convert_toml_value(arg_value)
+                        instance[arg_name] = convert_config_value(arg_value)
                         updated = True
                 if not updated:
                     raise KeyError(
@@ -278,20 +279,22 @@ class DriveOrganiser:
             else:
                 arg_names = list(instance.keys())
                 if not arg_names:
-                    raise KeyError(f"Command '{name}' has no TOML parameters to update.")
+                    raise KeyError(
+                        f"Command '{name}' has no config parameters to update."
+                    )
                 target_arg = arg_names[0]
                 instance[target_arg] = normalized_value
                 if len(arg_names) > 1:
                     print(
                         f"update command '{name}': applied scalar value to "
-                        f"'{target_arg}', remaining args kept from TOML."
+                        f"'{target_arg}', remaining args kept from DCF defaults."
                     )
-            return name, convert_toml_params(instance)
+            return name, convert_config_params(instance)
 
         for func_name, instance in comm_data.items():
             if name in instance:
                 instance[name] = normalized_value
-                return func_name, convert_toml_params(instance)
+                return func_name, convert_config_params(instance)
 
         raise KeyError(
             f"Unknown command parameter '{name}' for mode {mode_code}."
@@ -325,16 +328,21 @@ class DriveOrganiser:
                 f"I={self._read_sdo_value('Position control parameter set.Position controller I gain')}, "
                 f"D={self._read_sdo_value('Position control parameter set.Position controller D gain')}"
             )
+            print(f"  target position: {self._read_sdo_value('Target position')}")
 
         if desired_mode in VELOCITY_RELEVANT_MODES:
+            target_velocity = self._read_sdo_value("Target velocity")
             print(
                 f"  velocity controller gains: "
                 f"P={self._read_sdo_value('Velocity control parameter set.Velocity controller P gain')}, "
                 f"I={self._read_sdo_value('Velocity control parameter set.Velocity controller I gain')}, "
                 f"FFV={self._read_sdo_value('Velocity control parameter set.Velocity controller FF velocity gain')}, "
                 f"FFA={self._read_sdo_value('Velocity control parameter set.Velocity controller FF acceleration gain')}"
-                f"Target Velocity = {self._read_sdo_value("Target velocity")}"
             )
+            print(f"  target velocity: {target_velocity}")
+
+        if desired_mode == OperationModes.CyclicSynchronousTorque:
+            print(f"  target torque: {self._read_sdo_value('Target torque')}")
 
     def clear_non_stop_commands(self):
         """Remove stale non-stop commands after a stop-voltage request."""
