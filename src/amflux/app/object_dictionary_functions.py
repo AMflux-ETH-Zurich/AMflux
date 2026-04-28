@@ -619,7 +619,7 @@ def target_velocity(node, vel: int = None):
     #6.2.149
     check_init(locals())
     #in PVM the object indicates the configured target velocity and is used as input for the trajectory generation, value is given in rpm
-    node.sdo["Target velocity"].raw = vel if vel is not None else 0
+    node.sdo["Target velocity"].raw = vel if vel is not None else 50
 
 
 def motor_type(node, motor_type: int = None):

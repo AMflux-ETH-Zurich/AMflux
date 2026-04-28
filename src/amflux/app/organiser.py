@@ -105,6 +105,7 @@ def apply_od_section(node, section: dict, section_name: str) -> None:
         kwargs = convert_toml_params(params)
         try:
             func(node, **kwargs)
+            print(f"applied od section {section_name}")
         except Exception as exc:
             print(
                 f"OD apply failed for {section_name}.{func_name} "
