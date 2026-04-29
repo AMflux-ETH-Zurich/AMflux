@@ -30,12 +30,12 @@ from errors import SanityCheck
 # Network control functions
 # ======================================================================
 
-def network_setup(node_id: int, node_eds: str, node_channel: str, net):
+def network_setup(node_id: int, node_od: str, node_channel: str, net):
     """Sets up CANopen network and adds node.
 
     Args:
         node_id (int): CANopen Node ID of the device.
-        node_eds (str): Path to the EDS file for the device.
+        node_od (str): Path to the EDS/DCF file for the device.
         node_channel (str): CAN interface channel (e.g., 'can0' for Linux SocketCAN).
 
     Returns:
@@ -47,8 +47,8 @@ def network_setup(node_id: int, node_eds: str, node_channel: str, net):
         # Connect to a CAN interface (e.g., 'can0' for Linux SocketCAN)
         # Write 'virtual' when debugging on mac 
         net.connect(channel=node_channel, bustype='socketcan')
-    # Add a node to the network with a specific EDS file
-    node = net.add_node(node_id, node_eds) 
+    # Add a node to the network with a specific EDS/DCF file.
+    node = net.add_node(node_id, str(node_od)) 
     # Return network and the node 
     return net, node
 
@@ -126,11 +126,8 @@ def cword_read(node) -> int:
     :rtype: int
     """
     
-    # read controlword via TPDO
-    return node.tpdo[1]["Controlword"].raw
-   
-    # read controlword via SDO
-    #return node.sdo[0x6040].raw
+    # Controlword is not mapped in the DCF TPDO layout.
+    return node.sdo[0x6040].raw
 
 
 def sword(node) -> int:

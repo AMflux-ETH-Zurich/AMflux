@@ -26,7 +26,6 @@ import can_functions
 import object_dictionary_functions
 import organiser
 import gui
-from pathlib import Path
 
 
 # ======================================================================
@@ -52,7 +51,7 @@ def main():
     # Setup our CANopen network
     network, mc1 = can_functions.network_setup(
         1, 
-        '/home/amfluxpi/AMflux/src/amflux/app/Epos4_70_15.eds', #str(Path(__file__).parent / 'Epos4_70_15.eds')
+        object_dictionary_functions.resolve_dcf_path(),
         'can0', 
         net
     )
@@ -60,8 +59,10 @@ def main():
     # Sanity check for Network communication
     can_functions.sanity_check(network)
 
-    # Initialize PDO's
-    object_dictionary_functions.pdo_mapping_init(mc1, network)
+    # Apply the EPOS Studio DCF, including PDO mapping and ParameterValue entries.
+    mc1.nmt.state = 'PRE-OPERATIONAL'
+    mc1.load_configuration()
+    mc1.nmt.state = 'OPERATIONAL'
 
     # Initialize Drive Organiser
     EPOS4 = organiser.DriveOrganiser(mc1, network=network)
