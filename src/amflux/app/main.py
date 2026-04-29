@@ -61,6 +61,7 @@ def main():
 
     # Apply the EPOS Studio DCF, including PDO mapping and ParameterValue entries.
     mc1.nmt.state = 'PRE-OPERATIONAL'
+    object_dictionary_functions.disable_command_parameter_values(mc1)
     mc1.load_configuration()
     mc1.nmt.state = 'OPERATIONAL'
 

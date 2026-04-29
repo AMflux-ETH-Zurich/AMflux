@@ -52,6 +52,16 @@ _MODE_COMMAND_DCF_MAP = {
     },
 }
 
+_DCF_LOAD_SKIP_INDEXES = {
+    0x1010,  # Store parameters
+    0x1011,  # Restore default parameters
+    0x1F50,  # Program data
+    0x1F51,  # Program control
+    0x1F56,  # Program software identification
+    0x1F57,  # Flash status identification
+    0x6040,  # Controlword
+}
+
 
 def resolve_dcf_path(dcf_path=None) -> Path:
     if dcf_path is not None:
@@ -97,6 +107,31 @@ def _od_variable(od, index, subindex=0):
     if subindex == 0 and hasattr(obj, "value"):
         return obj
     return obj[subindex]
+
+
+def _iter_od_variables(obj):
+    if hasattr(obj, "value"):
+        yield obj
+    else:
+        for subobj in obj.values():
+            if hasattr(subobj, "value"):
+                yield subobj
+
+
+def disable_command_parameter_values(node) -> int:
+    """Prevent load_configuration() from writing command-like DCF entries."""
+    disabled_count = 0
+    for index in _DCF_LOAD_SKIP_INDEXES:
+        if index not in node.object_dictionary:
+            continue
+        for variable in _iter_od_variables(node.object_dictionary[index]):
+            if variable.value is not None:
+                variable.value = None
+                disabled_count += 1
+
+    if disabled_count:
+        print(f"disabled {disabled_count} command ParameterValue entries before DCF load")
+    return disabled_count
 
 
 def _od_command_entry(od, index, subindex=0):
