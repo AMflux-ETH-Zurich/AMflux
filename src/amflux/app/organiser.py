@@ -282,6 +282,24 @@ class DriveOrganiser:
 
         self._write_command_entry_sdo(entry, value)
 
+    def _write_mapped_rpdo_command_entries(self, mode_code: str):
+        written_count = 0
+        for entry in self._iter_mode_command_entries(mode_code):
+            value = parse_command_value(entry.get("value"))
+            if value is None:
+                continue
+
+            rpdo_number, rpdo_map, variable = self._find_mapped_rpdo(
+                entry["index"],
+                entry["subindex"],
+            )
+            if rpdo_map is None:
+                continue
+
+            self._write_command_entry_rpdo(rpdo_number, rpdo_map, variable, value)
+            written_count += 1
+        return written_count
+
     def _iter_mode_command_entries(self, mode_code: str):
         for command_entries in objdict_data["mode"][mode_code]["comm"].values():
             for entry in command_entries.values():
@@ -637,6 +655,9 @@ class DriveOrganiser:
         print(f'var: {var}')
         self.power_enabled = True
         self.torque_enabled = True
+        mode_code = mode_to_abbreviation(self.current_mode)
+        written_count = self._write_mapped_rpdo_command_entries(mode_code)
+        print(f"resent {written_count} mapped RPDO command value(s) after enable")
        
     def stop_volt(self):
         """
