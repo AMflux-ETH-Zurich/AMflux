@@ -5,6 +5,7 @@
 import tkinter as tk
 from tkinter import ttk
 from collections import deque
+import queue
 import math
 import time
 import matplotlib
@@ -114,13 +115,23 @@ def HomePage(app, parent):
             return
 
         page_state, desired_mode = selection
-        app.set_state(page_state)
         app.drive.current_mode = desired_mode
+        button.config(state=tk.DISABLED)
+
+        def prepare_finished(prepared):
+            def update_gui(prepared):
+                button.config(state=tk.NORMAL)
+                if prepared:
+                    app.set_state(page_state)
+                else:
+                    print("Prepare operation failed. Staying on mode selection.")
+            app.post_gui_event(update_gui, prepared)
 
         #   app.drive.stop_volt()
         print(app.drive.node.tpdo[1]["Statusword"].phys) 
         print(f"current state of the drive {app.drive.drivestate} (printed form guy.py)")
         app.drive.start_organiser()
+        app.drive.request_prepare_operation(desired_mode, callback=prepare_finished)
         
 
     button = ttk.Button(
@@ -220,29 +231,17 @@ def ModePageBuilder(app, parent, modeint, modename):
 
     variables = build_param_editor(editing, objdict_data["mode"][mode_code]["comm"])
 
-    def update_params():
+    def apply_button_func():
         if app.drive is None:
             print("Warning: Network not initialized, cannot update parameters")
             return
         for param_name, tk_var in variables.items():
             value = tk_var.get()
             app.drive.request_update_param(param_name, value, 5)
-    
-    def set_button_func():
-        if app.drive is None:
-            print("Warning: Network not initialized, cannot update parameters")
-            return
-        #print("set1")
-        param_dict = {}
-        for name, tk_var in variables.items():
-            param_dict[name] = tk_var.get()
-            
-        app.drive.request_set_param(desired_mode, param_dict)
-        print("wait for confirmation of: prepare operation")
-        set_button.config(text="UPDATE", command=lambda: update_params())
 
-    set_button = ttk.Button(editing, text="SET", command=lambda: set_button_func())
-    set_button.grid(column=1)
+    
+    apply_button = ttk.Button(editing, text="APPLY", command=lambda: apply_button_func())
+    apply_button.grid(column=1)
     
 
     #Command Buttons
@@ -284,11 +283,11 @@ def ModePageBuilder(app, parent, modeint, modename):
     back_button.grid(row=0, column=1, padx=50)
     
     def stop_record_data():
-        set_button.config(text="RECORD", background = "white", command=lambda: record_data())
+        record_button.config(text="RECORD", background = "white", command=lambda: record_data())
         app.drive.stop_recording()
 
     def record_data():
-        set_button.config(text="RECORDING", background = "red", command=lambda: stop_record_data())
+        record_button.config(text="RECORDING", background = "red", command=lambda: stop_record_data())
         app.drive.start_recording()
 
     record_button = ttk.Button(
@@ -494,6 +493,7 @@ class App(tk.Tk):
 
         #Drive
         self.drive = drive
+        self.gui_events = queue.Queue()
         # current state
         self.state = PageState.Home
 
@@ -502,6 +502,19 @@ class App(tk.Tk):
         self.container.pack(fill="both", expand=True)
 
         self.render_page()
+        self._poll_gui_events()
+
+    def post_gui_event(self, callback, *args):
+        self.gui_events.put((callback, args))
+
+    def _poll_gui_events(self):
+        while True:
+            try:
+                callback, args = self.gui_events.get_nowait()
+            except queue.Empty:
+                break
+            callback(*args)
+        self.after(50, self._poll_gui_events)
 
     def set_state(self, new_state: str):
         self.state = new_state

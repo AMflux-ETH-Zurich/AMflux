@@ -125,7 +125,7 @@ class CmdType(Enum):
     QUICK_STOP = auto()
     DISABLE_VOLTAGE = auto()
     UPDATE_PARAM = auto()
-    SET_PARAM = auto()
+    PREPARE_OPERATION = auto()
 
 @dataclass
 class Command:
@@ -193,11 +193,9 @@ class DriveOrganiser:
         print("requested: update params")
         self.cmd_q.put(Command(CmdType.UPDATE_PARAM, data=(name, value)))
 
-    def request_set_param(self, desired_mode, param_dict):
-        mode_code = mode_to_abbreviation(desired_mode)
-        self.current_mode = desired_mode
-        print(f"requested: set params and preparing operation for mode {mode_code}")
-        self.cmd_q.put(Command(CmdType.SET_PARAM, data=(desired_mode, param_dict)))
+    def request_prepare_operation(self, desired_mode, callback=None):
+        print("requested: prepare operation")
+        self.cmd_q.put(Command(CmdType.PREPARE_OPERATION, data=(desired_mode, callback)))
 
     def start_recording(self):
         print("execute: start recording")
@@ -239,11 +237,16 @@ class DriveOrganiser:
         except Exception as exc:
             return f"<read failed: {exc}>"
 
-    def _write_command_entry(self, entry: dict):
-        value = parse_command_value(entry.get("value"))
-        if value is None:
-            return
+    def _find_mapped_rpdo(self, index: int, subindex: int):
+        for rpdo_number, rpdo_map in self.node.rpdo.map.items():
+            if not rpdo_map.enabled:
+                continue
+            for variable in rpdo_map:
+                if variable.index == index and variable.subindex == subindex:
+                    return rpdo_number, rpdo_map, variable
+        return None, None, None
 
+    def _write_command_entry_sdo(self, entry: dict, value):
         index = entry["index"]
         subindex = entry["subindex"]
         if subindex == 0:
@@ -251,6 +254,33 @@ class DriveOrganiser:
         else:
             self.node.sdo[index][subindex].raw = value
         print(f"wrote SDO 0x{index:04X}:{subindex:02X} ({entry['name']}) = {value}")
+
+    def _write_command_entry_rpdo(self, rpdo_number: int, rpdo_map, variable, value):
+        try:
+            rpdo_map["Controlword"].raw = self.node.sdo["Controlword"].raw
+        except KeyError:
+            pass
+
+        variable.raw = value
+        rpdo_map.transmit()
+        print(
+            f"wrote RPDO{rpdo_number} 0x{variable.index:04X}:{variable.subindex:02X} "
+            f"({variable.name}) = {value}"
+        )
+
+    def _write_command_entry(self, entry: dict):
+        value = parse_command_value(entry.get("value"))
+        if value is None:
+            return
+
+        index = entry["index"]
+        subindex = entry["subindex"]
+        rpdo_number, rpdo_map, variable = self._find_mapped_rpdo(index, subindex)
+        if rpdo_map is not None:
+            self._write_command_entry_rpdo(rpdo_number, rpdo_map, variable, value)
+            return
+
+        self._write_command_entry_sdo(entry, value)
 
     def _iter_mode_command_entries(self, mode_code: str):
         for command_entries in objdict_data["mode"][mode_code]["comm"].values():
@@ -363,20 +393,6 @@ class DriveOrganiser:
 
         if cleared_types:
             print(f"cleared stale commands after stop request: {cleared_types}")
-
-    def set_parameter(self, desired_mode, param_dict):
-        mode_code = mode_to_abbreviation(desired_mode)
-        self.current_mode = desired_mode
-
-        for name, value in param_dict.items():
-            self._update_mode_command_config(mode_code, name, value)
-
-        print("finished setting commanding parameters, preparing operation")
-        print(f"selected operation mode in gui: {mode_code}")
-        if self.prepare_operation(desired_mode):
-            print("ready to enable operation.")
-        else:
-            print("setting parameters failed")
 
     def update_parameter(self, param_name: str, value: int):
         """Apply a queued parameter update from the organiser thread.
@@ -534,9 +550,20 @@ class DriveOrganiser:
                         self.update_parameter(name, value)
                     elif cmd.type == CmdType.DISABLE_VOLTAGE:
                         self.stop_volt()
-                    elif cmd.type == CmdType.SET_PARAM:
-                        desired_mode, param_dict = cmd.data
-                        self.set_parameter(desired_mode, param_dict)
+                    elif cmd.type == CmdType.PREPARE_OPERATION:
+                        desired_mode, callback = cmd.data
+                        try:
+                            prepared = self.prepare_operation(desired_mode)
+                        except Exception as exc:
+                            prepared = False
+                            print(f"prepare operation failed: {exc}")
+                            traceback.print_exc()
+                        if prepared:
+                            print("ready to enable operation.")
+                        else:
+                            print("setting parameters failed")
+                        if callback is not None:
+                            callback(prepared)
 
                 if self.recording.is_set():
                     self.log_telemetry()
