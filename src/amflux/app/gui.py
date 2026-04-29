@@ -148,7 +148,11 @@ def build_param_editor(parent, param_dict):
                 row=row, column=0, padx=5, pady=2
             )
 
-            current_value = next(iter(value.values()), None)
+            first_entry = next(iter(value.values()), {})
+            if isinstance(first_entry, dict) and "value" in first_entry:
+                current_value = first_entry["value"]
+            else:
+                current_value = first_entry
             var = tk.StringVar(
                 value="" if current_value is None else str(current_value)
             )

@@ -69,6 +69,13 @@ VELOCITY_RELEVANT_MODES = {
     OperationModes.ProfileVelocity,
     OperationModes.CyclicSynchronousVelocity,
 }
+
+DCF_TPDO_STATUS = 1
+DCF_TPDO_MODE_DISPLAY = 2
+DCF_TPDO_POSITION = 3
+DCF_TPDO_VELOCITY = 4
+
+
 def mode_to_abbreviation(mode) -> str:
     """Return the command-section abbreviation for a canonical operation mode."""
     try:
@@ -80,8 +87,8 @@ def mode_to_abbreviation(mode) -> str:
         ) from exc
 
 
-def convert_config_value(value):
-    """Convert config values into runtime values used by OD helper functions."""
+def parse_command_value(value):
+    """Convert GUI/config values into raw OD values for SDO writes."""
     if value is None:
         return None
     if isinstance(value, str):
@@ -95,33 +102,8 @@ def convert_config_value(value):
     return value
 
 
-def convert_config_params(params: dict) -> dict:
-    """Convert config parameters, allowing None to trigger OD helper defaults.
-
-    Args:
-        params (dict): EPOS4 network node
-    """
-    return {k: convert_config_value(v) for k, v in params.items()}
-
-
-def apply_od_section(node, section: dict, section_name: str) -> None:
-    """Apply one DCF-derived object-dictionary section to the controller."""
-    for func_name, params in section.items():
-        func = getattr(object_dictionary_functions, func_name)
-        kwargs = convert_config_params(params)
-        try:
-            func(node, **kwargs)
-            print(f"applied od section {section_name}")
-        except Exception as exc:
-            print(
-                f"OD apply failed for {section_name}.{func_name} "
-                f"with params {kwargs}: {exc}"
-            )
-            raise
-
-
 def init_obj_dict(node, desired_mode):
-    """Initialize controller OD entries from the shared DCF snapshot.
+    """DCF configuration is loaded once at startup via node.load_configuration().
 
     Args:
         node (RemoteNode): EPOS4 node
@@ -131,13 +113,7 @@ def init_obj_dict(node, desired_mode):
         DesiredMode: raised if no desired mode is given
     """    
     mode_code = mode_to_abbreviation(desired_mode)
-    print(
-        f"initializing controller configuration from DCF for mode {mode_code}: "
-        f"{objdict_data['dcf_path']}"
-    )
-    object_dictionary_functions.apply_dcf_base_configuration(
-        node, objdict_data["dcf_path"]
-    )
+    print(f"using startup-loaded DCF configuration for mode {mode_code}")
 
 
 # ======================================================================
@@ -252,17 +228,37 @@ class DriveOrganiser:
 
     def _read_mode_display(self):
         try:
-            return self.node.tpdo[1]["Modes of operation display"].phys
+            return self.node.tpdo[DCF_TPDO_MODE_DISPLAY][
+                "Modes of operation display"
+            ].phys
         except Exception:
             try:
                 return self.node.sdo["Modes of operation display"].raw
             except Exception as exc:
                 return f"<read failed: {exc}>"
 
+    def _write_command_entry(self, entry: dict):
+        value = parse_command_value(entry.get("value"))
+        if value is None:
+            return
+
+        index = entry["index"]
+        subindex = entry["subindex"]
+        if subindex == 0:
+            self.node.sdo[index].raw = value
+        else:
+            self.node.sdo[index][subindex].raw = value
+        print(f"wrote SDO 0x{index:04X}:{subindex:02X} ({entry['name']}) = {value}")
+
+    def _iter_mode_command_entries(self, mode_code: str):
+        for command_entries in objdict_data["mode"][mode_code]["comm"].values():
+            for entry in command_entries.values():
+                yield entry
+
     def _update_mode_command_config(self, mode_code: str, name: str, value):
-        """Update one in-memory mode command entry and return its function kwargs."""
+        """Update one in-memory command value and return OD entries to write."""
         comm_data = objdict_data["mode"][mode_code]["comm"]
-        normalized_value = convert_config_value(value)
+        normalized_value = parse_command_value(value)
 
         if name in comm_data:
             instance = comm_data[name]
@@ -270,7 +266,7 @@ class DriveOrganiser:
                 updated = False
                 for arg_name, arg_value in normalized_value.items():
                     if arg_name in instance:
-                        instance[arg_name] = convert_config_value(arg_value)
+                        instance[arg_name]["value"] = parse_command_value(arg_value)
                         updated = True
                 if not updated:
                     raise KeyError(
@@ -283,18 +279,18 @@ class DriveOrganiser:
                         f"Command '{name}' has no config parameters to update."
                     )
                 target_arg = arg_names[0]
-                instance[target_arg] = normalized_value
+                instance[target_arg]["value"] = normalized_value
                 if len(arg_names) > 1:
                     print(
                         f"update command '{name}': applied scalar value to "
                         f"'{target_arg}', remaining args kept from DCF defaults."
                     )
-            return name, convert_config_params(instance)
+            return list(instance.values())
 
         for func_name, instance in comm_data.items():
             if name in instance:
-                instance[name] = normalized_value
-                return func_name, convert_config_params(instance)
+                instance[name]["value"] = normalized_value
+                return [instance[name]]
 
         raise KeyError(
             f"Unknown command parameter '{name}' for mode {mode_code}."
@@ -389,9 +385,9 @@ class DriveOrganiser:
 
         """
         mode_code = mode_to_abbreviation(self.current_mode)
-        func_name, kwargs = self._update_mode_command_config(mode_code, param_name, value)
-        print(f"applying update parameter: {func_name} -> {kwargs}")
-        getattr(object_dictionary_functions, func_name)(self.node, **kwargs)
+        entries = self._update_mode_command_config(mode_code, param_name, value)
+        for entry in entries:
+            self._write_command_entry(entry)
     
     def process_param_updates(self, timeout):
         """Deprecated queue path; updates are processed directly from cmd_q.
@@ -411,19 +407,20 @@ class DriveOrganiser:
         Falls back to SDO if TPDO access fails.
         """
         try:
-            # TPDO1: Statusword (0x6041)
-            # TPDO2: Position (0x6064), Velocity (0x606C)
-            # TPDO3: Current (0x30D1.0x01)
+            # DCF TPDO1: Statusword (0x6041)
+            # DCF TPDO3: Position actual value (0x6064)
+            # DCF TPDO4: Velocity actual value (0x606C)
+            # Current/torque is not mapped in the current DCF.
             # Non-blocking: read cached TPDO values (assume they've arrived during operation)
             
-            status_word = self.node.tpdo[1]["Statusword"].raw
+            status_word = self.node.tpdo[DCF_TPDO_STATUS]["Statusword"].raw
             
-            position_raw = self.node.tpdo[2]["Position actual value"].phys
+            position_raw = self.node.tpdo[DCF_TPDO_POSITION]["Position actual value"].phys
             position = (position_raw / 4096) * 2 * np.pi
             
-            velocity = self.node.tpdo[2]["Velocity actual value"].phys
+            velocity = self.node.tpdo[DCF_TPDO_VELOCITY]["Velocity actual value"].phys
 
-            torque = self.node.tpdo[3]["Current actual values.Current actual value"].phys
+            torque = self.node.sdo[0x6077].raw
                     
         except Exception as e:
             # Fallback to SDO reads (slower but safe)
@@ -557,19 +554,18 @@ class DriveOrganiser:
         """
         mode_to_abbreviation(desired_mode)
         self.current_mode = desired_mode
-        self.node.rpdo[1]["Modes of operation"].phys = desired_mode
-        self.node.rpdo[1].transmit()
+        self.node.sdo["Modes of operation"].raw = desired_mode
 
         deadline = time.monotonic() + 2.0
         while time.monotonic() < deadline:
             mode_display = self._read_mode_display()
             if mode_display == desired_mode:
-                print(f"set mode via rpdo: mode of operation display: {mode_display}")
+                print(f"set mode via sdo: mode of operation display: {mode_display}")
                 return True
             time.sleep(0.05)
 
         mode_display = self._read_mode_display()
-        print(f"set mode via rpdo: mode of operation display: {mode_display}")
+        print(f"set mode via sdo: mode of operation display: {mode_display}")
         return False
 
     def prepare_operation(self, desired_mode) -> bool:
@@ -590,7 +586,8 @@ class DriveOrganiser:
             print(f"prepare_operation failed: mode display did not switch to {mode_code}")
             return False
 
-        apply_od_section(self.node, objdict_data["mode"][mode_code]["comm"], f"mode.{mode_code}.comm")
+        for entry in self._iter_mode_command_entries(mode_code):
+            self._write_command_entry(entry)
         self._print_prepare_diagnostics(desired_mode)
         return True
                 
