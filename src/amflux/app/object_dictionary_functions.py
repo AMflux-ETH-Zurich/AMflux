@@ -62,6 +62,13 @@ _DCF_LOAD_SKIP_INDEXES = {
     0x6040,  # Controlword
 }
 
+_DCF_LOAD_SKIP_OBJECTS = {
+    od_ref
+    for command_map in _MODE_COMMAND_DCF_MAP.values()
+    for entry_map in command_map.values()
+    for od_ref in entry_map.values()
+}
+
 
 def resolve_dcf_path(dcf_path=None) -> Path:
     if dcf_path is not None:
@@ -119,7 +126,7 @@ def _iter_od_variables(obj):
 
 
 def disable_command_parameter_values(node) -> int:
-    """Prevent load_configuration() from writing command-like DCF entries."""
+    """Prevent load_configuration() from writing command/runtime DCF entries."""
     disabled_count = 0
     for index in _DCF_LOAD_SKIP_INDEXES:
         if index not in node.object_dictionary:
@@ -128,6 +135,17 @@ def disable_command_parameter_values(node) -> int:
             if variable.value is not None:
                 variable.value = None
                 disabled_count += 1
+
+    for index, subindex in _DCF_LOAD_SKIP_OBJECTS:
+        if index not in node.object_dictionary:
+            continue
+        try:
+            variable = _od_variable(node.object_dictionary, index, subindex)
+        except Exception:
+            continue
+        if variable.value is not None:
+            variable.value = None
+            disabled_count += 1
 
     if disabled_count:
         print(f"disabled {disabled_count} command ParameterValue entries before DCF load")
