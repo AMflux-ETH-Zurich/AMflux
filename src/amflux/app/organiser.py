@@ -228,14 +228,16 @@ class DriveOrganiser:
 
     def _read_mode_display(self):
         try:
+            return self.node.sdo["Modes of operation display"].raw
+        except Exception:
+            pass
+
+        try:
             return self.node.tpdo[DCF_TPDO_MODE_DISPLAY][
                 "Modes of operation display"
             ].phys
-        except Exception:
-            try:
-                return self.node.sdo["Modes of operation display"].raw
-            except Exception as exc:
-                return f"<read failed: {exc}>"
+        except Exception as exc:
+            return f"<read failed: {exc}>"
 
     def _write_command_entry(self, entry: dict):
         value = parse_command_value(entry.get("value"))
@@ -554,18 +556,20 @@ class DriveOrganiser:
         """
         mode_to_abbreviation(desired_mode)
         self.current_mode = desired_mode
-        self.node.sdo["Modes of operation"].raw = desired_mode
+        self.node.rpdo[2]["Controlword"].raw = self.node.sdo["Controlword"].raw
+        self.node.rpdo[2]["Modes of operation"].raw = desired_mode
+        self.node.rpdo[2].transmit()
 
         deadline = time.monotonic() + 2.0
         while time.monotonic() < deadline:
             mode_display = self._read_mode_display()
             if mode_display == desired_mode:
-                print(f"set mode via sdo: mode of operation display: {mode_display}")
+                print(f"set mode via rpdo: mode of operation display: {mode_display}")
                 return True
             time.sleep(0.05)
 
         mode_display = self._read_mode_display()
-        print(f"set mode via sdo: mode of operation display: {mode_display}")
+        print(f"set mode via rpdo: mode of operation display: {mode_display}")
         return False
 
     def prepare_operation(self, desired_mode) -> bool:
