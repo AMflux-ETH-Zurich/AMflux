@@ -301,7 +301,7 @@ def ModePageBuilder(app, parent, modeint, modename):
     for name, button in bit_dict[modeint].items():
         i = 0
         if name != "reserved":
-            check = button
+            check = button[1]
             check.grid(specific[1], text = f"{name}", column = i)
             i += 1
 
