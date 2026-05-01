@@ -206,7 +206,7 @@ def execute_transition(node, from_state: int, to_state: int, timeout: float, spe
     original = TRANSITION_COMMANDS[(from_state, to_state)]
     
     try:
-        controlword = original & ((original & ~selection_mask) | (value_mask & selection_mask))
+        controlword = (original & ~selection_mask) | (value_mask & selection_mask)
     except KeyError as exc:
         raise DriveStatePathError(
             f"Illegal state transition from {format_drive_state(from_state)} "
@@ -301,4 +301,3 @@ def goto_state(node, desired_state, timeout, specific_bits):
         next_state = route[1]
         execute_transition(node, current_state, next_state, remaining, specific_bits)
         print(f"Attempted transition to {format_drive_state(next_state)}")
-

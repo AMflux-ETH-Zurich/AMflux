@@ -245,74 +245,39 @@ def ModePageBuilder(app, parent, modeint, modename):
     
     specific = tk.Frame(parent)
     specific.grid(row=3, column=3, pady=50)
-    
-    check1 = ttk.Checkbutton()
-    check2 = ttk.Checkbutton()
-    check3 = ttk.Checkbutton()
-    check4 = ttk.Checkbutton()
-    check5 = ttk.Checkbutton()
 
-
-    bit_dict = {
-        2 : {
-            "reserved":  (15, 0),
-            "halt":   (8, check2), 
-            "reserved":   (6, 0), 
-            "reserved":   (5, 0), 
-            "homing operation start":   (4, check5)}, 
-        1 : {
-            "endless movement":  (15, check1),
-            "halt":   (8, check2), 
-            "abs/rel":   (6, check3), 
-            "change set immediately":   (5, check4), 
-            "new setpoint":   (4, check5)
-        },
-        3 : {
-            "reserved":  (15, 0),
-            "halt":   (8, check2), 
-            "reserved":   (6, 0), 
-            "reserved":   (5, 0), 
-            "reserved":   (4, 0)
-        },
-        4 : {
-            "reserved":  (5, 0),
-            "reserved":  (8, 0), 
-            "reserved":  (6, 0), 
-            "reserved":  (5, 0), 
-            "reserved":  (4, 0)
-        },
-        5 : {
-            "reserved":  (5, 0),
-            "reserved":  (8, 0), 
-            "reserved":  (6, 0), 
-            "reserved":  (5, 0), 
-            "reserved":  (4, 0)
-        },
-        6 : {
-            "reserved":  (5, 0),
-            "reserved":  (8, 0), 
-            "reserved":  (6, 0), 
-            "reserved":  (5, 0), 
-            "reserved":  (4, 0)
-        },
+    specific_bit_specs = {
+        PageState.ProfilePosition: [
+            ("endless movement", 15),
+            ("halt", 8),
+            ("abs/rel", 6),
+            ("change set immediately", 5),
+            ("new setpoint", 4),
+        ],
+        PageState.Homing: [
+            ("halt", 8),
+            ("homing operation start", 4),
+        ],
+        PageState.ProfileVelocity: [
+            ("halt", 8),
+        ],
+        PageState.CyclicSynchronousPosition: [],
+        PageState.CyclicSynchronousVelocity: [],
+        PageState.CyclicSynchronousTorque: [],
     }
 
+    specific_bit_vars = []
+    for column, (name, bit_position) in enumerate(specific_bit_specs[modeint]):
+        var = tk.IntVar(value=0)
+        check = ttk.Checkbutton(specific, text=name, variable=var)
+        check.grid(row=0, column=column, padx=4, pady=2)
+        specific_bit_vars.append((bit_position, var))
 
-    for name, button in bit_dict[modeint].items():
-        i = 0
-        if name != "reserved":
-            check = button[1]
-            check.grid(specific[1], text = f"{name}", column = i)
-            i += 1
-
-
-    def get_specific_bits(bit_dict, modeint):
-        bit = 0b00000000000000000
-
-        for _, specific in bit_dict[modeint].items():
-                bit += specific[1] * (2**specific[0])
-        
-        return bit
+    def get_specific_bits():
+        bits = 0
+        for bit_position, var in specific_bit_vars:
+            bits |= var.get() << bit_position
+        return bits
     
 
     #Command Buttons
@@ -329,7 +294,7 @@ def ModePageBuilder(app, parent, modeint, modename):
     enable_button = ttk.Button(
         commanding,
         text="ENABLE",
-        command= lambda: app.drive.request_enable_operation(get_specific_bits(bit_dict, modeint))#enable_operation(10)
+        command= lambda: app.drive.request_enable_operation(get_specific_bits())#enable_operation(10)
     )
     enable_button.grid(row=0, column=0)
 

@@ -169,7 +169,7 @@ class DriveOrganiser:
         self.recording = Event()
         self.data = np.array([])
 
-    def request_enable_operation(self, specific_bits, timeout=5.0):
+    def request_enable_operation(self, specific_bits=0, timeout=5.0):
         print("requested: enable operation")
         self.cancel_transition.clear()
         self.cmd_q.put(Command(CmdType.ENABLE_OPERATION, timeout=timeout, data=specific_bits))
@@ -563,7 +563,7 @@ class DriveOrganiser:
                     if cmd.type == CmdType.QUICK_STOP:
                         self.quick_stop()
                     elif cmd.type == CmdType.ENABLE_OPERATION:
-                        specific_bits = cmd.data
+                        specific_bits = cmd.data or 0
                         self.enable_operation(cmd.timeout or 5.0, specific_bits=specific_bits)
                     elif cmd.type == CmdType.UPDATE_PARAM:
                         name, value = cmd.data
@@ -642,7 +642,7 @@ class DriveOrganiser:
         self._print_prepare_diagnostics(desired_mode)
         return True
                 
-    def enable_operation(self, timeout, specific_bits):
+    def enable_operation(self, timeout, specific_bits=0):
         """
         1. Transition to POWER_ENABLED and OPERATION_ENABLED via goto_state()
         2. Set power_enabled = True
@@ -662,7 +662,7 @@ class DriveOrganiser:
         written_count = self._write_mapped_rpdo_command_entries(mode_code)
         print(f"resent {written_count} mapped RPDO command value(s) after enable")
        
-    def stop_volt(self, specific_bits):
+    def stop_volt(self, specific_bits=0):
         """
         1. Shutdown drive via goto_state()
         2. 
@@ -678,7 +678,7 @@ class DriveOrganiser:
         goto_state(self.node, desired_state=DriveState.READY_TO_SWITCH_ON, timeout=2, specific_bits=0b0000000000000000)
         self.power_enabled = False
 
-    def quick_stop(self, specific_bits):
+    def quick_stop(self, specific_bits=0):
         """
         """
         print("execute: quick stop")
