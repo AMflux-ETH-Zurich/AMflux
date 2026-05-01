@@ -5631,7 +5631,7 @@ LowLimit=1
 HighLimit=50000
 PDOMapping=1
 ObjFlags=0
-ParameterValue=250
+ParameterValue=300
 
 [6080]
 ParameterName=Max motor speed
@@ -5655,7 +5655,7 @@ LowLimit=1
 HighLimit=50000
 PDOMapping=1
 ObjFlags=0
-ParameterValue=300
+ParameterValue=250
 
 [6083]
 ParameterName=Profile acceleration
