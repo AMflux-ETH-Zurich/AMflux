@@ -17,6 +17,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 import object_dictionary_functions
 from organiser import OperationModes
+from drive import DriveState, drive_state_from_statusword
 
 # ======================================================================
 # Object dictionary and utility classes
@@ -68,6 +69,26 @@ PAGE_TO_OPERATION_MODE = {
     page_state: desired_mode
     for _mode_name, (page_state, desired_mode) in MODE_NAME_TO_SELECTION.items()
 }
+
+
+def drive_is_operation_enabled(drive):
+    if drive is None:
+        return False
+
+    try:
+        telemetry = drive.get_status()
+    except Exception:
+        return False
+
+    if telemetry is None or len(telemetry) < 4 or telemetry[3] is None:
+        return False
+
+    try:
+        state = drive_state_from_statusword(int(telemetry[3]))
+    except Exception:
+        return False
+
+    return state == DriveState.OPERATION_ENABLED
 
 # ======================================================================
 # Home page
@@ -291,19 +312,47 @@ def ModePageBuilder(app, parent, modeint, modename):
     commanding.grid_columnconfigure(4, weight=1)
 
     def enable_button_func():
-        app.drive.request_enable_operation(get_specific_bits())#enable_operation(10)
-        enable_button.config(background = "red")
+        if app.drive is None:
+            print("Warning: Network not initialized, cannot enable operation")
+            return
+        app.drive.request_enable_operation(get_specific_bits())
     
     def disable_button_func():
         app.drive.request_disable_voltage()
-        enable_button.config(background = "white")
 
-    enable_button = ttk.Button(
+    enable_button = tk.Button(
         commanding,
         text="ENABLE",
-        command= enable_button_func()
+        command=enable_button_func
     )
     enable_button.grid(row=0, column=0)
+    enable_button_default_bg = enable_button.cget("background")
+    enable_button_default_fg = enable_button.cget("foreground")
+
+    def refresh_enable_button_color():
+        try:
+            if not enable_button.winfo_exists():
+                return
+
+            if drive_is_operation_enabled(app.drive):
+                enable_button.config(
+                    background="#c62828",
+                    activebackground="#b71c1c",
+                    foreground="white",
+                    activeforeground="white",
+                )
+            else:
+                enable_button.config(
+                    background=enable_button_default_bg,
+                    activebackground=enable_button_default_bg,
+                    foreground=enable_button_default_fg,
+                    activeforeground=enable_button_default_fg,
+                )
+            enable_button.after(200, refresh_enable_button_color)
+        except tk.TclError:
+            return
+
+    refresh_enable_button_color()
 
     quick_stop_button = ttk.Button(
         commanding,

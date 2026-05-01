@@ -95,6 +95,15 @@ STATE_MASKS = {
 }
 
 
+def drive_state_from_statusword(statusword: int) -> DriveState:
+    """Determine the DS402 drive state from a cached statusword value."""
+    for state, (bitmask, bits) in STATE_MASKS.items():
+        if statusword & bitmask == bits:
+            return state
+
+    raise DriveStateDetError(f"Unknown drive state with statusword: {statusword:#06x}")
+
+
 def format_drive_state(state: int) -> str:
     """Return a readable state label for logs and exceptions."""
     return f"{STATE_NAMES.get(state, 'UNKNOWN_STATE')} ({state})"
@@ -103,12 +112,7 @@ def format_drive_state(state: int) -> str:
 def get_DriveState(node) -> DriveState:
     """Determine the drive state from the DS402 statusword."""
     statusword = sword(node)
-    #print(f"get_DriveState {statusword}")
-    for state, (bitmask, bits) in STATE_MASKS.items():
-        if statusword & bitmask == bits:
-            return state
-
-    raise DriveStateDetError(f"Unknown drive state with statusword: {statusword:#06x}")
+    return drive_state_from_statusword(statusword)
 
 
 # ======================================================================
