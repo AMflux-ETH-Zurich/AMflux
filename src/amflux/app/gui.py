@@ -490,7 +490,7 @@ class MotorTelemetry:
         self.dot = self.canvas_widget.create_oval(85, 25, 105, 35, fill="black")
         
         # Create text label for position value on canvas
-        self.position_text = self.canvas_widget.create_text(100, 100, text="Position: 0.00 rad",
+        self.position_text = self.canvas_widget.create_text(100, 100, text="Position: 0.00 deg",
                                                                  font=("Arial", 10), fill="black")
 
         #==========================================================
@@ -568,7 +568,7 @@ class MotorTelemetry:
             print(f"MotorTelemetry update failed: {exc}")
         finally:
             if self.root_window.winfo_exists():
-                self.root_window.after(200, self.update)
+                self.root_window.after(50, self.update)
         
 
 

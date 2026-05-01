@@ -452,7 +452,7 @@ class DriveOrganiser:
             status_word = self.node.tpdo[DCF_TPDO_STATUS]["Statusword"].raw
             
             position_raw = self.node.tpdo[DCF_TPDO_POSITION]["Position actual value"].phys
-            position = (position_raw / 4096) * 2 * np.pi
+            position = (position_raw / 32768)
             
             velocity = self.node.tpdo[DCF_TPDO_VELOCITY]["Velocity actual value"].phys
 
@@ -593,7 +593,7 @@ class DriveOrganiser:
             except Exception as exc:
                 print(f"organiser loop error: {exc}")
                 traceback.print_exc()
-                time.sleep(0.05)
+                time.sleep(0.005)
 
     def set_mode(self, desired_mode):
         """Sets the modes of operation entry in OD to the desired mode
