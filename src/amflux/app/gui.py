@@ -243,6 +243,77 @@ def ModePageBuilder(app, parent, modeint, modename):
     apply_button = ttk.Button(editing, text="APPLY", command=lambda: apply_button_func())
     apply_button.grid(column=1)
     
+    specific = tk.Frame(parent)
+    specific.grid(row=3, column=3, pady=50)
+    
+    check1 = ttk.Checkbutton()
+    check2 = ttk.Checkbutton()
+    check3 = ttk.Checkbutton()
+    check4 = ttk.Checkbutton()
+    check5 = ttk.Checkbutton()
+
+
+    bit_dict = {
+        2 : {
+            "reserved":  (15, 0),
+            "halt":   (8, check2), 
+            "reserved":   (6, 0), 
+            "reserved":   (5, 0), 
+            "homing operation start":   (4, check5)}, 
+        1 : {
+            "endless movement":  (15, check1),
+            "halt":   (8, check2), 
+            "abs/rel":   (6, check3), 
+            "change set immediately":   (5, check4), 
+            "new setpoint":   (4, check5)
+        },
+        3 : {
+            "reserved":  (15, 0),
+            "halt":   (8, check2), 
+            "reserved":   (6, 0), 
+            "reserved":   (5, 0), 
+            "reserved":   (4, 0)
+        },
+        4 : {
+            "reserved":  (5, 0),
+            "reserved":  (8, 0), 
+            "reserved":  (6, 0), 
+            "reserved":  (5, 0), 
+            "reserved":  (4, 0)
+        },
+        5 : {
+            "reserved":  (5, 0),
+            "reserved":  (8, 0), 
+            "reserved":  (6, 0), 
+            "reserved":  (5, 0), 
+            "reserved":  (4, 0)
+        },
+        6 : {
+            "reserved":  (5, 0),
+            "reserved":  (8, 0), 
+            "reserved":  (6, 0), 
+            "reserved":  (5, 0), 
+            "reserved":  (4, 0)
+        },
+    }
+
+
+    for name, button in bit_dict[modeint].items():
+        i = 0
+        if name != "reserved":
+            check = button
+            check.grid(specific[1], text = f"{name}", column = i)
+            i += 1
+
+
+    def get_specific_bits(bit_dict, modeint):
+        bit = 0b00000000000000000
+
+        for _, specific in bit_dict[modeint].items():
+                bit += specific[1] * (2**specific[0])
+        
+        return bit
+    
 
     #Command Buttons
     commanding = tk.Frame(parent)
@@ -254,26 +325,27 @@ def ModePageBuilder(app, parent, modeint, modename):
     commanding.grid_columnconfigure(3, weight=0)
     commanding.grid_columnconfigure(4, weight=1)
 
-    run_button = ttk.Button(
+
+    enable_button = ttk.Button(
         commanding,
         text="ENABLE",
-        command= lambda: app.drive.request_enable_operation()#enable_operation(10)
+        command= lambda: app.drive.request_enable_operation(get_specific_bits(bit_dict, modeint))#enable_operation(10)
     )
-    run_button.grid(row=0, column=0)
+    enable_button.grid(row=0, column=0)
 
-    pause_button = ttk.Button(
+    quick_stop_button = ttk.Button(
         commanding,
         text="QUICK-STOP",
         command= lambda: app.drive.request_quick_stop()
     )
-    pause_button.grid(row=1, column=0)
+    quick_stop_button.grid(row=1, column=0)
 
-    stop_button = ttk.Button(
+    disable_voltage_button = ttk.Button(
         commanding,
         text="DISABLE",
         command= lambda: app.drive.request_disable_voltage()
     )
-    stop_button.grid(row=2, column=0)
+    disable_voltage_button.grid(row=2, column=0)
 
     back_button = ttk.Button(
         parent, 

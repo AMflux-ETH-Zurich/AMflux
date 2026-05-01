@@ -169,10 +169,10 @@ class DriveOrganiser:
         self.recording = Event()
         self.data = np.array([])
 
-    def request_enable_operation(self, timeout=5.0):
+    def request_enable_operation(self, specific_bits, timeout=5.0):
         print("requested: enable operation")
         self.cancel_transition.clear()
-        self.cmd_q.put(Command(CmdType.ENABLE_OPERATION, timeout=timeout))
+        self.cmd_q.put(Command(CmdType.ENABLE_OPERATION, timeout=timeout, data=specific_bits))
 
     def request_disable_voltage(self):
         print("requested: disable voltage")
@@ -538,13 +538,14 @@ class DriveOrganiser:
         fault state handling > stop requests > command queue > telemetry.
         """
         
+        
         while not self.shutdown.is_set():
             try:
                 if get_DriveState(self.node) == DriveState.FAULT_REACTION_ACTIVE:
                     var = sword(self.node)
                     print("Error occurred. Drive will be reset to SWITCH ON DISABLED")
-                    print(f"statusword: {var}")
-                    goto_state(self.node, desired_state=DriveState.SWITCH_ON_DISABLED, timeout=5)
+                    print(f"in organiser loop shutdown is set, statusword: {var}")
+                    goto_state(self.node, desired_state=DriveState.SWITCH_ON_DISABLED, timeout=5, specific_bits=0b0000000000000000)
 
                 # HIGH PRIORITY: handle request stop
                 if self.stop_volt_requested.is_set():
@@ -562,7 +563,8 @@ class DriveOrganiser:
                     if cmd.type == CmdType.QUICK_STOP:
                         self.quick_stop()
                     elif cmd.type == CmdType.ENABLE_OPERATION:
-                        self.enable_operation(cmd.timeout or 5.0)
+                        specific_bits = cmd.data
+                        self.enable_operation(cmd.timeout or 5.0, specific_bits=specific_bits)
                     elif cmd.type == CmdType.UPDATE_PARAM:
                         name, value = cmd.data
                         self.update_parameter(name, value)
@@ -640,7 +642,7 @@ class DriveOrganiser:
         self._print_prepare_diagnostics(desired_mode)
         return True
                 
-    def enable_operation(self, timeout):
+    def enable_operation(self, timeout, specific_bits):
         """
         1. Transition to POWER_ENABLED and OPERATION_ENABLED via goto_state()
         2. Set power_enabled = True
@@ -649,17 +651,18 @@ class DriveOrganiser:
         print("execute: enable operation")
         if self.cancel_transition.is_set():
             return
-        goto_state(self.node, desired_state=DriveState.OPERATION_ENABLED, timeout=timeout)
+        goto_state(self.node, desired_state=DriveState.OPERATION_ENABLED, timeout=timeout, specific_bits=specific_bits)
+        
         var = sword(self.node)
+        print(f'func: enable_operation, statusword:{var}')
 
-        print(f'var: {var}')
         self.power_enabled = True
         self.torque_enabled = True
         mode_code = mode_to_abbreviation(self.current_mode)
         written_count = self._write_mapped_rpdo_command_entries(mode_code)
         print(f"resent {written_count} mapped RPDO command value(s) after enable")
        
-    def stop_volt(self):
+    def stop_volt(self, specific_bits):
         """
         1. Shutdown drive via goto_state()
         2. 
@@ -670,12 +673,12 @@ class DriveOrganiser:
         if not self.power_enabled:
             return
         print("test b, disable voltage direct failed")
-        goto_state(self.node, desired_state=DriveState.SWITCHED_ON, timeout=2)
+        goto_state(self.node, desired_state=DriveState.SWITCHED_ON, timeout=2, specific_bits=0b0000000000000000)
         self.torque_enabled = False
-        goto_state(self.node, desired_state=DriveState.READY_TO_SWITCH_ON, timeout=2)
+        goto_state(self.node, desired_state=DriveState.READY_TO_SWITCH_ON, timeout=2, specific_bits=0b0000000000000000)
         self.power_enabled = False
 
-    def quick_stop(self):
+    def quick_stop(self, specific_bits):
         """
         """
         print("execute: quick stop")
@@ -683,5 +686,5 @@ class DriveOrganiser:
         if not self.torque_enabled:
             return
         print("test b")
-        goto_state(self.node, desired_state=DriveState.QUICK_STOP_ACTIVE, timeout=2)
+        goto_state(self.node, desired_state=DriveState.QUICK_STOP_ACTIVE, timeout=2, specific_bits=0b0000000000000000)
         self.torque_enabled = False

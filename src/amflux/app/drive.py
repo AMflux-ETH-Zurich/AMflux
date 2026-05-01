@@ -197,10 +197,16 @@ def wait_for_state(node, desired_state: int, timeout: float = 5.0):
         time.sleep(0.01)  # Avoid busy waiting
 
 
-def execute_transition(node, from_state: int, to_state: int, timeout: float) -> None:
+def execute_transition(node, from_state: int, to_state: int, timeout: float, specific_bits: int) -> None:
     """Execute one legal DS402 state transition."""
+    
+
+    selection_mask = 0b1000000101110000
+    value_mask = specific_bits
+    original = TRANSITION_COMMANDS[(from_state, to_state)]
+    
     try:
-        controlword = TRANSITION_COMMANDS[(from_state, to_state)]
+        controlword = original & ((original & ~selection_mask) | (value_mask & selection_mask))
     except KeyError as exc:
         raise DriveStatePathError(
             f"Illegal state transition from {format_drive_state(from_state)} "
@@ -258,7 +264,7 @@ def DriveState_BFS(start_state, target_state, Drive_State_map):
     return route
 
 
-def goto_state(node, desired_state, timeout):
+def goto_state(node, desired_state, timeout, specific_bits):
     """Traverse the DS402 state machine to reach the desired DriveState.
 
     Args:
@@ -293,6 +299,6 @@ def goto_state(node, desired_state, timeout):
             )
 
         next_state = route[1]
-        execute_transition(node, current_state, next_state, remaining)
+        execute_transition(node, current_state, next_state, remaining, specific_bits)
         print(f"Attempted transition to {format_drive_state(next_state)}")
 
