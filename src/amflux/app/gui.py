@@ -547,8 +547,8 @@ class MotorTelemetry:
                 self.ax_velocity.set_xlim(t - self.display_window, t)
 
             #set y-axis limits
-            self.ax_torque.set_ylim(0, 20)
-            self.ax_velocity.set_ylim(0, 100)
+            #self.ax_torque.set_ylim(0, 20)
+            #elf.ax_velocity.set_ylim(0, 100)
 
             #tells the program the figure needs to be redrawn, but do it when the GUI is idle, so it doesn't block the event loop
             self.canvas_plot.draw_idle()
@@ -562,7 +562,7 @@ class MotorTelemetry:
                     text=f"Position:\n{position:.2f} rad",
                 )
             else:
-                self.canvas_widget.itemconfig(self.position_text, text="Position:\n-- rad")
+                self.canvas_widget.itemconfig(self.position_text, text="Position:\n-- deg")
 
         except Exception as exc:
             print(f"MotorTelemetry update failed: {exc}")
