@@ -1326,7 +1326,7 @@ AccessType=rw
 DefaultValue=$NODEID+0xC0000280
 PDOMapping=0
 ObjFlags=0
-ParameterValue=0xC00002A0
+ParameterValue=0x400002A0
 
 [1801sub2]
 ParameterName=Transmission type TxPDO 2
@@ -1371,7 +1371,7 @@ AccessType=rw
 DefaultValue=$NODEID+0xC0000380
 PDOMapping=0
 ObjFlags=0
-ParameterValue=0xC00003A0
+ParameterValue=0x400003A0
 
 [1802sub2]
 ParameterName=Transmission type TxPDO 3
@@ -1416,7 +1416,7 @@ AccessType=rw
 DefaultValue=$NODEID+0xC0000480
 PDOMapping=0
 ObjFlags=0
-ParameterValue=0xC00004A0
+ParameterValue=0x400004A0
 
 [1803sub2]
 ParameterName=Transmission type TxPDO 4

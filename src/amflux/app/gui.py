@@ -290,11 +290,18 @@ def ModePageBuilder(app, parent, modeint, modename):
     commanding.grid_columnconfigure(3, weight=0)
     commanding.grid_columnconfigure(4, weight=1)
 
+    def enable_button_func():
+        app.drive.request_enable_operation(get_specific_bits())#enable_operation(10)
+        enable_button.config(background = "red")
+    
+    def disable_button_func():
+        app.drive.request_disable_voltage()
+        enable_button.config(background = "white")
 
     enable_button = ttk.Button(
         commanding,
         text="ENABLE",
-        command= lambda: app.drive.request_enable_operation(get_specific_bits())#enable_operation(10)
+        command= enable_button_func()
     )
     enable_button.grid(row=0, column=0)
 
@@ -308,7 +315,7 @@ def ModePageBuilder(app, parent, modeint, modename):
     disable_voltage_button = ttk.Button(
         commanding,
         text="DISABLE",
-        command= lambda: app.drive.request_disable_voltage()
+        command= disable_button_func
     )
     disable_voltage_button.grid(row=2, column=0)
 
