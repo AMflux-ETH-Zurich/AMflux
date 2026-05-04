@@ -19,6 +19,9 @@ import object_dictionary_functions
 from organiser import OperationModes
 from drive import DriveState, drive_state_from_statusword
 
+#serial for PID Demo
+import serial
+
 # ======================================================================
 # Object dictionary and utility classes
 # ======================================================================
@@ -45,6 +48,7 @@ class PageState:
     CyclicSynchronousPosition   = 4
     CyclicSynchronousVelocity   = 5
     CyclicSynchronousTorque     = 6
+    PIDDemo                     = 7
 
 
 MODE_NAME_TO_SELECTION = {
@@ -162,6 +166,27 @@ def HomePage(app, parent):
         command=start_button_func
     )
     button.pack(pady=10)
+
+    def serial_demo_button_func():
+        page_state = PageState.PIDDemo
+        desired_mode = OperationModes.CyclicSynchronousPosition
+        app.drive.current_mode = desired_mode
+        button.config(state=tk.DISABLED)
+
+        def prepare_finished(prepared):
+            def update_gui(prepared):
+                button.config(state=tk.NORMAL)
+                if prepared:
+                    app.set_state(page_state)
+                else:
+                    print("Prepare operation failed.")
+            app.post_gui_event(update_gui, prepared)
+
+        app.drive.start_organiser()
+        app.drive.request_prepare_operation(desired_mode, callback=prepare_finished)
+
+    ttk.Button(parent, text="Serial Position Demo",
+            command=serial_demo_button_func).pack(pady=10)
 
 
 # ======================================================================
@@ -393,7 +418,217 @@ def ModePageBuilder(app, parent, modeint, modename):
 
     #Motor Status
     MotorTelemetry(parent, app.drive)
+
+#===============================================AI SLOP=================================================
+
+
+def read_and_normalize_serial(ser, min_raw, max_raw, min_pos, max_pos):
+    """
+    Read a value from serial and normalize it to a position range.
+    min_raw/max_raw: expected range of incoming serial values
+    min_pos/max_pos: target position range in drive units
+    """
+    try:
+        line = ser.readline().decode().strip()
+        if not line:
+            return None
+        raw = int(line)
+        raw = max(min_raw, min(max_raw, raw))  # clamp to expected range
+        normalized = int((raw - min_raw) / (max_raw - min_raw) * (max_pos - min_pos) + min_pos)
+        return normalized
+    except Exception as e:
+        print(f"Serial read error: {e}")
+        return None
+
+#===============================================AI SLOP=================================================
+
+
+
+def pid_demo_page(app, parent):
+
+    #define Grid
+    parent.grid_columnconfigure(0, weight=10)
+    parent.grid_columnconfigure(1, weight=5)
+    parent.grid_columnconfigure(2, weight=0)
+    parent.grid_columnconfigure(3, weight=0)
+    parent.grid_columnconfigure(4, weight=0)
+    parent.grid_columnconfigure(5, weight=5)
+    parent.grid_columnconfigure(6, weight=10)
     
+    
+    parent.grid_rowconfigure(0, weight=10)
+    parent.grid_rowconfigure(1, weight=5)
+    parent.grid_rowconfigure(2, weight=0)
+    parent.grid_rowconfigure(3, weight=0)
+    parent.grid_rowconfigure(4, weight=0)
+    parent.grid_rowconfigure(5, weight=5)
+    parent.grid_rowconfigure(6, weight=10)
+
+    #Title Text
+    header = tk.Frame(parent)
+    header.grid(row=0, column=3)
+
+    landing_text_var = tk.StringVar()
+    landing_text_var.set("PID DEMO \n Demo Page for PID Control of Position")
+
+    label = tk.Label(
+        header, 
+        textvariable=landing_text_var, 
+        anchor=tk.CENTER,       
+        bg="lightblue",      
+        height=3,              
+        width=30,              
+        bd=3,                  
+        font=("Helvetica", 16, "bold"),   
+        fg="black",             
+        padx=15,               
+        pady=15,                
+        justify=tk.CENTER,    
+        relief=tk.RAISED,           
+        wraplength=250         
+    )
+    label.grid(row=0, column=0, pady=20)
+
+    #===============================================AI SLOP=================================================
+    # serial config UI
+    serial_frame = tk.Frame(parent)
+    serial_frame.grid(row=3, column=3)
+
+    ser_ref = [None]
+
+    tk.Label(serial_frame, text="Port:").grid(row=0, column=0, padx=5)
+    port_var = tk.StringVar(value="COM3")
+    ttk.Entry(serial_frame, textvariable=port_var, width=10).grid(row=0, column=1)
+
+    tk.Label(serial_frame, text="Baud:").grid(row=0, column=2, padx=5)
+    baud_var = tk.StringVar(value="115200")
+    ttk.Entry(serial_frame, textvariable=baud_var, width=8).grid(row=0, column=3)
+
+    status_var = tk.StringVar(value="Disconnected")
+    tk.Label(serial_frame, textvariable=status_var, fg="gray").grid(row=1, column=0, columnspan=4)
+
+    def poll_serial():
+        if ser_ref[0] and ser_ref[0].is_open:
+            serial_value_normalized = read_and_normalize_serial(
+                ser_ref[0],
+                min_raw=0, max_raw=1023,    # adjust to your serial device range
+                min_pos=0, max_pos=100000   # adjust to your drive position limits
+            )
+            if serial_value_normalized is not None:
+                app.drive.request_update_param(0x607A, serial_value_normalized)
+        if parent.winfo_exists():
+            parent.after(50, poll_serial)
+
+    def connect():
+        try:
+            ser_ref[0] = serial.Serial(port_var.get(), int(baud_var.get()), timeout=0.05)
+            status_var.set(f"Connected: {port_var.get()}")
+            poll_serial()
+        except Exception as e:
+            status_var.set(f"Error: {e}")
+
+    def disconnect():
+        if ser_ref[0]:
+            ser_ref[0].close()
+            ser_ref[0] = None
+        status_var.set("Disconnected")
+
+    ttk.Button(serial_frame, text="Connect", command=connect).grid(row=0, column=4, padx=5)
+    ttk.Button(serial_frame, text="Disconnect", command=disconnect).grid(row=0, column=5)
+
+    #===============================================AI SLOP=================================================
+
+    #Command Buttons
+    commanding = tk.Frame(parent)
+    commanding.grid(row=2, column=4, padx=50)
+
+    commanding.grid_columnconfigure(0, weight=1)
+    commanding.grid_columnconfigure(1, weight=0)
+    commanding.grid_columnconfigure(2, weight=0)
+    commanding.grid_columnconfigure(3, weight=0)
+    commanding.grid_columnconfigure(4, weight=1)
+
+    def enable_button_func():
+        if app.drive is None:
+            print("Warning: Network not initialized, cannot enable operation")
+            return
+        app.drive.request_enable_operation()
+    
+    def disable_button_func():
+        app.drive.request_disable_voltage()
+
+    enable_button = tk.Button(
+        commanding,
+        text="ENABLE",
+        command=enable_button_func
+    )
+    enable_button.grid(row=0, column=0)
+    enable_button_default_bg = enable_button.cget("background")
+    enable_button_default_fg = enable_button.cget("foreground")
+
+    def refresh_enable_button_color():
+        try:
+            if not enable_button.winfo_exists():
+                return
+
+            if drive_is_operation_enabled(app.drive):
+                enable_button.config(
+                    background="#c62828",
+                    activebackground="#b71c1c",
+                    foreground="white",
+                    activeforeground="white",
+                )
+            else:
+                enable_button.config(
+                    background=enable_button_default_bg,
+                    activebackground=enable_button_default_bg,
+                    foreground=enable_button_default_fg,
+                    activeforeground=enable_button_default_fg,
+                )
+            enable_button.after(200, refresh_enable_button_color)
+        except tk.TclError:
+            return
+
+    refresh_enable_button_color()
+
+    quick_stop_button = ttk.Button(
+        commanding,
+        text="QUICK-STOP",
+        command= lambda: app.drive.request_quick_stop()
+    )
+    quick_stop_button.grid(row=1, column=0)
+
+    disable_voltage_button = ttk.Button(
+        commanding,
+        text="DISABLE",
+        command= disable_button_func
+    )
+    disable_voltage_button.grid(row=2, column=0)
+
+    back_button = ttk.Button(
+        parent, 
+        text="Back", 
+        command = lambda: app.set_state(PageState.Home)
+    )
+    back_button.grid(row=0, column=1, padx=50)
+    
+    def stop_record_data():
+        record_button.config(text="RECORD", background = "white", command=lambda: record_data())
+        app.drive.stop_recording()
+
+    def record_data():
+        record_button.config(text="RECORDING", background = "red", command=lambda: stop_record_data())
+        app.drive.start_recording()
+
+    record_button = ttk.Button(
+        commanding, 
+        text = "Record",
+        command = lambda: record_data()
+    )
+    record_button.grid(row=4, column=0)
+
+    #Motor Status
+    MotorTelemetry(parent, app.drive)
 
 # ======================================================================
 # Motor telemetry
@@ -635,6 +870,8 @@ class App(tk.Tk):
             ModePageBuilder(self, self.container, self.state, "Cyclic Synchronous Velocity Mode")
         elif self.state == 6:
             ModePageBuilder(self, self.container, self.state, "Cyclic Synchronous Torque Mode")
+        elif self.state == 7:
+            pid_demo_page(self, self.container)
         else:
             tk.Label(self.container, text="Unknown state").pack()
 
