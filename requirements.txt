@@ -5,3 +5,4 @@ canopen
 TIME-python==0.0.17
 keyboard==0.13.5
 can
+pyserial
