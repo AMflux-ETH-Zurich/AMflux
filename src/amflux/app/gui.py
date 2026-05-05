@@ -20,7 +20,7 @@ from organiser import OperationModes
 from drive import DriveState, drive_state_from_statusword
 
 #serial for PID Demo
-import serial
+import pyserial
 
 # ======================================================================
 # Object dictionary and utility classes
@@ -515,13 +515,13 @@ def pid_demo_page(app, parent):
                 min_pos=0, max_pos=100000   # adjust to your drive position limits
             )
             if serial_value_normalized is not None:
-                app.drive.request_update_param(0x607A, serial_value_normalized)
+                app.drive.request_update_param('Target Position', serial_value_normalized)
         if parent.winfo_exists():
             parent.after(50, poll_serial)
 
     def connect():
         try:
-            ser_ref[0] = serial.Serial(port_var.get(), int(baud_var.get()), timeout=0.05)
+            ser_ref[0] = pyserial.Serial(port_var.get(), int(baud_var.get()), timeout=0.05)
             status_var.set(f"Connected: {port_var.get()}")
             poll_serial()
         except Exception as e:
