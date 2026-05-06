@@ -521,7 +521,7 @@ def pid_demo_page(app, parent):
 
     def connect():
         try:
-            ser_ref[0] = pyserial.Serial(port_var.get(), int(baud_var.get()), timeout=0.05)
+            ser_ref[0] = serial.Serial(port_var.get(), int(baud_var.get()), timeout=0.05)
             status_var.set(f"Connected: {port_var.get()}")
             poll_serial()
         except Exception as e:

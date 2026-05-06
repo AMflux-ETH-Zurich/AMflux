@@ -1,8 +1,6 @@
 numpy==2.1.0
-pandas==2.2.2
 matplotlib==3.9.0
 canopen
-TIME-python==0.0.17
+python-can>=3.0.0
 keyboard==0.13.5
-can
 pyserial
