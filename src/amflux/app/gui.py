@@ -20,7 +20,7 @@ from organiser import OperationModes
 from drive import DriveState, drive_state_from_statusword
 
 #serial for PID Demo
-import pyserial
+import serial
 
 # ======================================================================
 # Object dictionary and utility classes
@@ -877,8 +877,6 @@ class App(tk.Tk):
 
 
 def main():
-   
-
     # Start user interface
     app = App(drive=None)
     app.mainloop()
