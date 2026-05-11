@@ -38,6 +38,9 @@ _MODE_COMMAND_DCF_MAP = {
     },
     "CSP": {
         "Target position": {"Target position": (0x607A, 0)},
+        "Position controller P gain": {"Position controller P gain": (0x30A1, 1)},
+        "Position controller I gain": {"Position controller I gain": (0x30A1, 2)},
+        "Position controller D gain": {"Position controller D gain": (0x30A1, 3)},
         "Position offset": {"Position offset": (0x60B0, 0)},
         "Torque offset": {"Torque offset": (0x60B2, 0)},
     },
