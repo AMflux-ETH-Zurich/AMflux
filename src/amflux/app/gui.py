@@ -428,13 +428,16 @@ def read_and_normalize_serial(ser, min_raw, max_raw, min_pos, max_pos):
     min_raw/max_raw: expected range of incoming serial values
     min_pos/max_pos: target position range in drive units
     """
+    
     try:
-        line = ser.readline().decode().strip()
+        line = ser.readline().strip(",")
         if not line:
             return None
-        raw = int(line)
-        raw = max(min_raw, min(max_raw, raw))  # clamp to expected range
-        normalized = int((raw - min_raw) / (max_raw - min_raw) * (max_pos - min_pos) + min_pos)
+        normalized = []
+        for val in line:
+            raw = int(val)
+            raw = max(min_raw, min(max_raw, raw))  # clamp to expected range
+            normalized = int((raw - min_raw) / (max_raw - min_raw) * (max_pos - min_pos) + min_pos)
         return normalized
     except Exception as e:
         print(f"Serial read error: {e}")
@@ -497,7 +500,7 @@ def pid_demo_page(app, parent):
     ser_ref = [None]
 
     tk.Label(serial_frame, text="Port:").grid(row=0, column=0, padx=5)
-    port_var = tk.StringVar(value="COM3")
+    port_var = tk.StringVar(value="/dev/ttyUSB0")
     ttk.Entry(serial_frame, textvariable=port_var, width=10).grid(row=0, column=1)
 
     tk.Label(serial_frame, text="Baud:").grid(row=0, column=2, padx=5)
