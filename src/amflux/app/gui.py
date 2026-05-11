@@ -422,23 +422,27 @@ def ModePageBuilder(app, parent, modeint, modename):
 #===============================================AI SLOP=================================================
 
 
-def read_and_normalize_serial(ser, min_raw, max_raw, min_pos, max_pos):
+def read_and_normalize_serial(ser, min_raw, max_raw, min_pos, max_pos, value_index=0):
     """
-    Read a value from serial and normalize it to a position range.
+    Read one value from serial and normalize it to a position range.
     min_raw/max_raw: expected range of incoming serial values
     min_pos/max_pos: target position range in drive units
     """
     
     try:
-        line = ser.readline().strip(",")
+        line = ser.readline().decode("utf-8", errors="ignore").strip()
         if not line:
             return None
-        normalized = []
-        for val in line:
-            raw = int(val)
-            raw = max(min_raw, min(max_raw, raw))  # clamp to expected range
-            normalized = int((raw - min_raw) / (max_raw - min_raw) * (max_pos - min_pos) + min_pos)
+
+        values = [part.strip() for part in line.strip("()[]").split(",")]
+        values = [part for part in values if part]
+        raw = int(values[value_index])
+        raw = max(min_raw, min(max_raw, raw))  # clamp to expected range
+        normalized = int((raw - min_raw) / (max_raw - min_raw) * (max_pos - min_pos) + min_pos)
         return normalized
+    except (ValueError, IndexError) as e:
+        print(f"Serial parse error for {line!r}: {e}")
+        return None
     except Exception as e:
         print(f"Serial read error: {e}")
         return None
