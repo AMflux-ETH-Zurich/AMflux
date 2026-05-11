@@ -12,43 +12,43 @@ from pathlib import Path
 
 _MODE_COMMAND_DCF_MAP = {
     "PPM": {
-        "target_position": {"position": (0x607A, 0)},
-        "profile_velocity": {"prof_velocity": (0x6081, 0)},
-        "profile_acceleration": {"prof_acc": (0x6083, 0)},
-        "profile_deceleration": {"prof_dec": (0x6084, 0)},
+        "Target position": {"Target position": (0x607A, 0)},
+        "Profile velocity": {"Profile velocity": (0x6081, 0)},
+        "Profile acceleration": {"Profile acceleration": (0x6083, 0)},
+        "Profile deceleration": {"Profile deceleration": (0x6084, 0)},
     },
     "HMM": {
-        "homing_method_init": {"homing_method": (0x6098, 0)},
-        "homing_speeds": {
-            "speed_sw_srch": (0x6099, 1),
-            "speed_zero_srch": (0x6099, 2),
+        "Homing method": {"Homing method": (0x6098, 0)},
+        "Homing speeds": {
+            "Speed for switch search": (0x6099, 1),
+            "Speed for zero search": (0x6099, 2),
         },
-        "homing_acceleration": {"homing_acc": (0x609A, 0)},
-        "home_offset_distance_init": {"home_offset_distance": (0x30B1, 0)},
-        "home_position_init": {"homeposition": (0x30B0, 0)},
-        "current_threshold_homing_init": {
-            "current_threshold_homing": (0x30B2, 0),
+        "Homing acceleration": {"Homing acceleration": (0x609A, 0)},
+        "Home offset move distance": {"Home offset move distance": (0x30B1, 0)},
+        "Home position": {"Home position": (0x30B0, 0)},
+        "Current threshold for homing mode": {
+            "Current threshold for homing mode": (0x30B2, 0),
         },
     },
     "PVM": {
-        "target_velocity": {"vel": (0x60FF, 0)},
-        "profile_acceleration": {"prof_acc": (0x6083, 0)},
-        "profile_deceleration": {"prof_dec": (0x6084, 0)},
-        "motion_profile_type": {"profile": (0x6086, 0)},
+        "Target velocity": {"Target velocity": (0x60FF, 0)},
+        "Profile acceleration": {"Profile acceleration": (0x6083, 0)},
+        "Profile deceleration": {"Profile deceleration": (0x6084, 0)},
+        "Motion profile type": {"Motion profile type": (0x6086, 0)},
     },
     "CSP": {
-        "target_position": {"position": (0x607A, 0)},
-        "position_offset": {"pos_offset": (0x60B0, 0)},
-        "torque_offset": {"tor_offset": (0x60B2, 0)},
+        "Target position": {"Target position": (0x607A, 0)},
+        "Position offset": {"Position offset": (0x60B0, 0)},
+        "Torque offset": {"Torque offset": (0x60B2, 0)},
     },
     "CSV": {
-        "target_velocity": {"vel": (0x60FF, 0)},
-        "velocity_offset": {"vel_offset": (0x60B1, 0)},
-        "torque_offset": {"tor_offset": (0x60B2, 0)},
+        "Target velocity": {"Target velocity": (0x60FF, 0)},
+        "Velocity offset": {"Velocity offset": (0x60B1, 0)},
+        "Torque offset": {"Torque offset": (0x60B2, 0)},
     },
     "CST": {
-        "target_torque": {"torque": (0x6071, 0)},
-        "torque_offset": {"tor_offset": (0x60B2, 0)},
+        "Target torque": {"Target torque": (0x6071, 0)},
+        "Torque offset": {"Torque offset": (0x60B2, 0)},
     },
 }
 
