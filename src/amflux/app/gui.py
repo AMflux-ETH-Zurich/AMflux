@@ -221,7 +221,14 @@ def build_param_editor(parent, param_dict):
 
         return tk_vars
 
-def ModePageBuilder(app, parent, modeint, modename): 
+def ModePageBuilder(
+    app,
+    parent,
+    modeint,
+    modename,
+    extra_panel_builder=None,
+    telemetry_panel_builder=None,
+): 
     
     #Grid
     parent.grid_columnconfigure(0, weight=10)
@@ -290,8 +297,11 @@ def ModePageBuilder(app, parent, modeint, modename):
     apply_button = ttk.Button(editing, text="APPLY", command=lambda: apply_button_func())
     apply_button.grid(column=1)
     
-    specific = tk.Frame(parent)
-    specific.grid(row=3, column=3, pady=50)
+    mode_options = tk.Frame(parent)
+    mode_options.grid(row=3, column=3, pady=50)
+
+    specific = tk.Frame(mode_options)
+    specific.grid(row=0, column=0)
 
     specific_bit_specs = {
         PageState.ProfilePosition: [
@@ -325,6 +335,11 @@ def ModePageBuilder(app, parent, modeint, modename):
         for bit_position, var in specific_bit_vars:
             bits |= var.get() << bit_position
         return bits
+
+    if extra_panel_builder is not None:
+        extra_panel = tk.Frame(mode_options)
+        extra_panel.grid(row=1, column=0, pady=(10, 0))
+        extra_panel_builder(app, extra_panel)
     
 
     #Command Buttons
@@ -416,11 +431,13 @@ def ModePageBuilder(app, parent, modeint, modename):
     )
     record_button.grid(row=4, column=0)
 
-    #Motor Status
-    MotorTelemetry(parent, app.drive)
+    if telemetry_panel_builder is None:
+        telemetry_panel_builder = build_motor_telemetry_panel
 
-#===============================================AI SLOP=================================================
-
+    if telemetry_panel_builder is not None:
+        telemetry_panel = tk.Frame(parent)
+        telemetry_panel.grid(row=6, column=3)
+        telemetry_panel_builder(app, telemetry_panel)
 
 def read_and_normalize_serial(ser, min_raw, max_raw, min_pos, max_pos, value_index=0):
     """
@@ -447,371 +464,202 @@ def read_and_normalize_serial(ser, min_raw, max_raw, min_pos, max_pos, value_ind
         print(f"Serial read error: {e}")
         return None
 
-#===============================================AI SLOP=================================================
-
-
-
-def pid_demo_page(app, parent):
-
-    #define Grid
-    parent.grid_columnconfigure(0, weight=10)
-    parent.grid_columnconfigure(1, weight=5)
-    parent.grid_columnconfigure(2, weight=0)
-    parent.grid_columnconfigure(3, weight=0)
-    parent.grid_columnconfigure(4, weight=0)
-    parent.grid_columnconfigure(5, weight=5)
-    parent.grid_columnconfigure(6, weight=10)
-    
-    
-    parent.grid_rowconfigure(0, weight=10)
-    parent.grid_rowconfigure(1, weight=5)
-    parent.grid_rowconfigure(2, weight=0)
-    parent.grid_rowconfigure(3, weight=0)
-    parent.grid_rowconfigure(4, weight=0)
-    parent.grid_rowconfigure(5, weight=5)
-    parent.grid_rowconfigure(6, weight=10)
-
-    #Title Text
-    header = tk.Frame(parent)
-    header.grid(row=0, column=3)
-
-    landing_text_var = tk.StringVar()
-    landing_text_var.set("PID DEMO \n Demo Page for PID Control of Position")
-
-    label = tk.Label(
-        header, 
-        textvariable=landing_text_var, 
-        anchor=tk.CENTER,       
-        bg="lightblue",      
-        height=3,              
-        width=30,              
-        bd=3,                  
-        font=("Helvetica", 16, "bold"),   
-        fg="black",             
-        padx=15,               
-        pady=15,                
-        justify=tk.CENTER,    
-        relief=tk.RAISED,           
-        wraplength=250         
-    )
-    label.grid(row=0, column=0, pady=20)
-
-    #===============================================AI SLOP=================================================
-    # serial config UI
-    serial_frame = tk.Frame(parent)
-    serial_frame.grid(row=3, column=3)
-
-    ser_ref = [None]
-
-    tk.Label(serial_frame, text="Port:").grid(row=0, column=0, padx=5)
+def build_serial_position_panel(app, parent):
+    tk.Label(parent, text="Port:").grid(row=0, column=0, padx=5)
     port_var = tk.StringVar(value="/dev/ttyUSB0")
-    ttk.Entry(serial_frame, textvariable=port_var, width=10).grid(row=0, column=1)
+    ttk.Entry(parent, textvariable=port_var, width=10).grid(row=0, column=1)
 
-    tk.Label(serial_frame, text="Baud:").grid(row=0, column=2, padx=5)
+    tk.Label(parent, text="Baud:").grid(row=0, column=2, padx=5)
     baud_var = tk.StringVar(value="115200")
-    ttk.Entry(serial_frame, textvariable=baud_var, width=8).grid(row=0, column=3)
+    ttk.Entry(parent, textvariable=baud_var, width=8).grid(row=0, column=3)
 
-    status_var = tk.StringVar(value="Disconnected")
-    tk.Label(serial_frame, textvariable=status_var, fg="gray").grid(row=1, column=0, columnspan=4)
+    connected = app.serial_connection is not None and app.serial_connection.is_open
+    status_text = "Connected" if connected else "Disconnected"
+    status_var = tk.StringVar(value=status_text)
+    tk.Label(parent, textvariable=status_var, fg="gray").grid(row=1, column=0, columnspan=4)
+    poll_running = {"active": False}
 
     def poll_serial():
-        if ser_ref[0] and ser_ref[0].is_open:
+        if not parent.winfo_exists():
+            poll_running["active"] = False
+            return
+
+        poll_running["active"] = True
+        if app.serial_connection and app.serial_connection.is_open:
             serial_value_normalized = read_and_normalize_serial(
-                ser_ref[0],
+                app.serial_connection,
                 min_raw=0, max_raw=1023,    # adjust to your serial device range
                 min_pos=0, max_pos=100000   # adjust to your drive position limits
             )
-            if serial_value_normalized is not None:
+            if app.drive is not None and serial_value_normalized is not None:
                 app.drive.request_update_param('Target position', serial_value_normalized)
-        if parent.winfo_exists():
-            parent.after(50, poll_serial)
+        parent.after(50, poll_serial)
 
     def connect():
         try:
-            ser_ref[0] = serial.Serial(port_var.get(), int(baud_var.get()), timeout=0.05)
+            if app.serial_connection and app.serial_connection.is_open:
+                app.serial_connection.close()
+            app.serial_connection = serial.Serial(port_var.get(), int(baud_var.get()), timeout=0.05)
             status_var.set(f"Connected: {port_var.get()}")
-            poll_serial()
+            if not poll_running["active"]:
+                poll_serial()
         except Exception as e:
             status_var.set(f"Error: {e}")
 
     def disconnect():
-        if ser_ref[0]:
-            ser_ref[0].close()
-            ser_ref[0] = None
+        app.close_serial_connection()
         status_var.set("Disconnected")
 
-    ttk.Button(serial_frame, text="Connect", command=connect).grid(row=0, column=4, padx=5)
-    ttk.Button(serial_frame, text="Disconnect", command=disconnect).grid(row=0, column=5)
+    ttk.Button(parent, text="Connect", command=connect).grid(row=0, column=4, padx=5)
+    ttk.Button(parent, text="Disconnect", command=disconnect).grid(row=0, column=5)
 
-    #===============================================AI SLOP=================================================
-
-    #Command Buttons
-    commanding = tk.Frame(parent)
-    commanding.grid(row=2, column=4, padx=50)
-
-    commanding.grid_columnconfigure(0, weight=1)
-    commanding.grid_columnconfigure(1, weight=0)
-    commanding.grid_columnconfigure(2, weight=0)
-    commanding.grid_columnconfigure(3, weight=0)
-    commanding.grid_columnconfigure(4, weight=1)
-
-    def enable_button_func():
-        if app.drive is None:
-            print("Warning: Network not initialized, cannot enable operation")
-            return
-        app.drive.request_enable_operation()
-    
-    def disable_button_func():
-        app.drive.request_disable_voltage()
-
-    enable_button = tk.Button(
-        commanding,
-        text="ENABLE",
-        command=enable_button_func
-    )
-    enable_button.grid(row=0, column=0)
-    enable_button_default_bg = enable_button.cget("background")
-    enable_button_default_fg = enable_button.cget("foreground")
-
-    def refresh_enable_button_color():
-        try:
-            if not enable_button.winfo_exists():
-                return
-
-            if drive_is_operation_enabled(app.drive):
-                enable_button.config(
-                    background="#c62828",
-                    activebackground="#b71c1c",
-                    foreground="white",
-                    activeforeground="white",
-                )
-            else:
-                enable_button.config(
-                    background=enable_button_default_bg,
-                    activebackground=enable_button_default_bg,
-                    foreground=enable_button_default_fg,
-                    activeforeground=enable_button_default_fg,
-                )
-            enable_button.after(200, refresh_enable_button_color)
-        except tk.TclError:
-            return
-
-    refresh_enable_button_color()
-
-    quick_stop_button = ttk.Button(
-        commanding,
-        text="QUICK-STOP",
-        command= lambda: app.drive.request_quick_stop()
-    )
-    quick_stop_button.grid(row=1, column=0)
-
-    disable_voltage_button = ttk.Button(
-        commanding,
-        text="DISABLE",
-        command= disable_button_func
-    )
-    disable_voltage_button.grid(row=2, column=0)
-
-    back_button = ttk.Button(
-        parent, 
-        text="Back", 
-        command = lambda: app.set_state(PageState.Home)
-    )
-    back_button.grid(row=0, column=1, padx=50)
-    
-    def stop_record_data():
-        record_button.config(text="RECORD", background = "white", command=lambda: record_data())
-        app.drive.stop_recording()
-
-    def record_data():
-        record_button.config(text="RECORDING", background = "red", command=lambda: stop_record_data())
-        app.drive.start_recording()
-
-    record_button = ttk.Button(
-        commanding, 
-        text = "Record",
-        command = lambda: record_data()
-    )
-    record_button.grid(row=4, column=0)
-
-    #Motor Status
-    MotorTelemetry(parent, app.drive)
+    if connected:
+        poll_serial()
 
 # ======================================================================
 # Motor telemetry
 # ======================================================================
 
-class MotorTelemetry:
-    def __init__(self, parent, drive):
-        """initialize the MotorTelemetry class"""
+class MotorTelemetryPanel:
+    PLOT_SIGNALS = (
+        {"key": "torque", "label": "Torque", "unit": "Nm", "color": "wheat"},
+        {"key": "velocity", "label": "Velocity", "unit": "RPM", "color": "lightblue"},
+    )
 
+    def __init__(self, parent, drive, update_interval_ms=50, max_points=100, display_window=10):
+        self.parent = parent
         self.drive = drive
-        self.root_window = tk.Frame(parent)
-
-        #self.root_window.grid_propagate(False)
-        #self.root_window.configure(width=450, height=260)
-        
-        self.root_window.grid(row=6, column=3)
-
-        #setup the grid for the two widgets side by side
-        self.root_window.grid_rowconfigure(0, weight=0)
-        self.root_window.grid_columnconfigure(0, weight=0)
-        self.root_window.grid_columnconfigure(1, weight=0)
-
-        #==========================================================
-
-        #data buffers, lists that will store our values and automatically pop old ones
-        #length of the deques
-        self.max_points = 100
-        #create the deque lines with a maximum length
-        self.time_data = deque(maxlen=self.max_points)
-        self.torque_data = deque(maxlen=self.max_points)
-        self.velocity_data = deque(maxlen=self.max_points)
-
-        #when the monitoring started
+        self.update_interval_ms = update_interval_ms
+        self.display_window = display_window
         self.start_time = time.time()
-        # seconds to display on x-axis
-        self.display_window = 10
+        self.time_data = deque(maxlen=max_points)
+        self.signal_data = {
+            spec["key"]: deque(maxlen=max_points)
+            for spec in self.PLOT_SIGNALS
+        }
+        self.plot_widgets = {}
 
-        #==========================================================
+        self.parent.grid_rowconfigure(0, weight=0)
+        self.parent.grid_columnconfigure(0, weight=0)
+        self.parent.grid_columnconfigure(1, weight=0)
 
-        #create the corresponding matplotlib figures
-        fig = Figure(figsize=(4, 2.5), dpi=100)
-
-        #creates two subplots side by side (row, column, index of subplot)
-        self.ax_torque = fig.add_subplot(1,2,1)
-        self.ax_velocity = fig.add_subplot(1,2,2)
-
-        #creates line objects for our plots which are empty, the comma ensures we don't return a list but the actual line data type
-        self.torque_line, = self.ax_torque.plot([], [], 'k')
-        self.velocity_line, = self.ax_velocity.plot([], [], 'k')
-
-        #set titles and labels for the plots
-        self.ax_torque.set_title("Torque vs Time")
-        self.ax_velocity.set_title("Velocity vs Time")
-
-        self.ax_torque.set_ylabel("Torque (Nm)")
-        self.ax_velocity.set_ylabel("Velocity (RPM)")
-
-        self.ax_torque.set_xlabel("Time (s)")
-        self.ax_velocity.set_xlabel("Time (s)")
-
-        # Create text annotations for displaying current values
-        self.torque_text = self.ax_torque.text(0.05, 0.95, "", transform=self.ax_torque.transAxes,
-                                                fontsize=10, verticalalignment='top',
-                                                bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
-        self.velocity_text = self.ax_velocity.text(0.05, 0.95, "", transform=self.ax_velocity.transAxes,
-                                                    fontsize=10, verticalalignment='top',
-                                                    bbox=dict(boxstyle='round', facecolor='lightblue', alpha=0.5))
-
-        #==========================================================
-
-        #embed the matplotlib figure into the Tkinter window
-        self.canvas_plot = FigureCanvasTkAgg(fig, master = self.root_window)
-
-        #get_tk_widget() returns the Tkinter widget containing the plot and pack() adds it to the window
-        #self.canvas_plot.get_tk_widget().pack(side="left")
-
-        self.canvas_plot.get_tk_widget().grid(row=0, column=0)
-
-        #==========================================================
-
-        #create custom canvas to visualize motor position
-        #creates the canvas widget with specified width, height, and background color
-        self.canvas_widget = tk.Canvas(self.root_window, width=250, height=250, bg="white")
-        #pady adds vertical padding around the canvas
-        #self.canvas_widget.pack(side="left")
-        self.canvas_widget.grid(row=0, column=1)
-        # center of the canvas
-        self.center = (125, 125)
-        # radius for the motor position circle
-        self.radius = 75
-        #draw the motor circle on the canvas
-        self.canvas_widget.create_oval(45 , 45, 205, 205, outline="black", width=2)
-        #draw the position dot
-        #args (x1, y1, x2, y2, fill): (x1,y1) top-left, (x2,y2) bottom-right of bounding box, fill=color
-        self.dot = self.canvas_widget.create_oval(85, 25, 105, 35, fill="black")
-        
-        # Create text label for position value on canvas
-        self.position_text = self.canvas_widget.create_text(100, 100, text="Position: 0.00 deg",
-                                                                 font=("Arial", 10), fill="black")
-
-        #==========================================================
-
+        self._build_plot_panel()
+        self._build_position_panel()
         self.update()
 
-    def read_motor_data(self):
+    def _build_plot_panel(self):
+        self.figure = Figure(figsize=(4, 2.5), dpi=100)
+
+        for index, spec in enumerate(self.PLOT_SIGNALS, start=1):
+            axis = self.figure.add_subplot(1, len(self.PLOT_SIGNALS), index)
+            line, = axis.plot([], [], "k")
+            axis.set_title(f"{spec['label']} vs Time")
+            axis.set_ylabel(f"{spec['label']} ({spec['unit']})")
+            axis.set_xlabel("Time (s)")
+            readback = axis.text(
+                0.05,
+                0.95,
+                "",
+                transform=axis.transAxes,
+                fontsize=10,
+                verticalalignment="top",
+                bbox=dict(boxstyle="round", facecolor=spec["color"], alpha=0.5),
+            )
+            self.plot_widgets[spec["key"]] = {
+                "axis": axis,
+                "line": line,
+                "readback": readback,
+                "spec": spec,
+            }
+
+        self.plot_canvas = FigureCanvasTkAgg(self.figure, master=self.parent)
+        self.plot_canvas.get_tk_widget().grid(row=0, column=0)
+
+    def _build_position_panel(self):
+        self.position_canvas = tk.Canvas(self.parent, width=250, height=250, bg="white")
+        self.position_canvas.grid(row=0, column=1)
+
+        self.position_center = (125, 125)
+        self.position_radius = 75
+        self.position_canvas.create_oval(45, 45, 205, 205, outline="black", width=2)
+        self.position_dot = self.position_canvas.create_oval(85, 25, 105, 35, fill="black")
+        self.position_text = self.position_canvas.create_text(
+            100,
+            100,
+            text="Position:\n-- rad",
+            font=("Arial", 10),
+            fill="black",
+        )
+
+    def read_telemetry(self):
+        values = {"torque": None, "velocity": None, "position": None}
         if self.drive is None:
-            return None, None, None
+            return values
 
         telemetry = self.drive.get_status()
-        if telemetry is None or len(telemetry) < 3:
-            return None, None, None
+        if telemetry is None:
+            return values
 
-        torque = telemetry[0]
-        velocity = telemetry[1]
-        position = telemetry[2]
-
-        return torque, velocity, position
+        for key, index in (("torque", 0), ("velocity", 1), ("position", 2)):
+            if len(telemetry) > index:
+                values[key] = telemetry[index]
+        return values
 
     def _format_readback(self, label, value, unit):
         if value is None:
             return f"{label}:\n-- {unit}"
         return f"{label}:\n{value:.2f} {unit}"
-    
+
+    def _update_plot(self, elapsed_time, values):
+        self.time_data.append(elapsed_time)
+
+        for key, widgets in self.plot_widgets.items():
+            value = values[key]
+            plot_value = float("nan") if value is None else value
+            self.signal_data[key].append(plot_value)
+
+            widgets["line"].set_data(self.time_data, self.signal_data[key])
+            spec = widgets["spec"]
+            widgets["readback"].set_text(
+                self._format_readback(spec["label"], value, spec["unit"])
+            )
+
+            axis = widgets["axis"]
+            if elapsed_time < self.display_window:
+                axis.set_xlim(0, self.display_window)
+            else:
+                axis.set_xlim(elapsed_time - self.display_window, elapsed_time)
+
+        self.plot_canvas.draw_idle()
+
+    def _update_position(self, position):
+        if position is None:
+            self.position_canvas.itemconfig(self.position_text, text="Position:\n-- rad")
+            return
+
+        x = self.position_center[0] + self.position_radius * math.cos(position)
+        y = self.position_center[1] - self.position_radius * math.sin(position)
+        self.position_canvas.coords(self.position_dot, x - 5, y - 5, x + 5, y + 5)
+        self.position_canvas.itemconfig(
+            self.position_text,
+            text=f"Position:\n{position:.2f} rad",
+        )
+
     def update(self):
-        """update the GUI with new motor data"""
         try:
-            t = time.time() - self.start_time
-            torque, velocity, position = self.read_motor_data()
-
-            # Append NaN for unavailable values so plots stay alive without fake zeros.
-            torque_plot = float("nan") if torque is None else torque
-            velocity_plot = float("nan") if velocity is None else velocity
-
-            self.time_data.append(t)
-            self.torque_data.append(torque_plot)
-            self.velocity_data.append(velocity_plot)
-
-            #updating the plots with new data
-            self.torque_line.set_data(self.time_data, self.torque_data)
-            self.velocity_line.set_data(self.time_data, self.velocity_data)
-
-            # Update text values on plots
-            self.torque_text.set_text(self._format_readback("Torque", torque, "Nm"))
-            self.velocity_text.set_text(self._format_readback("Velocity", velocity, "RPM"))
-
-            #set x-axis to show moving window
-            if t < self.display_window:
-                self.ax_torque.set_xlim(0, self.display_window)
-                self.ax_velocity.set_xlim(0, self.display_window)
-            else:
-                self.ax_torque.set_xlim(t - self.display_window, t)
-                self.ax_velocity.set_xlim(t - self.display_window, t)
-
-            #set y-axis limits
-            #self.ax_torque.set_ylim(0, 20)
-            #elf.ax_velocity.set_ylim(0, 100)
-
-            #tells the program the figure needs to be redrawn, but do it when the GUI is idle, so it doesn't block the event loop
-            self.canvas_plot.draw_idle()
-
-            if position is not None:
-                x = self.center[0] + self.radius * math.cos(position)
-                y = self.center[1] - self.radius * math.sin(position)
-                self.canvas_widget.coords(self.dot, x - 5, y - 5, x + 5, y + 5)
-                self.canvas_widget.itemconfig(
-                    self.position_text,
-                    text=f"Position:\n{position:.2f} rad",
-                )
-            else:
-                self.canvas_widget.itemconfig(self.position_text, text="Position:\n-- deg")
-
+            values = self.read_telemetry()
+            elapsed_time = time.time() - self.start_time
+            self._update_plot(elapsed_time, values)
+            self._update_position(values["position"])
         except Exception as exc:
             print(f"MotorTelemetry update failed: {exc}")
         finally:
-            if self.root_window.winfo_exists():
-                self.root_window.after(50, self.update)
+            if self.parent.winfo_exists():
+                self.parent.after(self.update_interval_ms, self.update)
+
+
+def build_motor_telemetry_panel(app, parent):
+    MotorTelemetryPanel(parent, app.drive)
         
 
 
@@ -829,6 +677,7 @@ class App(tk.Tk):
 
         #Drive
         self.drive = drive
+        self.serial_connection = None
         self.gui_events = queue.Queue()
         # current state
         self.state = PageState.Home
@@ -839,6 +688,7 @@ class App(tk.Tk):
 
         self.render_page()
         self._poll_gui_events()
+        self.protocol("WM_DELETE_WINDOW", self.on_close)
 
     def post_gui_event(self, callback, *args):
         self.gui_events.put((callback, args))
@@ -855,6 +705,17 @@ class App(tk.Tk):
     def set_state(self, new_state: str):
         self.state = new_state
         self.render_page()
+
+    def close_serial_connection(self):
+        if self.serial_connection is not None:
+            try:
+                self.serial_connection.close()
+            finally:
+                self.serial_connection = None
+
+    def on_close(self):
+        self.close_serial_connection()
+        self.destroy()
 
     def clear_container(self):
         for widget in self.container.winfo_children():
@@ -878,7 +739,13 @@ class App(tk.Tk):
         elif self.state == 6:
             ModePageBuilder(self, self.container, self.state, "Cyclic Synchronous Torque Mode")
         elif self.state == 7:
-            pid_demo_page(self, self.container)
+            ModePageBuilder(
+                self,
+                self.container,
+                PageState.CyclicSynchronousPosition,
+                "PID Demo",
+                extra_panel_builder=build_serial_position_panel,
+            )
         else:
             tk.Label(self.container, text="Unknown state").pack()
 
