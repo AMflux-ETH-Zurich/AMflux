@@ -80,7 +80,7 @@ def build_serial_pid_panel(app, parent):
             if app.drive is not None and raw_values is not None:
                 values = normalize_pid_values(raw_values)
                 for param_name, value in values.items():
-                    if param_name == "switch" or last_values.get(param_name) == value:
+                    if param_name == "switch" or abs(last_values.get(param_name) - value) < 100_000:
                         continue
                     app.drive.request_update_param(param_name, value)
                     last_values[param_name] = value
