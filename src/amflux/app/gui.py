@@ -522,7 +522,7 @@ def pid_demo_page(app, parent):
                 min_pos=0, max_pos=100000   # adjust to your drive position limits
             )
             if serial_value_normalized is not None:
-                app.drive.request_update_param('Target Position', serial_value_normalized)
+                app.drive.request_update_param('Target position', serial_value_normalized)
         if parent.winfo_exists():
             parent.after(50, poll_serial)
 
