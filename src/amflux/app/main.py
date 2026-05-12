@@ -69,7 +69,7 @@ def main():
     EPOS4 = organiser.DriveOrganiser(mc1, network=network)
 
     # Start user interface
-    app = gui.App(drive=EPOS4)
+    app = gui.App(organiser=EPOS4)
     app.mainloop()
     
     # Shutdown network after user interface

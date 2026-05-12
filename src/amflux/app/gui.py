@@ -72,12 +72,12 @@ def mode_page_for_menu_label(menu_label):
     return None
 
 
-def drive_is_operation_enabled(drive):
-    if drive is None:
+def organiser_is_operation_enabled(organiser):
+    if organiser is None:
         return False
 
     try:
-        telemetry = drive.get_status()
+        telemetry = organiser.get_status()
     except Exception:
         return False
 
@@ -93,11 +93,11 @@ def drive_is_operation_enabled(drive):
 
 
 def prepare_mode_page(app, page_state, desired_mode, button, failure_message):
-    if app.drive is None:
+    if app.organiser is None:
         print("Warning: Network not initialized, cannot prepare operation")
         return
 
-    app.drive.current_mode = desired_mode
+    app.organiser.current_mode = desired_mode
     button.config(state=tk.DISABLED)
 
     def prepare_finished(prepared):
@@ -109,8 +109,8 @@ def prepare_mode_page(app, page_state, desired_mode, button, failure_message):
                 print(failure_message)
         app.post_gui_event(update_gui, prepared)
 
-    app.drive.start_organiser()
-    app.drive.request_prepare_operation(desired_mode, callback=prepare_finished)
+    app.organiser.start_organiser()
+    app.organiser.request_prepare_operation(desired_mode, callback=prepare_finished)
 
 
 # ======================================================================
@@ -285,12 +285,12 @@ def build_mode_page(
     variables = build_param_editor(editing, objdict_data["mode"][mode_code]["comm"])
 
     def apply_button_func():
-        if app.drive is None:
+        if app.organiser is None:
             print("Warning: Network not initialized, cannot update parameters")
             return
         for param_name, tk_var in variables.items():
             value = tk_var.get()
-            app.drive.request_update_param(param_name, value, 5)
+            app.organiser.request_update_param(param_name, value, 5)
 
     
     apply_button = ttk.Button(editing, text="APPLY", command=apply_button_func)
@@ -352,22 +352,22 @@ def build_mode_page(
     commanding.grid_columnconfigure(4, weight=1)
 
     def enable_button_func():
-        if app.drive is None:
+        if app.organiser is None:
             print("Warning: Network not initialized, cannot enable operation")
             return
-        app.drive.request_enable_operation(get_specific_bits())
+        app.organiser.request_enable_operation(get_specific_bits())
     
     def disable_button_func():
-        if app.drive is None:
+        if app.organiser is None:
             print("Warning: Network not initialized, cannot disable voltage")
             return
-        app.drive.request_disable_voltage()
+        app.organiser.request_disable_voltage()
 
     def quick_stop_button_func():
-        if app.drive is None:
+        if app.organiser is None:
             print("Warning: Network not initialized, cannot quick-stop")
             return
-        app.drive.request_quick_stop()
+        app.organiser.request_quick_stop()
 
     enable_button = tk.Button(
         commanding,
@@ -383,7 +383,7 @@ def build_mode_page(
             if not enable_button.winfo_exists():
                 return
 
-            if drive_is_operation_enabled(app.drive):
+            if organiser_is_operation_enabled(app.organiser):
                 enable_button.config(
                     background="#c62828",
                     activebackground="#b71c1c",
@@ -425,18 +425,18 @@ def build_mode_page(
     back_button.grid(row=0, column=1, padx=50)
     
     def stop_record_data():
-        if app.drive is None:
+        if app.organiser is None:
             print("Warning: Network not initialized, cannot stop recording")
             return
         record_button.config(text="RECORD", background="white", command=record_data)
-        app.drive.stop_recording()
+        app.organiser.stop_recording()
 
     def record_data():
-        if app.drive is None:
+        if app.organiser is None:
             print("Warning: Network not initialized, cannot start recording")
             return
         record_button.config(text="RECORDING", background="red", command=stop_record_data)
-        app.drive.start_recording()
+        app.organiser.start_recording()
 
     record_button = ttk.Button(
         commanding, 
@@ -459,15 +459,14 @@ def build_mode_page(
 # ======================================================================
 
 class App(tk.Tk):
-    def __init__(self, drive):
+    def __init__(self, organiser):
         super().__init__()
         
         self.title("EPOS4 Control Window")
         self.geometry("800x500")
         self.configure(bg="#363131") 
 
-        #Drive
-        self.drive = drive
+        self.organiser = organiser
         self.serial_connection = None
         self.gui_events = queue.Queue()
         # current state
@@ -533,7 +532,7 @@ class App(tk.Tk):
 
 def main():
     # Start user interface
-    app = App(drive=None)
+    app = App(organiser=None)
     app.mainloop()
 
 if __name__ == "__main__":

@@ -5,11 +5,16 @@ import serial
 
 
 SERIAL_FIELDS = ("p", "i", "d", "switch")
+SERIAL_POLL_INTERVAL_MS = 250
 RAW_CHANGE_THRESHOLD = 4
 PID_GAIN_RANGES = {
     "p": ("Position controller P gain", 0, 10_000_000),
     "i": ("Position controller I gain", 0, 100_000_000),
     "d": ("Position controller D gain", 0, 300_000),
+}
+PARAM_TO_SERIAL_FIELD = {
+    param_name: field
+    for field, (param_name, _min_gain, _max_gain) in PID_GAIN_RANGES.items()
 }
 
 
@@ -29,7 +34,7 @@ def parse_serial_pid_line(line):
     }
 
 
-def read_latest_serial_pid_values(ser):
+def read_serial_pid_samples(ser):
     try:
         first_line = ser.readline().decode("utf-8", errors="ignore").strip()
         buffered_text = ""
@@ -40,19 +45,28 @@ def read_latest_serial_pid_values(ser):
         lines = [first_line] if first_line else []
         lines.extend(line.strip() for line in buffered_text.splitlines() if line.strip())
         if not lines:
-            return None
+            return []
 
-        for line in reversed(lines):
+        samples = []
+        for line in lines:
             try:
-                return parse_serial_pid_line(line)
+                samples.append(parse_serial_pid_line(line))
             except ValueError:
                 continue
 
-        print(f"Serial parse error: no valid PID line in {lines!r}")
-        return None
+        if not samples:
+            print(f"Serial parse error: no valid PID line in {lines!r}")
+        return samples
     except Exception as exc:
         print(f"Serial read error: {exc}")
+        return []
+
+
+def read_latest_serial_pid_values(ser):
+    samples = read_serial_pid_samples(ser)
+    if not samples:
         return None
+    return samples[-1]
 
 
 read_serial_pid_values = read_latest_serial_pid_values
@@ -85,8 +99,25 @@ def build_serial_pid_panel(app, parent):
     connected = app.serial_connection is not None and app.serial_connection.is_open
     status_var = tk.StringVar(value="Connected" if connected else "Disconnected")
     tk.Label(parent, textvariable=status_var, fg="gray").grid(row=1, column=0, columnspan=4)
+
+    tk.Label(parent, text="Target:").grid(row=2, column=0, padx=5)
+    target_position_var = tk.StringVar(value="100000")
+    ttk.Entry(parent, textvariable=target_position_var, width=10).grid(row=2, column=1)
+
     poll_running = {"active": False}
     last_raw_values = {}
+    last_switch_state = {"value": 1}
+    next_target_sign = {"value": 1}
+
+    def request_target_position():
+        try:
+            target_magnitude = abs(int(target_position_var.get(), 0))
+        except ValueError:
+            status_var.set(f"Invalid target: {target_position_var.get()}")
+            return
+        target_position = next_target_sign["value"] * target_magnitude
+        app.organiser.request_update_param("Target position", target_position)
+        next_target_sign["value"] *= -1
 
     def poll_serial():
         if not parent.winfo_exists():
@@ -95,29 +126,34 @@ def build_serial_pid_panel(app, parent):
 
         poll_running["active"] = True
         if app.serial_connection and app.serial_connection.is_open:
-            raw_values = read_latest_serial_pid_values(app.serial_connection)
-            if app.drive is not None and raw_values is not None:
+            samples = read_serial_pid_samples(app.serial_connection)
+            if app.organiser is not None and samples:
+                switch_pressed = False
+                for sample in samples:
+                    if last_switch_state["value"] == 1 and sample["switch"] == 0:
+                        switch_pressed = True
+                    last_switch_state["value"] = sample["switch"]
+
+                if switch_pressed:
+                    request_target_position()
+
+                raw_values = samples[-1]
                 values = normalize_pid_values(raw_values)
                 for param_name, value in values.items():
                     if param_name == "switch":
                         continue
 
-                    serial_field = next(
-                        field
-                        for field, (gain_name, _min_gain, _max_gain) in PID_GAIN_RANGES.items()
-                        if gain_name == param_name
-                    )
+                    serial_field = PARAM_TO_SERIAL_FIELD[param_name]
                     previous_raw_value = last_raw_values.get(serial_field)
                     if (
                         previous_raw_value is not None
                         and abs(previous_raw_value - raw_values[serial_field]) < RAW_CHANGE_THRESHOLD
                     ):
-                        print("polled serial; difference to small for parameter update")
                         continue
 
-                    app.drive.request_update_param(param_name, value)
+                    app.organiser.request_update_param(param_name, value)
                     last_raw_values[serial_field] = raw_values[serial_field]
-        parent.after(50, poll_serial)
+        parent.after(SERIAL_POLL_INTERVAL_MS, poll_serial)
 
     def connect():
         try:

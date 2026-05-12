@@ -16,9 +16,9 @@ class MotorTelemetryPanel:
         {"key": "velocity", "label": "Velocity", "unit": "RPM", "color": "lightblue"},
     )
 
-    def __init__(self, parent, drive, update_interval_ms=50, max_points=100, display_window=10):
+    def __init__(self, parent, organiser, update_interval_ms=50, max_points=100, display_window=10):
         self.parent = parent
-        self.drive = drive
+        self.organiser = organiser
         self.update_interval_ms = update_interval_ms
         self.display_window = display_window
         self.start_time = time.time()
@@ -83,10 +83,10 @@ class MotorTelemetryPanel:
 
     def read_telemetry(self):
         values = {"torque": None, "velocity": None, "position": None}
-        if self.drive is None:
+        if self.organiser is None:
             return values
 
-        telemetry = self.drive.get_status()
+        telemetry = self.organiser.get_status()
         if telemetry is None:
             return values
 
@@ -147,4 +147,4 @@ def format_readback(label, value, unit):
 
 
 def build_motor_telemetry_panel(app, parent):
-    MotorTelemetryPanel(parent, app.drive)
+    MotorTelemetryPanel(parent, app.organiser)
