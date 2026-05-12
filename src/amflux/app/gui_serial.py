@@ -5,6 +5,7 @@ import serial
 
 
 SERIAL_FIELDS = ("p", "i", "d", "switch")
+RAW_CHANGE_THRESHOLD = 4
 PID_GAIN_RANGES = {
     "p": ("Position controller P gain", 0, 10_000_000),
     "i": ("Position controller I gain", 0, 100_000_000),
@@ -17,26 +18,44 @@ def normalize_raw_value(raw, min_raw, max_raw, min_value, max_value):
     return int((raw - min_raw) / (max_raw - min_raw) * (max_value - min_value) + min_value)
 
 
-def read_serial_pid_values(ser):
+def parse_serial_pid_line(line):
+    values = [part.strip() for part in line.strip("()[]").split(",")]
+    if len(values) != len(SERIAL_FIELDS):
+        raise ValueError(f"expected {len(SERIAL_FIELDS)} values, got {len(values)}")
+
+    return {
+        field: int(value)
+        for field, value in zip(SERIAL_FIELDS, values)
+    }
+
+
+def read_latest_serial_pid_values(ser):
     try:
-        line = ser.readline().decode("utf-8", errors="ignore").strip()
-        if not line:
+        first_line = ser.readline().decode("utf-8", errors="ignore").strip()
+        buffered_text = ""
+        waiting = ser.in_waiting
+        if waiting:
+            buffered_text = ser.read(waiting).decode("utf-8", errors="ignore")
+
+        lines = [first_line] if first_line else []
+        lines.extend(line.strip() for line in buffered_text.splitlines() if line.strip())
+        if not lines:
             return None
 
-        values = [part.strip() for part in line.strip("()[]").split(",")]
-        if len(values) != len(SERIAL_FIELDS):
-            raise ValueError(f"expected {len(SERIAL_FIELDS)} values, got {len(values)}")
+        for line in reversed(lines):
+            try:
+                return parse_serial_pid_line(line)
+            except ValueError:
+                continue
 
-        return {
-            field: int(value)
-            for field, value in zip(SERIAL_FIELDS, values)
-        }
-    except ValueError as exc:
-        print(f"Serial parse error for {line!r}: {exc}")
+        print(f"Serial parse error: no valid PID line in {lines!r}")
         return None
     except Exception as exc:
         print(f"Serial read error: {exc}")
         return None
+
+
+read_serial_pid_values = read_latest_serial_pid_values
 
 
 def normalize_pid_values(raw_values):
@@ -67,7 +86,7 @@ def build_serial_pid_panel(app, parent):
     status_var = tk.StringVar(value="Connected" if connected else "Disconnected")
     tk.Label(parent, textvariable=status_var, fg="gray").grid(row=1, column=0, columnspan=4)
     poll_running = {"active": False}
-    last_values = {}
+    last_raw_values = {}
 
     def poll_serial():
         if not parent.winfo_exists():
@@ -76,17 +95,28 @@ def build_serial_pid_panel(app, parent):
 
         poll_running["active"] = True
         if app.serial_connection and app.serial_connection.is_open:
-            raw_values = read_serial_pid_values(app.serial_connection)
+            raw_values = read_latest_serial_pid_values(app.serial_connection)
             if app.drive is not None and raw_values is not None:
                 values = normalize_pid_values(raw_values)
                 for param_name, value in values.items():
-                    previous_value = last_values.get(param_name)
                     if param_name == "switch":
                         continue
-                    if previous_value is not None and abs(previous_value - value) < 1_000_000:
+
+                    serial_field = next(
+                        field
+                        for field, (gain_name, _min_gain, _max_gain) in PID_GAIN_RANGES.items()
+                        if gain_name == param_name
+                    )
+                    previous_raw_value = last_raw_values.get(serial_field)
+                    if (
+                        previous_raw_value is not None
+                        and abs(previous_raw_value - raw_values[serial_field]) < RAW_CHANGE_THRESHOLD
+                    ):
+                        print("polled serial; difference to small for parameter update")
                         continue
+
                     app.drive.request_update_param(param_name, value)
-                    last_values[param_name] = value
+                    last_raw_values[serial_field] = raw_values[serial_field]
         parent.after(50, poll_serial)
 
     def connect():
@@ -97,6 +127,7 @@ def build_serial_pid_panel(app, parent):
                 int(baud_var.get()),
                 timeout=0.05,
             )
+            app.serial_connection.reset_input_buffer()
             status_var.set(f"Connected: {port_var.get()}")
             if not poll_running["active"]:
                 poll_serial()
