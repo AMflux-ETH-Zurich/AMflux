@@ -18,8 +18,10 @@ PARAM_TO_SERIAL_FIELD = {
 }
 
 
-def normalize_raw_value(raw, min_raw, max_raw, min_value, max_value):
+def normalize_raw_value(raw, min_raw, max_raw, min_value, max_value, invert=False):
     raw = max(min_raw, min(max_raw, raw))
+    if invert:
+        raw = max_raw - (raw - min_raw)
     return int((raw - min_raw) / (max_raw - min_raw) * (max_value - min_value) + min_value)
 
 
@@ -34,28 +36,34 @@ def parse_serial_pid_line(line):
     }
 
 
-def read_serial_pid_samples(ser):
+def read_serial_pid_samples(ser, text_buffer=None):
     try:
-        first_line = ser.readline().decode("utf-8", errors="ignore").strip()
-        buffered_text = ""
         waiting = ser.in_waiting
-        if waiting:
-            buffered_text = ser.read(waiting).decode("utf-8", errors="ignore")
+        if not waiting:
+            return []
 
-        lines = [first_line] if first_line else []
-        lines.extend(line.strip() for line in buffered_text.splitlines() if line.strip())
-        if not lines:
+        text = ser.read(waiting).decode("utf-8", errors="ignore")
+        if text_buffer is not None:
+            text = text_buffer["value"] + text
+
+        parts = text.split("\n")
+        if text_buffer is not None:
+            text_buffer["value"] = "" if text.endswith("\n") else parts[-1]
+
+        complete_lines = parts if text.endswith("\n") else parts[:-1]
+        complete_lines = [line.strip() for line in complete_lines if line.strip()]
+        if not complete_lines:
             return []
 
         samples = []
-        for line in lines:
+        for line in complete_lines:
             try:
                 samples.append(parse_serial_pid_line(line))
             except ValueError:
                 continue
 
         if not samples:
-            print(f"Serial parse error: no valid PID line in {lines!r}")
+            print(f"Serial parse error: no valid PID line in {complete_lines!r}")
         return samples
     except Exception as exc:
         print(f"Serial read error: {exc}")
@@ -80,6 +88,7 @@ def normalize_pid_values(raw_values):
             max_raw=1023,
             min_value=min_gain,
             max_value=max_gain,
+            invert=True,
         )
         for field, (param_name, min_gain, max_gain) in PID_GAIN_RANGES.items()
     }
@@ -101,12 +110,13 @@ def build_serial_pid_panel(app, parent):
     tk.Label(parent, textvariable=status_var, fg="gray").grid(row=1, column=0, columnspan=4)
 
     tk.Label(parent, text="Target:").grid(row=2, column=0, padx=5)
-    target_position_var = tk.StringVar(value="100000")
+    target_position_var = tk.StringVar(value="10000")
     ttk.Entry(parent, textvariable=target_position_var, width=10).grid(row=2, column=1)
 
     poll_running = {"active": False}
+    serial_text_buffer = {"value": ""}
     last_raw_values = {}
-    last_switch_state = {"value": 1}
+    last_switch_state = {"value": None}
     next_target_sign = {"value": 1}
 
     def request_target_position():
@@ -117,6 +127,7 @@ def build_serial_pid_panel(app, parent):
             return
         target_position = next_target_sign["value"] * target_magnitude
         app.organiser.request_update_param("Target position", target_position)
+        status_var.set(f"Target position: {target_position}")
         next_target_sign["value"] *= -1
 
     def poll_serial():
@@ -126,7 +137,7 @@ def build_serial_pid_panel(app, parent):
 
         poll_running["active"] = True
         if app.serial_connection and app.serial_connection.is_open:
-            samples = read_serial_pid_samples(app.serial_connection)
+            samples = read_serial_pid_samples(app.serial_connection, serial_text_buffer)
             if app.organiser is not None and samples:
                 switch_pressed = False
                 for sample in samples:
@@ -150,7 +161,6 @@ def build_serial_pid_panel(app, parent):
                         and abs(previous_raw_value - raw_values[serial_field]) < RAW_CHANGE_THRESHOLD
                        
                     ):
-                        print("polled serial; difference not large enough")
                         continue
 
                     app.organiser.request_update_param(param_name, value)
@@ -166,6 +176,8 @@ def build_serial_pid_panel(app, parent):
                 timeout=0.05,
             )
             app.serial_connection.reset_input_buffer()
+            serial_text_buffer["value"] = ""
+            last_switch_state["value"] = None
             status_var.set(f"Connected: {port_var.get()}")
             if not poll_running["active"]:
                 poll_serial()
