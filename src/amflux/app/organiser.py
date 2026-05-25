@@ -444,8 +444,9 @@ class DriveOrganiser:
         """
         try:
             # DCF TPDO1: Statusword (0x6041)
-            # DCF TPDO3: Position actual value (0x6064), current actual value (0x30D1:02)
+            # DCF TPDO3: Position actual value (0x6064)
             # DCF TPDO4: Velocity actual value (0x606C)
+            # Current/torque is not mapped in the current DCF.
             # Non-blocking: read cached TPDO values (assume they've arrived during operation)
             
             status_word = self.node.tpdo[DCF_TPDO_STATUS]["Statusword"].raw
@@ -455,9 +456,7 @@ class DriveOrganiser:
             
             velocity = self.node.tpdo[DCF_TPDO_VELOCITY]["Velocity actual value"].phys
 
-            current = self.node.tpdo[DCF_TPDO_POSITION][
-                "Current actual values.Current actual value"
-            ].phys
+            torque = self.node.sdo["Torque actual values"]["Torque actual value averaged"].raw
                     
         except Exception as e:
             # Fallback to SDO reads (slower but safe)
@@ -472,9 +471,9 @@ class DriveOrganiser:
             except Exception:
                 velocity = None
             try:
-                current = self.node.sdo["Current actual values"]["Current actual value"].phys
+                torque = self.node.sdo[0x6077].raw
             except Exception:
-                current = None
+                torque = None
             try:
                 status_word = self.node.sdo[0x6041].raw
             except Exception:
@@ -484,7 +483,7 @@ class DriveOrganiser:
             #except Exception:
             #    current_mode_disp = None
         
-        self.recent_telemetry = [current, velocity, position, status_word]
+        self.recent_telemetry = [torque, velocity, position, status_word]
         return self.recent_telemetry
         
     def get_status(self) -> list:
