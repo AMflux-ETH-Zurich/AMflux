@@ -9,7 +9,7 @@ SERIAL_POLL_INTERVAL_MS = 250
 RAW_CHANGE_THRESHOLD = 4
 PID_GAIN_RANGES = {
     "p": ("Position controller P gain", 0, 10_000_000),
-    "i": ("Position controller I gain", 0, 100_000_000),
+    "i": ("Position controller I gain", 0, 10_000_000),
     "d": ("Position controller D gain", 0, 300_000),
 }
 PARAM_TO_SERIAL_FIELD = {
