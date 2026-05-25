@@ -177,7 +177,6 @@ def build_serial_pid_panel(app, parent):
                             )
                         )
                     ):
-                        print("polled serial; difference not large enough")
                         continue
                     app.organiser.request_update_param(param_name, value)
                     last_raw_values[serial_field] = raw_values[serial_field]
