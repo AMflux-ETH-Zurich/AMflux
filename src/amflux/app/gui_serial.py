@@ -94,7 +94,13 @@ def normalize_pid_values(raw_values):
         )
         for field, (param_name, min_gain, max_gain) in PID_GAIN_RANGES.items()
     }
-    normalized[POSITION_PARAM_NAME] = max(0, min(32768, raw_values["pos"]))
+    normalized[POSITION_PARAM_NAME] = normalize_raw_value(
+        raw_values["pos"],
+        min_raw=0,
+        max_raw=1023,
+        min_value=0,
+        max_value=32768,
+    )
     normalized["switch"] = raw_values["switch"]
     return normalized
 
