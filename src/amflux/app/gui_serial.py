@@ -4,9 +4,10 @@ from tkinter import ttk
 import serial
 
 
-SERIAL_FIELDS = ("p", "i", "d", "switch")
+SERIAL_FIELDS = ("p", "i", "d", "switch", "pos")
 SERIAL_POLL_INTERVAL_MS = 250
 RAW_CHANGE_THRESHOLD = 4
+POSITION_PARAM_NAME = "Target position"
 PID_GAIN_RANGES = {
     "p": ("Position controller P gain", 0, 10_000_000),
     "i": ("Position controller I gain", 0, 100_000_000),
@@ -16,6 +17,7 @@ PARAM_TO_SERIAL_FIELD = {
     param_name: field
     for field, (param_name, _min_gain, _max_gain) in PID_GAIN_RANGES.items()
 }
+PARAM_TO_SERIAL_FIELD[POSITION_PARAM_NAME] = "pos"
 
 
 def normalize_raw_value(raw, min_raw, max_raw, min_value, max_value, invert=False):
@@ -92,6 +94,7 @@ def normalize_pid_values(raw_values):
         )
         for field, (param_name, min_gain, max_gain) in PID_GAIN_RANGES.items()
     }
+    normalized[POSITION_PARAM_NAME] = max(0, min(32768, raw_values["pos"]))
     normalized["switch"] = raw_values["switch"]
     return normalized
 
@@ -161,6 +164,7 @@ def build_serial_pid_panel(app, parent):
                         and abs(previous_raw_value - raw_values[serial_field]) < RAW_CHANGE_THRESHOLD
                        
                     ):
+                        print("polled Serial: difference to small")
                         continue
 
                     app.organiser.request_update_param(param_name, value)
