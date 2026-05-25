@@ -4,9 +4,7 @@ from tkinter import ttk
 import serial
 
 
-LEGACY_SERIAL_FIELDS = ("p", "i", "d", "switch")
-SERIAL_FIELDS = (*LEGACY_SERIAL_FIELDS, "pos")
-POSITION_BEFORE_SWITCH_FIELDS = ("p", "i", "d", "pos", "switch")
+SERIAL_FIELDS = ("p", "i", "d", "pos", "switch")
 SERIAL_POLL_INTERVAL_MS = 250
 RAW_CHANGE_THRESHOLD = 4
 PID_GAIN_RANGES = {
@@ -30,23 +28,12 @@ def normalize_raw_value(raw, min_raw, max_raw, min_value, max_value, invert=Fals
 
 def parse_serial_pid_line(line):
     values = [part.strip() for part in line.strip("()[]").split(",")]
-    if len(values) == len(LEGACY_SERIAL_FIELDS):
-        fields = LEGACY_SERIAL_FIELDS
-    elif len(values) == len(SERIAL_FIELDS):
-        fourth_value, fifth_value = (int(value) for value in values[3:])
-        if fourth_value not in (0, 1) and fifth_value in (0, 1):
-            fields = POSITION_BEFORE_SWITCH_FIELDS
-        else:
-            fields = SERIAL_FIELDS
-    else:
-        raise ValueError(
-            f"expected {len(LEGACY_SERIAL_FIELDS)} or {len(SERIAL_FIELDS)} values, "
-            f"got {len(values)}"
-        )
+    if len(values) != len(SERIAL_FIELDS):
+        raise ValueError(f"expected {len(SERIAL_FIELDS)} values, got {len(values)}")
 
     return {
         field: int(value)
-        for field, value in zip(fields, values)
+        for field, value in zip(SERIAL_FIELDS, values)
     }
 
 
@@ -105,7 +92,6 @@ def normalize_pid_values(raw_values):
             invert=True,
         )
         for field, (param_name, min_gain, max_gain) in PID_GAIN_RANGES.items()
-        if field in raw_values
     }
     normalized["switch"] = raw_values["switch"]
     return normalized
