@@ -4,13 +4,9 @@ from tkinter import ttk
 import serial
 
 
-SERIAL_FIELDS = ("p", "i", "d", "switch", "pos")
+SERIAL_FIELDS = ("p", "i", "d", "switch")
 SERIAL_POLL_INTERVAL_MS = 250
 RAW_CHANGE_THRESHOLD = 4
-POSITION_FIELD = "pos"
-POSITION_PARAM_NAME = "Target position"
-MIN_TARGET_POSITION = 0
-MAX_TARGET_POSITION = 32768
 PID_GAIN_RANGES = {
     "p": ("Position controller P gain", 0, 10_000_000),
     "i": ("Position controller I gain", 0, 10_000_000),
@@ -20,7 +16,6 @@ PARAM_TO_SERIAL_FIELD = {
     param_name: field
     for field, (param_name, _min_gain, _max_gain) in PID_GAIN_RANGES.items()
 }
-PARAM_TO_SERIAL_FIELD[POSITION_PARAM_NAME] = POSITION_FIELD
 
 
 def normalize_raw_value(raw, min_raw, max_raw, min_value, max_value, invert=False):
@@ -97,10 +92,6 @@ def normalize_pid_values(raw_values):
         )
         for field, (param_name, min_gain, max_gain) in PID_GAIN_RANGES.items()
     }
-    normalized[POSITION_PARAM_NAME] = max(
-        MIN_TARGET_POSITION,
-        min(MAX_TARGET_POSITION, raw_values[POSITION_FIELD]),
-    )
     normalized["switch"] = raw_values["switch"]
     return normalized
 
@@ -154,39 +145,26 @@ def build_serial_pid_panel(app, parent):
                         switch_pressed = True
                     last_switch_state["value"] = sample["switch"]
 
+                if switch_pressed:
+                    request_target_position()
+
                 raw_values = samples[-1]
                 values = normalize_pid_values(raw_values)
-                position_updated_from_pot = False
                 for param_name, value in values.items():
                     if param_name == "switch":
                         continue
+
                     serial_field = PARAM_TO_SERIAL_FIELD[param_name]
                     previous_raw_value = last_raw_values.get(serial_field)
-                    raw_change = (
-                        None
-                        if previous_raw_value is None
-                        else abs(previous_raw_value - raw_values[serial_field])
-                    )
                     if (
-                        raw_change is not None
-                        and (
-                            raw_change < RAW_CHANGE_THRESHOLD
-                            or (
-                                serial_field == POSITION_FIELD
-                                and raw_change == RAW_CHANGE_THRESHOLD
-                            )
-                        )
+                        previous_raw_value is not None
+                        and abs(previous_raw_value - raw_values[serial_field]) < RAW_CHANGE_THRESHOLD
+                       
                     ):
-                        print("polled serial; difference not large enough")
                         continue
+
                     app.organiser.request_update_param(param_name, value)
                     last_raw_values[serial_field] = raw_values[serial_field]
-                    if serial_field == POSITION_FIELD:
-                        position_updated_from_pot = True
-
-                if switch_pressed and not position_updated_from_pot:
-                    request_target_position()
-
         parent.after(SERIAL_POLL_INTERVAL_MS, poll_serial)
 
     def connect():
