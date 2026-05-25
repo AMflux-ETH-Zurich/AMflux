@@ -456,7 +456,9 @@ class DriveOrganiser:
             
             velocity = self.node.tpdo[DCF_TPDO_VELOCITY]["Velocity actual value"].phys
 
-            torque = self.node.sdo["Torque actual values"]["Torque actual value averaged"].raw
+            # Torque/current is not in a configured TPDO; do not issue an SDO
+            # request from the high-frequency telemetry loop.
+            torque = None
                     
         except Exception as e:
             # Fallback to SDO reads (slower but safe)
@@ -470,10 +472,7 @@ class DriveOrganiser:
                 velocity = self.node.sdo[0x606C].raw
             except Exception:
                 velocity = None
-            try:
-                torque = self.node.sdo[0x6077].raw
-            except Exception:
-                torque = None
+            torque = None
             try:
                 status_word = self.node.sdo[0x6041].raw
             except Exception:
