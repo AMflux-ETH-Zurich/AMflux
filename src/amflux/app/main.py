@@ -73,7 +73,7 @@ def main():
     app.mainloop()
     
     # Shutdown network after user interface
-    mc1.nmt.state = 'COMMUNICATION RESET'
+    mc1.nmt.state = 'PRE-OPERATIONAL'
     can_functions.network_shutdown(net)
 
 
