@@ -155,8 +155,7 @@ def build_serial_pid_panel(app, parent):
             samples = read_serial_pid_samples(app.serial_connection, serial_text_buffer)
             print(f"poll_serial: received {len(samples)} valid sample(s)")
 
-            if samples[0]==0 and samples[1]==0 and samples[2]==0:
-                
+            if samples[-1][0]==0 and samples[-1][1]==0 and samples[-1][2]==0:
                 app.organiser.request_update_param("Position controller P gain", 3005138)
                 app.organiser.request_update_param("Position controller I gain", 606093)
                 app.organiser.request_update_param("Position controller D gain", 1109021)
