@@ -8,6 +8,11 @@ SERIAL_FIELDS = ("p", "i", "d", "pos", "switch")
 SERIAL_POLL_INTERVAL_MS = 250
 RAW_CHANGE_THRESHOLD = 4
 POSITION_PARAM_NAME = "Target position"
+OPTIMAL_PID_VALUES = {
+    "Position controller P gain": 3005138,
+    "Position controller I gain": 606093,
+    "Position controller D gain": 1109021,
+}
 PID_GAIN_RANGES = {
     "p": ("Position controller P gain", 0, 10_000_000),
     "i": ("Position controller I gain", 0, 100_000_000),
@@ -127,6 +132,7 @@ def build_serial_pid_panel(app, parent):
     last_raw_values = {}
     last_switch_state = {"value": None}
     next_target_sign = {"value": 1}
+    last_optimal_mode = {"value": False}
 
     def request_target_position():
         try:
@@ -154,15 +160,6 @@ def build_serial_pid_panel(app, parent):
             print("poll_serial: reading serial")
             samples = read_serial_pid_samples(app.serial_connection, serial_text_buffer)
             print(f"poll_serial: received {len(samples)} valid sample(s)")
-
-            if samples[-1][0]==0 and samples[-1][1]==0 and samples[-1][2]==0:
-                app.organiser.request_update_param("Position controller P gain", 3005138)
-                app.organiser.request_update_param("Position controller I gain", 606093)
-                app.organiser.request_update_param("Position controller D gain", 1109021)
-                print("using optimal values")
-                return
-                
-           
             if app.organiser is None or not samples:
                 return
 
@@ -179,6 +176,14 @@ def build_serial_pid_panel(app, parent):
 
             raw_values = samples[-1]
             values = normalize_pid_values(raw_values)
+            use_optimal_values = all(raw_values[field] == 0 for field in ("p", "i", "d"))
+            optimal_mode_changed = use_optimal_values != last_optimal_mode["value"]
+            if use_optimal_values:
+                values.update(OPTIMAL_PID_VALUES)
+                if optimal_mode_changed:
+                    print("using optimal values")
+            last_optimal_mode["value"] = use_optimal_values
+
             for param_name, value in values.items():
                 if param_name == "switch":
                     continue
@@ -188,6 +193,10 @@ def build_serial_pid_panel(app, parent):
                 if (
                     previous_raw_value is not None
                     and abs(previous_raw_value - raw_values[serial_field]) < RAW_CHANGE_THRESHOLD
+                    and not (
+                        optimal_mode_changed
+                        and param_name in OPTIMAL_PID_VALUES
+                    )
                 ):
                     print(f"poll_serial: {serial_field} difference too small")
                     continue
