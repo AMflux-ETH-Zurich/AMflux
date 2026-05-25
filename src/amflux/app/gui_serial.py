@@ -4,14 +4,13 @@ from tkinter import ttk
 import serial
 
 
-SERIAL_FIELDS = ("p", "i", "d", "pos", "switch")
+SERIAL_FIELDS = ("p", "i", "d", "switch")
 SERIAL_POLL_INTERVAL_MS = 250
 RAW_CHANGE_THRESHOLD = 4
 PID_GAIN_RANGES = {
     "p": ("Position controller P gain", 0, 10_000_000),
     "i": ("Position controller I gain", 0, 10_000_000),
     "d": ("Position controller D gain", 0, 300_000),
-    "pos": ("Target position", 0, 32768)
 }
 PARAM_TO_SERIAL_FIELD = {
     param_name: field
@@ -146,28 +145,26 @@ def build_serial_pid_panel(app, parent):
                         switch_pressed = True
                     last_switch_state["value"] = sample["switch"]
 
-                
+                if switch_pressed:
+                    request_target_position()
+
                 raw_values = samples[-1]
                 values = normalize_pid_values(raw_values)
                 for param_name, value in values.items():
                     if param_name == "switch":
                         continue
+
                     serial_field = PARAM_TO_SERIAL_FIELD[param_name]
                     previous_raw_value = last_raw_values.get(serial_field)
                     if (
                         previous_raw_value is not None
-                        and abs(previous_raw_value - raw_values[serial_field]) < RAW_CHANGE_THRESHOLD   
+                        and abs(previous_raw_value - raw_values[serial_field]) < RAW_CHANGE_THRESHOLD
+                       
                     ):
                         continue
-                    if param_name == "pos":
-                        set_pos_pot = True
+
                     app.organiser.request_update_param(param_name, value)
                     last_raw_values[serial_field] = raw_values[serial_field]
-                
-                if switch_pressed and not set_pos_pot:
-                    request_target_position()
-                
-                
         parent.after(SERIAL_POLL_INTERVAL_MS, poll_serial)
 
     def connect():
