@@ -1585,12 +1585,12 @@ ParameterName=Number of mapped objects in TxPDO 2
 ObjectType=0x7
 DataType=0x5
 AccessType=rw
-DefaultValue=2
+DefaultValue=3
 LowLimit=0
 HighLimit=12
 PDOMapping=0
 ObjFlags=0
-ParameterValue=2
+ParameterValue=3
 
 [1A01sub1]
 ParameterName=1st mapped object in TxPDO 2
@@ -1620,7 +1620,7 @@ AccessType=rw
 DefaultValue=0x00000000
 PDOMapping=0
 ObjFlags=0
-ParameterValue=0x00000000
+ParameterValue=0x30D10220
 
 [1A01sub4]
 ParameterName=4th mapped object in TxPDO 2
@@ -1722,12 +1722,12 @@ ParameterName=Number of mapped objects in TxPDO 3
 ObjectType=0x7
 DataType=0x5
 AccessType=rw
-DefaultValue=3
+DefaultValue=2
 LowLimit=0
 HighLimit=12
 PDOMapping=0
 ObjFlags=0
-ParameterValue=3
+ParameterValue=2
 
 [1A02sub1]
 ParameterName=1st mapped object in TxPDO 3
@@ -1757,7 +1757,7 @@ AccessType=rw
 DefaultValue=0x00000000
 PDOMapping=0
 ObjFlags=0
-ParameterValue=0x30D10210
+ParameterValue=0x00000000
 
 [1A02sub4]
 ParameterName=4th mapped object in TxPDO 3
