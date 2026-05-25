@@ -4,21 +4,23 @@ from tkinter import ttk
 import serial
 
 
-LEGACY_SERIAL_FIELDS = ("p", "i", "d", "switch")
-SERIAL_FIELDS = (*LEGACY_SERIAL_FIELDS, "pos")
-POSITION_BEFORE_SWITCH_FIELDS = ("p", "i", "d", "pos", "switch")
+SERIAL_FIELDS = ("p", "i", "d", "switch", "pos")
 SERIAL_POLL_INTERVAL_MS = 250
 RAW_CHANGE_THRESHOLD = 4
+POSITION_FIELD = "pos"
+POSITION_PARAM_NAME = "Target position"
+MIN_TARGET_POSITION = 0
+MAX_TARGET_POSITION = 32768
 PID_GAIN_RANGES = {
     "p": ("Position controller P gain", 0, 10_000_000),
     "i": ("Position controller I gain", 0, 10_000_000),
     "d": ("Position controller D gain", 0, 300_000),
-    "pos": ("Target position", 0, 32768),
 }
 PARAM_TO_SERIAL_FIELD = {
     param_name: field
     for field, (param_name, _min_gain, _max_gain) in PID_GAIN_RANGES.items()
 }
+PARAM_TO_SERIAL_FIELD[POSITION_PARAM_NAME] = POSITION_FIELD
 
 
 def normalize_raw_value(raw, min_raw, max_raw, min_value, max_value, invert=False):
@@ -30,23 +32,12 @@ def normalize_raw_value(raw, min_raw, max_raw, min_value, max_value, invert=Fals
 
 def parse_serial_pid_line(line):
     values = [part.strip() for part in line.strip("()[]").split(",")]
-    if len(values) == len(LEGACY_SERIAL_FIELDS):
-        fields = LEGACY_SERIAL_FIELDS
-    elif len(values) == len(SERIAL_FIELDS):
-        fourth_value, fifth_value = (int(value) for value in values[3:])
-        if fourth_value not in (0, 1) and fifth_value in (0, 1):
-            fields = POSITION_BEFORE_SWITCH_FIELDS
-        else:
-            fields = SERIAL_FIELDS
-    else:
-        raise ValueError(
-            f"expected {len(LEGACY_SERIAL_FIELDS)} or {len(SERIAL_FIELDS)} values, "
-            f"got {len(values)}"
-        )
+    if len(values) != len(SERIAL_FIELDS):
+        raise ValueError(f"expected {len(SERIAL_FIELDS)} values, got {len(values)}")
 
     return {
         field: int(value)
-        for field, value in zip(fields, values)
+        for field, value in zip(SERIAL_FIELDS, values)
     }
 
 
@@ -105,8 +96,11 @@ def normalize_pid_values(raw_values):
             invert=True,
         )
         for field, (param_name, min_gain, max_gain) in PID_GAIN_RANGES.items()
-        if field in raw_values
     }
+    normalized[POSITION_PARAM_NAME] = max(
+        MIN_TARGET_POSITION,
+        min(MAX_TARGET_POSITION, raw_values[POSITION_FIELD]),
+    )
     normalized["switch"] = raw_values["switch"]
     return normalized
 
@@ -168,14 +162,25 @@ def build_serial_pid_panel(app, parent):
                         continue
                     serial_field = PARAM_TO_SERIAL_FIELD[param_name]
                     previous_raw_value = last_raw_values.get(serial_field)
+                    raw_change = (
+                        None
+                        if previous_raw_value is None
+                        else abs(previous_raw_value - raw_values[serial_field])
+                    )
                     if (
-                        previous_raw_value is not None
-                        and abs(previous_raw_value - raw_values[serial_field]) <= RAW_CHANGE_THRESHOLD
+                        raw_change is not None
+                        and (
+                            raw_change < RAW_CHANGE_THRESHOLD
+                            or (
+                                serial_field == POSITION_FIELD
+                                and raw_change == RAW_CHANGE_THRESHOLD
+                            )
+                        )
                     ):
                         continue
                     app.organiser.request_update_param(param_name, value)
                     last_raw_values[serial_field] = raw_values[serial_field]
-                    if serial_field == "pos":
+                    if serial_field == POSITION_FIELD:
                         position_updated_from_pot = True
 
                 if switch_pressed and not position_updated_from_pot:
