@@ -181,6 +181,7 @@ def build_serial_pid_panel(app, parent):
             last_switch_state["value"] = None
             status_var.set(f"Connected: {port_var.get()}")
             if not poll_running["active"]:
+                print("calling poll_serial()")
                 poll_serial()
         except Exception as exc:
             status_var.set(f"Error: {exc}")
