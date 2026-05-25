@@ -161,6 +161,7 @@ def build_serial_pid_panel(app, parent):
                         and abs(previous_raw_value - raw_values[serial_field]) < RAW_CHANGE_THRESHOLD
                        
                     ):
+                        print("polled serial: difference too small")
                         continue
 
                     app.organiser.request_update_param(param_name, value)
