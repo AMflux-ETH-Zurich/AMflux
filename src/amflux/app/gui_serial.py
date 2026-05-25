@@ -136,44 +136,37 @@ def build_serial_pid_panel(app, parent):
             return
 
         poll_running["active"] = True
-        try:
-            if app.serial_connection and app.serial_connection.is_open:
-                samples = read_serial_pid_samples(app.serial_connection, serial_text_buffer)
-                if app.organiser is not None and samples:
-                    switch_pressed = False
-                    for sample in samples:
-                        if last_switch_state["value"] == 1 and sample["switch"] == 0:
-                            switch_pressed = True
-                        last_switch_state["value"] = sample["switch"]
+        if app.serial_connection and app.serial_connection.is_open:
+            samples = read_serial_pid_samples(app.serial_connection, serial_text_buffer)
+            if app.organiser is not None and samples:
+                switch_pressed = False
+                for sample in samples:
+                    if last_switch_state["value"] == 1 and sample["switch"] == 0:
+                        switch_pressed = True
+                    last_switch_state["value"] = sample["switch"]
 
-                    if switch_pressed:
-                        request_target_position()
+                if switch_pressed:
+                    request_target_position()
 
-                    raw_values = samples[-1]
-                    values = normalize_pid_values(raw_values)
-                    for param_name, value in values.items():
-                        if param_name == "switch":
-                            continue
+                raw_values = samples[-1]
+                values = normalize_pid_values(raw_values)
+                for param_name, value in values.items():
+                    if param_name == "switch":
+                        continue
 
-                        serial_field = PARAM_TO_SERIAL_FIELD[param_name]
-                        previous_raw_value = last_raw_values.get(serial_field)
-                        if (
-                            previous_raw_value is not None
-                            and abs(previous_raw_value - raw_values[serial_field]) < RAW_CHANGE_THRESHOLD
-                        ):
-                            print("polled serial: difference too small")
-                            continue
+                    serial_field = PARAM_TO_SERIAL_FIELD[param_name]
+                    previous_raw_value = last_raw_values.get(serial_field)
+                    if (
+                        previous_raw_value is not None
+                        and abs(previous_raw_value - raw_values[serial_field]) < RAW_CHANGE_THRESHOLD
+                       
+                    ):
+                        print("polled serial: difference too small")
+                        continue
 
-                        app.organiser.request_update_param(param_name, value)
-                        last_raw_values[serial_field] = raw_values[serial_field]
-        except Exception as exc:
-            print(f"Serial poll error: {exc}")
-            status_var.set(f"Serial poll error: {exc}")
-        finally:
-            if parent.winfo_exists():
-                parent.after(SERIAL_POLL_INTERVAL_MS, poll_serial)
-            else:
-                poll_running["active"] = False
+                    app.organiser.request_update_param(param_name, value)
+                    last_raw_values[serial_field] = raw_values[serial_field]
+        parent.after(SERIAL_POLL_INTERVAL_MS, poll_serial)
 
     def connect():
         try:
