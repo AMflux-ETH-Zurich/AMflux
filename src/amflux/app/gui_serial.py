@@ -11,7 +11,7 @@ PID_GAIN_RANGES = {
     "p": ("Position controller P gain", 0, 10_000_000),
     "i": ("Position controller I gain", 0, 10_000_000),
     "d": ("Position controller D gain", 0, 300_000),
-    "pos": ("Target position", 0, 32768),
+    "pos": ("Target position", 0, 32768)
 }
 PARAM_TO_SERIAL_FIELD = {
     param_name: field
@@ -146,9 +146,9 @@ def build_serial_pid_panel(app, parent):
                         switch_pressed = True
                     last_switch_state["value"] = sample["switch"]
 
+                
                 raw_values = samples[-1]
                 values = normalize_pid_values(raw_values)
-                position_updated_from_pot = False
                 for param_name, value in values.items():
                     if param_name == "switch":
                         continue
@@ -156,17 +156,18 @@ def build_serial_pid_panel(app, parent):
                     previous_raw_value = last_raw_values.get(serial_field)
                     if (
                         previous_raw_value is not None
-                        and abs(previous_raw_value - raw_values[serial_field]) <= RAW_CHANGE_THRESHOLD
+                        and abs(previous_raw_value - raw_values[serial_field]) < RAW_CHANGE_THRESHOLD   
                     ):
                         continue
+                    if param_name == "pos":
+                        set_pos_pot = True
                     app.organiser.request_update_param(param_name, value)
                     last_raw_values[serial_field] = raw_values[serial_field]
-                    if serial_field == "pos":
-                        position_updated_from_pot = True
-
-                if switch_pressed and not position_updated_from_pot:
+                
+                if switch_pressed and not set_pos_pot:
                     request_target_position()
-
+                
+                
         parent.after(SERIAL_POLL_INTERVAL_MS, poll_serial)
 
     def connect():
