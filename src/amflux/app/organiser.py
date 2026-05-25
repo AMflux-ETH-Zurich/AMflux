@@ -444,8 +444,7 @@ class DriveOrganiser:
         """
         try:
             # DCF TPDO1: Statusword (0x6041)
-            # DCF TPDO2: Modes display (0x6061), current actual value (0x30D1:02)
-            # DCF TPDO3: Position actual value (0x6064)
+            # DCF TPDO3: Position actual value (0x6064), current actual value (0x30D1:02)
             # DCF TPDO4: Velocity actual value (0x606C)
             # Non-blocking: read cached TPDO values (assume they've arrived during operation)
             
@@ -456,7 +455,7 @@ class DriveOrganiser:
             
             velocity = self.node.tpdo[DCF_TPDO_VELOCITY]["Velocity actual value"].phys
 
-            current = self.node.tpdo[DCF_TPDO_MODE_DISPLAY][
+            current = self.node.tpdo[DCF_TPDO_POSITION][
                 "Current actual values.Current actual value"
             ].phys
                     
