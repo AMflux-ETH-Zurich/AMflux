@@ -249,6 +249,7 @@ class DriveOrganiser:
     def _write_command_entry_sdo(self, entry: dict, value):
         index = entry["index"]
         subindex = entry["subindex"]
+        print(f"writing SDO 0x{index:04X}:{subindex:02X} ({entry['name']}) = {value}")
         if subindex == 0:
             self.node.sdo[index].raw = value
         else:
@@ -262,6 +263,10 @@ class DriveOrganiser:
             pass
 
         variable.raw = value
+        print(
+            f"transmitting RPDO{rpdo_number} 0x{variable.index:04X}:{variable.subindex:02X} "
+            f"({variable.name}) = {value}"
+        )
         rpdo_map.transmit()
         print(
             f"wrote RPDO{rpdo_number} 0x{variable.index:04X}:{variable.subindex:02X} "
@@ -567,6 +572,7 @@ class DriveOrganiser:
                         self.enable_operation(cmd.timeout or 5.0, specific_bits=specific_bits)
                     elif cmd.type == CmdType.UPDATE_PARAM:
                         name, value = cmd.data
+                        print(f"processing update: {name} = {value}")
                         self.update_parameter(name, value)
                     elif cmd.type == CmdType.DISABLE_VOLTAGE:
                         self.stop_volt()
