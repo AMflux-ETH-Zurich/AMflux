@@ -12,7 +12,7 @@ from matplotlib.figure import Figure
 
 class MotorTelemetryPanel:
     PLOT_SIGNALS = (
-        {"key": "current", "label": "Current", "unit": "mA", "color": "wheat"},
+        {"key": "torque", "label": "Torque", "unit": "Nm", "color": "wheat"},
         {"key": "velocity", "label": "Velocity", "unit": "RPM", "color": "lightblue"},
     )
 
@@ -82,7 +82,7 @@ class MotorTelemetryPanel:
         )
 
     def read_telemetry(self):
-        values = {"current": None, "velocity": None, "position": None}
+        values = {"torque": None, "velocity": None, "position": None}
         if self.organiser is None:
             return values
 
@@ -90,7 +90,7 @@ class MotorTelemetryPanel:
         if telemetry is None:
             return values
 
-        for key, index in (("current", 0), ("velocity", 1), ("position", 2)):
+        for key, index in (("torque", 0), ("velocity", 1), ("position", 2)):
             if len(telemetry) > index:
                 values[key] = telemetry[index]
         return values
