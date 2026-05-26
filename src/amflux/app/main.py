@@ -52,7 +52,7 @@ def main():
     network, mc1 = can_functions.network_setup(
         1, 
         object_dictionary_functions.resolve_dcf_path(),
-        'can0', 
+        'can1', 
         net
     )
 
