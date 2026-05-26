@@ -5,7 +5,7 @@ import serial
 
 
 SERIAL_FIELDS = ("p", "i", "d", "pos", "switch")
-SERIAL_POLL_INTERVAL_MS = 250
+SERIAL_POLL_INTERVAL_MS = 50
 RAW_CHANGE_THRESHOLD = 4
 POSITION_PARAM_NAME = "Target position"
 PID_GAIN_RANGES = {
