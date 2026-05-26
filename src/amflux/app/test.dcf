@@ -3107,7 +3107,7 @@ AccessType=rww
 DefaultValue=0
 PDOMapping=1
 ObjFlags=0
-ParameterValue=3309
+ParameterValue=3308
 
 [30A2sub5]
 ParameterName=Velocity controller filter cut-off frequency
