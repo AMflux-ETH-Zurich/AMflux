@@ -90,7 +90,7 @@ def sanity_check(net):
                     print("INFO:Sanity Check passed.")
                     return True
                 else: 
-                    raise SanityCheck(f"Sanity Check failed. Message : {msg_ist}")
+                    raise SanityCheck(f"Sanity Check failed. Message : {net.bus.recv(1)}")
         else:
             print("no answer received after 3 seconds")
             return False
