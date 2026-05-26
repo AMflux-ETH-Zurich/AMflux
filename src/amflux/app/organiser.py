@@ -461,7 +461,7 @@ class DriveOrganiser:
             
             velocity = self.node.tpdo[DCF_TPDO_VELOCITY]["Velocity actual value"].phys
 
-            torque = self.node.sdo["Torque actual values"]["Torque actual value averaged"].raw
+            torque = self.node.sdo["Current actual values"]["Current actual value"].raw
                     
         except Exception as e:
             # Fallback to SDO reads (slower but safe)
