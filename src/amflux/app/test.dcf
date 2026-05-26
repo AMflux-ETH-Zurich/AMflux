@@ -2486,7 +2486,7 @@ LowLimit=0
 HighLimit=15000
 PDOMapping=1
 ObjFlags=0
-ParameterValue=5000
+ParameterValue=1000
 
 [3001sub2]
 ParameterName=Output current limit
@@ -2498,7 +2498,7 @@ LowLimit=0
 HighLimit=30000
 PDOMapping=1
 ObjFlags=0
-ParameterValue=30000
+ParameterValue=2000
 
 [3001sub3]
 ParameterName=Number of pole pairs
