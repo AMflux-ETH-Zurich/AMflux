@@ -5914,7 +5914,7 @@ LowLimit=1
 HighLimit=4294967295
 PDOMapping=1
 ObjFlags=0
-ParameterValue=100000
+ParameterValue=1000
 
 [60D0]
 SubNumber=2
