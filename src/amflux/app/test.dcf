@@ -2834,7 +2834,12 @@ AccessType=rw
 DefaultValue=0
 PDOMapping=0
 ObjFlags=0
-ParameterValue=192
+ParameterValue=2323
+
+;*****************************************************************
+; pta1 = 192
+; pta2 = 2323
+;*****************************************************************
 
 [3012subB]
 ParameterName=SSI position bits
