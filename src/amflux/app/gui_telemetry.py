@@ -108,9 +108,12 @@ class MotorTelemetryPanel:
 
             axis = widgets["axis"]
             if elapsed_time < self.display_window:
-                axis.set_xlim(0, self.display_window)
+                x_min, x_max = 0, self.display_window
             else:
-                axis.set_xlim(elapsed_time - self.display_window, elapsed_time)
+                x_min, x_max = elapsed_time - self.display_window, elapsed_time
+
+            axis.set_xlim(x_min, x_max)
+            set_visible_y_limits(axis, self.time_data, self.signal_data[key], x_min, x_max)
 
         self.plot_canvas.draw_idle()
 
@@ -144,6 +147,22 @@ def format_readback(label, value, unit):
     if value is None:
         return f"{label}:\n-- {unit}"
     return f"{label}:\n{value:.2f} {unit}"
+
+
+def set_visible_y_limits(axis, time_data, signal_data, x_min, x_max):
+    visible_values = [
+        value
+        for timestamp, value in zip(time_data, signal_data)
+        if x_min <= timestamp <= x_max and math.isfinite(value)
+    ]
+    if not visible_values:
+        return
+
+    y_min = min(visible_values)
+    y_max = max(visible_values)
+    span = y_max - y_min
+    padding = span * 0.1 if span else max(abs(y_min) * 0.1, 1.0)
+    axis.set_ylim(y_min - padding, y_max + padding)
 
 
 def build_motor_telemetry_panel(app, parent):
